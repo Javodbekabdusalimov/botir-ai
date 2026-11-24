@@ -43,7 +43,7 @@ export function ChatLauncher() {
           setOpen((o) => !o);
         }}
         aria-expanded={open}
-        className="fixed bottom-20 right-4 z-50 flex h-12 items-center gap-2 rounded-full bg-green-600 px-4 text-sm font-bold text-white shadow-lift transition-transform hover:scale-105 hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:bottom-6 sm:right-6"
+        className={`fixed bottom-20 right-4 z-50 flex h-12 items-center gap-2 rounded-full bg-green-600 px-4 text-sm font-bold text-white shadow-lift transition-transform hover:scale-105 hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:bottom-6 sm:right-6 ${open ? "max-sm:hidden" : ""}`}
       >
         {open ? <X className="size-5" aria-hidden="true" /> : <MessageCircle className="size-5" aria-hidden="true" />}
         <span className="hidden sm:inline">Botir AI bilan gaplashing</span>

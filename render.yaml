@@ -1,0 +1,52 @@
+# Render Blueprint — Botir AI (hackathon MVP)
+# Two separate services: web (ai-assistant) + backend API (ai-assistant-api).
+# Dashboard → New → Blueprint → this repo. Secrets marked `sync: false` are entered in the dashboard.
+services:
+  - type: web
+    name: ai-assistant-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter api exec prisma generate
+    startCommand: cd apps/api && npx prisma db push --skip-generate && npx tsx src/seed.ts && npx tsx src/main.ts
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # SQLite (demo): seeded on every boot, free plan disk is ephemeral.
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: CORS_ORIGINS
+        value: https://ai-assistant.onrender.com,http://localhost:3000
+      - key: WEB_URL
+        value: https://ai-assistant.onrender.com
+      - key: PUBLIC_API_URL
+        value: https://ai-assistant-api.onrender.com
+      - key: LLM_MODE
+        value: sdk
+      - key: AUTH_SECRET
+        generateValue: true
+      # Claude Agent SDK auth (`claude setup-token`) — without it AI negotiation fails.
+      - key: CLAUDE_CODE_OAUTH_TOKEN
+        sync: false
+      - key: TEZCHECK_API_KEY
+        sync: false
+      - key: TEZCHECK_CASH_DESK_CODE
+        sync: false
+      - key: PLAN_PRO_PRICE
+        value: "1000"
+
+  - type: web
+    name: ai-assistant
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter web build
+    startCommand: pnpm --filter web start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://ai-assistant-api.onrender.com

@@ -193,3 +193,13 @@
   .check-draw path { animation: none; stroke-dashoffset: 0; }
   html { scroll-behavior: auto; }
 }
+
+/* Chegirma slayderi: to'ldirilgan qismi yashil, qolgani och kulrang (accent-color Chromium'da qora trek beradi) */
+.range-green { appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
+.range-green::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(to right, #16a34a var(--p, 0%), #e5e7eb var(--p, 0%)); }
+.range-green::-moz-range-track { height: 6px; border-radius: 999px; background: #e5e7eb; }
+.range-green::-moz-range-progress { height: 6px; border-radius: 999px; background: #16a34a; }
+.range-green::-webkit-slider-thumb { -webkit-appearance: none; margin-top: -7px; width: 20px; height: 20px; border-radius: 999px; background: #fff; border: 2px solid #16a34a; box-shadow: 0 1px 3px rgb(0 0 0 / 0.15); }
+.range-green::-moz-range-thumb { width: 18px; height: 18px; border-radius: 999px; background: #fff; border: 2px solid #16a34a; }
+.range-green:focus-visible { outline: none; }
+.range-green:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px #bbf7d0; }

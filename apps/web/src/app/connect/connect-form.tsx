@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, Loader2, Upload } from "lucide-react";
@@ -133,7 +135,7 @@ export function ConnectForm() {
             </div>
           </Field>
           <Field id="discount" label={`Maksimal chegirma: ${discount}%`} hint="Agent bu chegaradan oshib chegirma bera olmaydi.">
-            <input id="discount" type="range" min={0} max={30} step={1} value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="h-11 w-full accent-[var(--primary-strong)]" />
+            <input id="discount" type="range" min={0} max={30} step={1} value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="range-green h-11 w-full" style={{ "--p": `${(discount / 30) * 100}%` } as React.CSSProperties} />
           </Field>
         </div>
       </fieldset>

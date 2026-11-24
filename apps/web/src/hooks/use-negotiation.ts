@@ -5,12 +5,28 @@ import { streamNegotiation } from "@/lib/api";
 import { runMockStream } from "@/lib/mock";
 import type { NegotiationEvent, NegotiationState, NegotiationStatus } from "@/lib/types";
 
+/** "Yozmoqda..." davomiyligi: bazaviy + matn uzunligiga proporsional (yuqori chegara bilan). */
+const TYPING_BASE_MS = 550;
+const TYPING_PER_CHAR_MS = 5;
+const TYPING_MAX_EXTRA_MS = 600;
+/** Harf-harf chiqarish: har kadrda nechta belgi va kadrlar orasidagi pauza. */
+const REVEAL_CHARS_PER_TICK = 3;
+const REVEAL_TICK_MS = 16;
+/** Xabar to'liq chiqqandan keyingi pauza (keyingi xabar oldidan). */
+const MESSAGE_GAP_MS = 350;
+/** `prefers-reduced-motion` da har kutish shu qiymat bilan cheklanadi. */
+const REDUCED_SLEEP_CAP_MS = 40;
+
 const INITIAL: NegotiationState = { lanes: {}, order: [], best: {}, status: "running", error: null };
 
 /**
  * SSE (yoki mock) hodisalarini har biznes uchun alohida navbatga qo'yib, "yozmoqda..." va harf-harf
  * animatsiya bilan ketma-ket ko'rsatadi: bir necha biznes bilan muzokara parallel ketadi.
  * Yakuniy status barcha chiziqlar ko'rsatib bo'lingach qo'llanadi.
+ *
+ * Kontrakt: `id` yoki `forceMock` o'zgarsa oqim yopilib, holat noldan boshlanadi (unmount'da ham
+ * barcha taymerlar va ulanish tozalanadi). `prefers-reduced-motion` da kutishlar qisqartiriladi.
+ * Chekka holat: `rejected`/`failed` kabi yakuniy status ham navbat bo'shagandan keyingina qo'yiladi.
  */
 export function useNegotiation(id: string, forceMock = false): NegotiationState {
   const [state, setState] = useState<NegotiationState>(INITIAL);
@@ -30,7 +46,7 @@ export function useNegotiation(id: string, forceMock = false): NegotiationState 
             timers.delete(t);
             resolve();
           },
-          reduce ? Math.min(ms, 40) : ms,
+          reduce ? Math.min(ms, REDUCED_SLEEP_CAP_MS) : ms,
         );
         timers.add(t);
       });
@@ -55,17 +71,17 @@ export function useNegotiation(id: string, forceMock = false): NegotiationState 
         if (ev.type === "message") {
           const m = ev.message;
           patchLane(bid, (l) => ({ ...l, typing: m.fromAgent }));
-          await sleep(550 + Math.min(m.text.length * 5, 600));
+          await sleep(TYPING_BASE_MS + Math.min(m.text.length * TYPING_PER_CHAR_MS, TYPING_MAX_EXTRA_MS));
           if (cancelled) break;
           patchLane(bid, (l) => ({ ...l, typing: null, round: Math.max(l.round, m.round), messages: [...l.messages, { ...m, shown: 0 }] }));
-          const step = reduce ? m.text.length : 3;
+          const step = reduce ? m.text.length : REVEAL_CHARS_PER_TICK;
           for (let n = step; !cancelled; n += step) {
             const upto = Math.min(n, m.text.length);
             patchLane(bid, (l) => ({ ...l, messages: l.messages.map((x) => (x.id === m.id ? { ...x, shown: upto } : x)) }));
             if (upto >= m.text.length) break;
-            await sleep(16);
+            await sleep(REVEAL_TICK_MS);
           }
-          await sleep(350);
+          await sleep(MESSAGE_GAP_MS);
         } else if (ev.type === "best_offer") {
           setState((s) => ({ ...s, best: { ...s.best, [ev.businessId]: { businessId: ev.businessId, businessName: ev.businessName, offer: ev.offer } } }));
         }

@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bot, CalendarClock, CheckCircle2, Loader2, MapPin, Mic, Play, Send, Users } from "lucide-react";
+import { CalendarClock, CheckCircle2, Loader2, MapPin, Mic, Play, Send, Users, UtensilsCrossed, Wrench } from "lucide-react";
+import { LogoMark } from "@/components/logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaidOrders } from "@/lib/orders-store";
@@ -20,6 +21,13 @@ interface Msg {
   tasks?: NegotiationTask[];
   negotiationId?: string;
 }
+
+/** Bo'sh holatdagi tayyor so'rovlar: bosilsa matn maydoniga qo'yiladi (yuborilmaydi). */
+const STARTERS = [
+  { icon: UtensilsCrossed, title: "Guruh uchun osh", text: "Ertaga 6 kishilik osh joy band qil" },
+  { icon: Wrench, title: "Avtoservis", text: "Cobalt uchun moy almashtirish, shanba kuni" },
+  { icon: CalendarClock, title: "Bir necha vazifa", text: "6 kishilik osh + moy almashtirish" },
+] as const;
 
 const EXAMPLES = ["6 kishilik osh + moy almashtirish", "Ertaga diagnostika", "Ertaga 6 kishilik osh joy band qil", "Cobalt uchun moy almashtirish, shanba kuni"];
 
@@ -128,7 +136,11 @@ export function AssistantChat() {
 
         {msgs.map((m) => (
           <div key={m.id} className={cn("rise-in flex gap-2", m.from === "me" && "justify-end")}>
-            {m.from === "agent" && <Bot className="mt-2 size-5 shrink-0 text-agent" aria-hidden="true" />}
+            {m.from === "agent" && (
+              <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-white shadow-soft ring-1 ring-tint-3">
+                <LogoMark className="size-5" />
+              </span>
+            )}
             <div className={cn("max-w-[88%] space-y-3", m.from === "me" && "text-right")}>
               <p className={cn("inline-block rounded-2xl px-4 py-2.5 text-left text-[15px]", m.from === "me" ? "bg-primary/20 text-green-950" : "border border-border bg-card shadow-soft")}>{m.text}</p>
               {m.tasks?.map((t) => (
@@ -167,6 +179,19 @@ export function AssistantChat() {
             </div>
           </div>
         ))}
+        {msgs.length === 1 && !busy && (
+          <ul className="grid gap-3 pt-2 sm:grid-cols-3" aria-label="Tayyor so'rovlar">
+            {STARTERS.map(({ icon: Icon, title, text: starter }) => (
+              <li key={title}>
+                <button type="button" onClick={() => setText(starter)} className="lift press flex min-h-28 w-full flex-col items-start gap-2 rounded-2xl border border-tint-3 bg-gradient-to-br from-tint-1 to-white p-4 text-left shadow-soft focus-visible:outline-2 focus-visible:outline-ring">
+                  <span className="grid size-9 place-items-center rounded-xl bg-primary text-green-950"><Icon className="size-4" aria-hidden="true" /></span>
+                  <span className="text-sm font-bold">{title}</span>
+                  <span className="text-xs leading-snug text-muted-foreground">{starter}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {busy && (
           <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
             <Loader2 className="size-4 animate-spin" aria-hidden="true" /> Agent reja tuzmoqda...
@@ -181,7 +206,7 @@ export function AssistantChat() {
         </p>
       )}
 
-      <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1 pt-2">
+      <div className={cn("mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1 pt-2", msgs.length === 1 && "hidden sm:hidden")}>
         {EXAMPLES.map((ex) => (
           <button key={ex} type="button" onClick={() => setText(ex)} className="min-h-11 shrink-0 rounded-full border border-tint-3 bg-card px-4 text-sm font-medium text-green-900 shadow-sm transition-colors hover:bg-tint-1 focus-visible:outline-2 focus-visible:outline-ring">
             {ex}

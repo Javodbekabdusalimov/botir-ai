@@ -23,6 +23,7 @@ function snapshot(): string {
   }
 }
 
+/** Biznesni saqlaydi va shu tabdagi `useBusinessId` obunachilarini yangilaydi (`storage` hodisasi faqat boshqa tablarga keladi). */
 export function setBusinessId(id: string) {
   try {
     localStorage.setItem(KEY, id);

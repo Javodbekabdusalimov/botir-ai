@@ -70,7 +70,7 @@ export function SiteHeader() {
   const links = useNav();
   const pending = usePendingActions(user?.role === "user", path);
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-white/70 shadow-[0_1px_0_rgb(255_255_255/0.8)_inset] backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4">
         <Logo />
         <nav aria-label="Asosiy" className="hidden items-center gap-1 sm:flex">
@@ -80,8 +80,8 @@ export function SiteHeader() {
               href={l.href}
               aria-current={isActive(path, l.href) ? "page" : undefined}
               className={cn(
-                "flex h-10 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground",
-                isActive(path, l.href) && "bg-tint-1 text-green-800",
+                "flex h-10 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground transition-colors duration-150 hover:bg-tint-1 hover:text-foreground",
+                isActive(path, l.href) && "bg-tint-2/70 text-green-900",
               )}
             >
               {l.label}

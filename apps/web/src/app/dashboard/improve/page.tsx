@@ -1,6 +1,7 @@
 import { ImproveView } from "./improve-view";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Yaxshilash | Botir AI" };
+export const metadata = pageMeta({ title: "Yaxshilash", description: "Agentni yaxshilash.", path: "/dashboard/improve", noindex: true });
 
 export default function ImprovePage() {
   return <ImproveView />;

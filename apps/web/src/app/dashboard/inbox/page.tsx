@@ -1,6 +1,7 @@
 import { InboxView } from "./inbox-view";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Inbox | Botir AI" };
+export const metadata = pageMeta({ title: "Inbox", description: "Mijozlar suhbatlari.", path: "/dashboard/inbox", noindex: true });
 
 export default function InboxPage() {
   return <InboxView />;

@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bot, Building2, Check, Copy, ExternalLink, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
+import Image from "next/image";
 import { getPaymentStatus } from "@/lib/api";
 import { savePaidOrder } from "@/lib/orders-store";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BizAvatar } from "@/components/biz-avatar";
 import { PayLogos } from "@/components/brand-logos";
+import { useCountUp } from "@/hooks/use-count-up";
+import { bizPhoto } from "@/lib/photos";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { A2AType, BestOffer, ConfirmResult, Lane, NegotiationState } from "@/lib/types";
@@ -15,21 +18,35 @@ import type { A2AType, BestOffer, ConfirmResult, Lane, NegotiationState } from "
 export const MAX_ROUNDS = 3;
 
 const PAYLOAD: Record<A2AType, { label: string; cls: string }> = {
-  REQUEST: { label: "So'rov", cls: "bg-agent/20 text-agent" },
-  OFFER: { label: "Taklif", cls: "bg-biz/20 text-biz" },
-  COUNTER: { label: "Qarshi taklif", cls: "bg-violet-500/15 text-violet-700" },
+  REQUEST: { label: "So'rov", cls: "bg-agent/15 text-green-900" },
+  OFFER: { label: "Taklif", cls: "bg-biz/15 text-amber-900" },
+  COUNTER: { label: "Qarshi taklif", cls: "bg-amber-100 text-amber-900" },
   ACCEPT: { label: "Qabul", cls: "bg-green-500/20 text-green-700" },
   REJECT: { label: "Rad", cls: "bg-destructive/20 text-destructive" },
 };
 
-function Bubble({ biz, type, text, typing }: { biz: boolean; type?: A2AType; text?: string; typing?: boolean }) {
+/** Mijoz agenti avatari (landing/live: bitta shaxsiy agent). */
+const CUSTOMER_PHOTO = "/photos/customer.jpg";
+
+function Avatar({ src, alt, size }: { src: string; alt: string; size: number }) {
+  return <Image src={src} alt={alt} width={size} height={size} sizes={`${size}px`} className="shrink-0 rounded-full object-cover ring-2 ring-white" style={{ width: size, height: size }} />;
+}
+
+function Bubble({ biz, type, text, typing, name, photo }: { biz: boolean; type?: A2AType; text?: string; typing?: boolean; name: string; photo: string }) {
   return (
     <div
       className={cn(
-        "rise-in col-span-2 max-w-[92%] rounded-2xl border px-4 py-3 text-[15px] leading-relaxed md:col-span-1 md:max-w-full",
-        biz ? "justify-self-end rounded-tr-sm border-amber-200 bg-biz-soft md:col-start-2" : "justify-self-start rounded-tl-sm border-tint-3 bg-tint-1 md:col-start-1",
+        "rise-in col-span-2 max-w-[92%] rounded-2xl border px-3.5 py-3 text-[15px] leading-relaxed shadow-sm md:col-span-1 md:max-w-full",
+        biz ? "justify-self-end rounded-tr-sm border-amber-200 bg-gradient-to-br from-biz-soft to-white md:col-start-2" : "justify-self-start rounded-tl-sm border-tint-3 bg-gradient-to-br from-tint-1 to-white md:col-start-1",
       )}
     >
+      <div className="mb-1.5 flex items-center gap-2">
+        <Avatar src={photo} alt="" size={22} />
+        <span className="min-w-0 truncate text-xs font-semibold text-muted-foreground">{name}</span>
+        {type && !typing && (
+          <span className={cn("ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold", PAYLOAD[type].cls)}>{PAYLOAD[type].label}</span>
+        )}
+      </div>
       {typing ? (
         <span className="flex h-5 items-center gap-2" role="status" aria-label="Yozmoqda">
           <span className="flex items-center gap-1">
@@ -40,14 +57,7 @@ function Bubble({ biz, type, text, typing }: { biz: boolean; type?: A2AType; tex
           <span className="text-xs text-muted-foreground">yozmoqda…</span>
         </span>
       ) : (
-        <>
-          {type && (
-            <span className={cn("mb-1.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide", PAYLOAD[type].cls)} title={PAYLOAD[type].label}>
-              {type}
-            </span>
-          )}
-          <p>{text}</p>
-        </>
+        <p>{text}</p>
       )}
     </div>
   );
@@ -73,12 +83,36 @@ function RoundProgress({ round, done }: { round: number; done: boolean }) {
   );
 }
 
-function ColumnHeader({ biz, name }: { biz: boolean; name?: string }) {
-  const Icon = biz ? Building2 : Bot;
+function AgentChip({ photo, title, subtitle, tone, align }: { photo: string; title: string; subtitle: string; tone: "agent" | "biz"; align: "left" | "right" }) {
   return (
-    <div className={cn("flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold", biz ? "border-amber-200 bg-biz-soft text-biz" : "border-tint-3 bg-tint-1 text-agent")}>
-      <Icon className="size-4 shrink-0" aria-hidden="true" />
-      <span className="truncate">{biz ? (name ? `Biznes agenti: ${name}` : "Biznes agenti") : "Mijoz agenti"}</span>
+    <div className={cn("flex min-w-0 items-center gap-2.5", align === "right" && "flex-row-reverse text-right")}>
+      <span className={cn("rounded-full p-0.5", tone === "agent" ? "bg-gradient-to-br from-green-400 to-green-700" : "bg-gradient-to-br from-amber-300 to-amber-600")}>
+        <Avatar src={photo} alt="" size={40} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold leading-tight">{title}</span>
+        <span className={cn("hidden truncate text-xs sm:block", tone === "agent" ? "text-agent" : "text-biz")}>{subtitle}</span>
+      </span>
+    </div>
+  );
+}
+
+/** Ikki agent va ular orasidagi jonli oqim: muzokara ketayotganda nuqtalar chapdan o'ngga siljiydi. */
+function Arena({ bizName, bizPhotoSrc, running }: { bizName?: string; bizPhotoSrc: string; running: boolean }) {
+  return (
+    <div className="glass mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-hidden rounded-2xl p-3 sm:gap-4 sm:p-4">
+      <AgentChip photo={CUSTOMER_PHOTO} title="Mijoz agenti" subtitle="Shaxsiy yordamchi" tone="agent" align="left" />
+      <div className="relative h-6 w-14 overflow-hidden [container-type:inline-size] sm:w-28" aria-hidden="true">
+        <span className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-green-400 via-tint-3 to-amber-400" />
+        {running && (
+          <span className="absolute inset-0">
+            {[0, 1, 2].map((i) => (
+              <i key={i} className="flow-dot absolute left-0 top-1/2 -mt-[3px] size-1.5 rounded-full bg-green-600" style={{ ["--flow-d" as string]: "calc(100cqw - 6px)" }} />
+            ))}
+          </span>
+        )}
+      </div>
+      <AgentChip photo={bizPhotoSrc} title={bizName ?? "Biznes agenti"} subtitle="Biznes agenti" tone="biz" align="right" />
     </div>
   );
 }
@@ -139,10 +173,7 @@ export function NegotiationStage({
           })}
         </div>
       )}
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <ColumnHeader biz={false} />
-        <ColumnHeader biz name={active ? nameOf(active) : undefined} />
-      </div>
+      <Arena bizName={active ? nameOf(active) : undefined} bizPhotoSrc={bizPhoto(active ?? "")} running={state.status === "running"} />
       <div className="mb-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <RoundProgress round={Math.min(lane?.round ?? 0, MAX_ROUNDS)} done={state.status === "agreed" || state.status === "confirmed"} />
         <span aria-live="polite">
@@ -156,9 +187,9 @@ export function NegotiationStage({
       <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3" aria-live="polite">
         {!lane && !state.error && state.status === "running" && <p role="status" className="col-span-2 py-8 text-center text-sm text-muted-foreground">Ulanmoqda… agentlar so&apos;rovni o&apos;qimoqda</p>}
         {lane?.messages.map((m) => (
-          <Bubble key={m.id} biz={m.fromAgent === "business"} type={m.payload.type} text={m.text.slice(0, m.shown)} />
+          <Bubble key={m.id} biz={m.fromAgent === "business"} type={m.payload.type} text={m.text.slice(0, m.shown)} name={m.fromAgent === "business" ? nameOf(m.businessId) : "Mijoz agenti"} photo={m.fromAgent === "business" ? bizPhoto(m.businessId) : CUSTOMER_PHOTO} />
         ))}
-        {lane?.typing && <Bubble biz={lane.typing === "business"} typing />}
+        {lane?.typing && <Bubble biz={lane.typing === "business"} typing name={lane.typing === "business" ? nameOf(lane.businessId) : "Mijoz agenti"} photo={lane.typing === "business" ? bizPhoto(lane.businessId) : CUSTOMER_PHOTO} />}
       </div>
       <div ref={endRef} />
     </section>
@@ -197,18 +228,23 @@ export function OfferCard({
   }, [focusConfirm, ready, result]);
   const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
-    <div className="slide-up rounded-2xl border border-primary/50 bg-card p-4 shadow-lift sm:p-5">
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <Trophy className="size-4 text-biz" aria-hidden="true" />
-          {ready ? "Eng yaxshi taklif" : "Joriy eng yaxshi taklif"}
-        </h2>
-        {offer.discountPct > 0 && <span key={offer.discountPct} className="pop-in shrink-0 rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold tabular-nums text-agent">-{offer.discountPct}%</span>}
+    <div className="slide-up overflow-hidden rounded-3xl border border-primary/50 bg-card shadow-lift">
+      <div className="relative isolate overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5">
+        <Image src={bizPhoto(best.businessId)} alt="" fill sizes="400px" className="-z-10 object-cover" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/90 via-green-950/60 to-green-900/40" aria-hidden="true" />
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-display text-base font-bold">
+            <Trophy className="size-4 text-amber-300" aria-hidden="true" />
+            {ready ? "Eng yaxshi taklif" : "Joriy eng yaxshi taklif"}
+          </h2>
+          {offer.discountPct > 0 && <span key={offer.discountPct} className="pop-in shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-bold tabular-nums text-green-900">-{offer.discountPct}%</span>}
+        </div>
+        <p className="mt-3 flex items-center gap-2 text-sm font-semibold">
+          <BizAvatar id={best.businessId} name={best.businessName} size={28} />
+          {best.businessName}
+        </p>
       </div>
-      <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-        <BizAvatar id={best.businessId} name={best.businessName} size={28} />
-        {best.businessName}
-      </p>
+      <div className="p-4 sm:p-5">
       <ul className={cn("divide-y divide-border text-sm", compact && "hidden")}>
         {offer.items.map((i) => (
           <li key={i.catalogItemId} className="flex items-start justify-between gap-3 py-2">
@@ -248,6 +284,7 @@ export function OfferCard({
         </div>
       )}
       {result && <PaymentFlow result={result} best={best} />}
+      </div>
     </div>
   );
 }
@@ -266,13 +303,22 @@ function PriceBlock({ price, subtotal, discountPct, compact }: { price: number; 
             {formatSom(struck)}
           </div>
         )}
-        <div key={price} className="price-in font-display text-2xl font-bold tabular-nums text-green-800">
-          {formatSom(price)}
-        </div>
+        <AnimatedPrice price={price} />
       </div>
     </div>
   );
 }
+
+/** Narx raqami eski qiymatdan yangisiga sanab o'tadi (reduced-motion: darhol). */
+function AnimatedPrice({ price }: { price: number }) {
+  const shown = useCountUp(price, 600);
+  return (
+    <div className="font-display text-2xl font-bold tabular-nums text-green-800" aria-label={formatSom(price)}>
+      <span aria-hidden="true">{formatSom(shown)}</span>
+    </div>
+  );
+}
+
 
 const OPENED = new Set<string>();
 
@@ -339,13 +385,13 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
 
   if (status === "paid")
     return (
-      <div ref={(el) => el?.scrollIntoView({ block: "center", behavior: "smooth" })} className="slide-up mt-4 rounded-2xl border border-green-500/40 bg-tint-1 p-5 text-center" role="status">
+      <div ref={(el) => el?.scrollIntoView({ block: "center", behavior: "smooth" })} className="slide-up relative mt-4 overflow-hidden rounded-2xl border border-green-500/40 bg-tint-1 p-5 text-center" role="status">
         <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-green-950">
           <svg viewBox="0 0 24 24" className="check-draw size-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">To&apos;landi ✅</p>
+        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">To&apos;landi</p>
         <p className="mt-1 text-sm font-medium text-green-900/80">TezCheck orqali to&apos;landi</p>
         <dl className="mx-auto mt-4 max-w-xs divide-y divide-tint-3 rounded-xl border border-tint-3 bg-card text-left text-sm">
           {[

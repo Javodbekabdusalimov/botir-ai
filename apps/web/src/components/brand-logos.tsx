@@ -37,3 +37,17 @@ export function PayLogos({ height = 20, className }: { height?: number; classNam
     </ul>
   );
 }
+
+/** TezCheck: rasmiy SVG yo'q, shuning uchun matnli belgi (galochka + so'z). Boshqa brendlarning logotipiga taqlid qilinmaydi. */
+export function TezCheckMark({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 font-display text-sm font-bold tracking-tight text-green-900", className)}>
+      <span className="grid size-5 place-items-center rounded-md bg-green-600 text-white">
+        <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </span>
+      TezCheck
+    </span>
+  );
+}

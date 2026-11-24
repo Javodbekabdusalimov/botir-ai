@@ -1,0 +1,23 @@
+# Botir AI
+
+> Botir AI: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i. Agent agent bilan gaplashadi, inson faqat yakuniy taklifni tasdiqlaydi.
+
+## Nima qiladi
+- Biznes: katalog (Excel/CSV) va maksimal chegirmani kiritadi. AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida 24/7 gaplashadi.
+- Mijoz: shaxsiy yordamchiga "Ertaga 18:00 ga 6 kishilik osh joy band qil" deb yozadi. Agent bir nechta biznes bilan muzokara qiladi.
+
+## Qanday ishlaydi
+- Muzokara ko'pi bilan 3 raund: so'rov, taklif, qarshi taklif, bitim.
+- Narx faqat katalogdan olinadi, chegirma biznes belgilagan limitdan oshmaydi (PolicyGuard).
+- Pul faqat inson "Tasdiqlayman" bosgandan keyin, TezCheck orqali (Payme, Click, Uzum). Faqat kirim to'lovlari.
+- Narx: Start bepul, Pro 1 000 so'm/oy, sotuvdan komissiya yo'q.
+
+## Sahifalar
+- [Bosh sahifa](/): mahsulot haqida, savol-javob
+- [Shaxsiy yordamchi](/assistant)
+- [Jonli muzokara namunasi](/live/demo-chorsu)
+- [Biznesni ulash](/connect)
+- [Ro'yxatdan o'tish](/register)
+
+## Maxfiylik
+Shaxsiy sahifalar (panel, to'lov, shaxsiy muzokaralar) indekslanmaydi. Telegram sessiyasi shifrlanadi.

@@ -39,13 +39,18 @@ export class LoopEngine {
 
   async run(businessId: string): Promise<LoopRunResult> {
     const { store, evaluator } = this.deps;
-    const findings = await store.getAuditFindings(businessId);
+    // Dedup: findings already covered by a pending/approved proposal are not proposed again (repeat "Yaxshilash" clicks).
+    const existing = (await store.getProposals(businessId)).filter((p) => p.status !== 'rejected');
+    const covered = new Set(existing.flatMap((p) => p.sourceFindingIds));
+    const findings = (await store.getAuditFindings(businessId)).filter((f) => !covered.has(f.id));
     if (findings.length === 0) return { proposals: [], discarded: [], evals: {} };
 
     const activeText = (await this.active(businessId))?.extraInstructions ?? '';
     const raw = await this.propose(businessId, activeText, findings);
     const now = new Date().toISOString();
-    const drafts: Proposal[] = raw.map((r) => ({
+    const norm = (t: string) => t.toLowerCase().replace(/\s+/g, ' ').trim();
+    const seen = new Set(existing.map((p) => `${p.kind}:${norm(p.change)}`));
+    const drafts: Proposal[] = raw.map((r): Proposal => ({
       id: randomUUID(),
       businessId,
       kind: r.kind as ProposalKind,
@@ -54,7 +59,12 @@ export class LoopEngine {
       sourceFindingIds: (r.sourceFindingIds ?? []).filter((id) => findings.some((f) => f.id === id)),
       status: 'pending',
       createdAt: now,
-    }));
+    })).filter((d) => {
+      const key = `${d.kind}:${norm(d.change)}`;
+      if (!d.change || seen.has(key)) return false; // same change already proposed (or duplicated within this batch)
+      seen.add(key);
+      return true;
+    });
 
     const promptDrafts = drafts.filter((d) => d.kind === 'prompt');
     const baseline = promptDrafts.length ? await evaluator.evaluate(businessId, activeText) : undefined;

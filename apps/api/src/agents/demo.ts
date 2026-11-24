@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     results.filter((r) => r !== undefined).map(async (r) => {
       const products = await store.getProducts(r.business.id);
       const [findings, facts] = await Promise.all([
-        agents.auditor.review({ sessionId: r.result.sessionId, transcript: r.result.transcript, products, maxDiscountPct: r.business.maxDiscountPct }),
+        agents.auditor.review({ sessionId: r.result.sessionId, businessId: r.business.id, transcript: r.result.transcript, products, maxDiscountPct: r.business.maxDiscountPct }),
         agents.memory.extract({ userId: USER_ID, sessionId: r.result.sessionId, userText: TEXT, transcript: r.result.transcript }),
       ]);
       return { name: r.business.name, findings, facts };

@@ -3,6 +3,7 @@ import type { LlmClient } from './llm/llm-client';
 import type { AgentMessage, Offer } from './shared';
 import type { OfferDraft } from './policy-guard';
 import { computeTotal, PolicyGuard } from './policy-guard';
+import type { AgentStore } from './store/agent-store';
 import type { AgentBusiness, Product } from './types';
 
 export type Lang = 'uz' | 'ru';
@@ -29,6 +30,8 @@ export interface BusinessTurnInput {
   history: AgentMessage[]; // full dialogue so far (personal_agent / biz_agent)
   round: number;
   lang: Lang;
+  /** Override for evaluation; when omitted the active PromptVersion from the store is used. */
+  extraInstructions?: string;
 }
 
 export interface BusinessTurnResult {
@@ -48,14 +51,16 @@ export class BusinessAgent {
   constructor(
     private readonly llm: LlmClient,
     private readonly guard: PolicyGuard,
+    private readonly store?: AgentStore,
   ) {}
 
   async respond(input: BusinessTurnInput): Promise<BusinessTurnResult> {
     const { business, products, round } = input;
+    const extra = input.extraInstructions ?? (await this.activeInstructions(business.id));
     const { data } = await this.llm.completeJson<LlmBusinessReply>({
       model: 'sonnet',
       purpose: 'business_agent',
-      system: this.systemPrompt(input),
+      system: this.systemPrompt(input, extra),
       prompt: `Suhbat (raund ${round}/3):\n${renderHistory(input.history)}\n\nKeyingi javobingni JSON qilib ber.`,
     });
 
@@ -96,7 +101,12 @@ export class BusinessAgent {
     return { reply, offer, confidence, violations };
   }
 
-  private systemPrompt(input: BusinessTurnInput): string {
+  private async activeInstructions(businessId: string): Promise<string> {
+    const versions = (await this.store?.getPromptVersions(businessId)) ?? [];
+    return versions.find((v) => v.status === 'active')?.extraInstructions ?? '';
+  }
+
+  private systemPrompt(input: BusinessTurnInput, extra: string): string {
     const b = input.business;
     const catalog = input.products
       .map((p) => `- ${p.id} | ${p.name} | ${p.price} so'm / ${p.unit}`)
@@ -111,6 +121,7 @@ export class BusinessAgent {
       `- Ish vaqtidan tashqari vaqtga band qilma — boshqa vaqt taklif qil.`,
       `- Jami summani matnda YOZMA — tizim katalogdan o'zi hisoblab qo'shadi.`,
       `- Qisqa, xushmuomala, 1–3 gap. ${langRule(input.lang)}`,
+      ...(extra.trim() ? [`Qo'shimcha ko'rsatmalar (biznes egasi tasdiqlagan):\n${extra.trim()}`] : []),
       'JSON formati: {"reply": string, "offer": {"items":[{"productId": string, "qty": number}], "discountPct": number} | null, "confidence": number (0..1)}',
     ].join('\n');
   }

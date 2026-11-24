@@ -3,12 +3,16 @@ import type {
   AgentBusiness,
   AuditFinding,
   BusinessCategory,
+  GoldenCase,
   LlmCallRecord,
   MemoryFact,
   PolicyViolationRecord,
   Product,
+  PromptVersion,
+  Proposal,
 } from '../types';
 import type { AgentStore } from './agent-store';
+import { DEMO_GOLDEN_CASES } from './golden-seed';
 import { DEMO_BUSINESSES, DEMO_PRODUCTS } from './seed';
 
 /** In-memory AgentStore seeded with 3 demo businesses. Everything is kept for inspection. */
@@ -21,10 +25,14 @@ export class MemoryStore implements AgentStore {
   readonly memoryFacts: MemoryFact[] = [];
   readonly violations: PolicyViolationRecord[] = [];
   readonly findings: AuditFinding[] = [];
+  readonly goldenCases: GoldenCase[];
+  readonly promptVersions: PromptVersion[] = [];
+  readonly proposals: Proposal[] = [];
 
   constructor(seed = true) {
     this.businesses = seed ? DEMO_BUSINESSES.map((b) => ({ ...b })) : [];
     this.products = seed ? DEMO_PRODUCTS.map((p) => ({ ...p })) : [];
+    this.goldenCases = seed ? DEMO_GOLDEN_CASES.map((c) => ({ ...c })) : [];
   }
 
   async getBusinesses(filter?: { category?: BusinessCategory; area?: string }): Promise<AgentBusiness[]> {
@@ -69,4 +77,38 @@ export class MemoryStore implements AgentStore {
   async saveAuditFinding(f: AuditFinding): Promise<void> {
     this.findings.push(f);
   }
+
+  async getAuditFindings(businessId: string): Promise<AuditFinding[]> {
+    return this.findings.filter((f) => f.businessId === businessId);
+  }
+
+  async getGoldenCases(businessId: string): Promise<GoldenCase[]> {
+    return this.goldenCases.filter((c) => c.businessId === businessId);
+  }
+
+  async getPromptVersions(businessId: string): Promise<PromptVersion[]> {
+    return this.promptVersions.filter((v) => v.businessId === businessId).sort((a, b) => a.version - b.version);
+  }
+
+  async savePromptVersion(v: PromptVersion): Promise<void> {
+    upsert(this.promptVersions, v);
+  }
+
+  async getProposals(businessId: string): Promise<Proposal[]> {
+    return this.proposals.filter((p) => p.businessId === businessId);
+  }
+
+  async getProposal(id: string): Promise<Proposal | undefined> {
+    return this.proposals.find((p) => p.id === id);
+  }
+
+  async saveProposal(p: Proposal): Promise<void> {
+    upsert(this.proposals, p);
+  }
+}
+
+function upsert<T extends { id: string }>(list: T[], item: T): void {
+  const i = list.findIndex((x) => x.id === item.id);
+  if (i >= 0) list[i] = { ...item };
+  else list.push({ ...item });
 }

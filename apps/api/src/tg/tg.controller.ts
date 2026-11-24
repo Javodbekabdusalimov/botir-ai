@@ -12,7 +12,7 @@ export class TgController {
   @Post('tg-connect/start')
   async start(@Body() dto: TgConnectStartDto) {
     if (!dto?.businessId || !dto.phone) throw new BadRequestException('businessId and phone are required');
-    return ok(await this.tg.start(dto.businessId, dto.phone));
+    return ok(await this.tg.start({ type: 'business', id: dto.businessId }, dto.phone));
   }
 
   @Post('tg-connect/code')
@@ -24,7 +24,7 @@ export class TgController {
   @Delete('tg-connect')
   async disconnect(@Query('businessId') businessId: string) {
     if (!businessId) throw new BadRequestException('businessId is required');
-    return ok(await this.tg.disconnect(businessId));
+    return ok(await this.tg.disconnect({ type: 'business', id: businessId }));
   }
 
   @Get('inbox')

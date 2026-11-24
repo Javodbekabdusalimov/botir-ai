@@ -6,3 +6,5 @@ export * from './userbot-login';
 export * from './sync';
 export * from './sender';
 export * from './modes';
+export * from './self-command';
+export * from './user-actions';

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import type { Bot } from 'grammy';
-import type { Chat as SharedChat, InboxMessage, TgConnectCodeResult } from '@botir/shared';
+import type { Chat as SharedChat, InboxMessage, MeTgStatus, TgConnectCodeResult } from '@botir/shared';
 import type { AgentMessage } from '../agents/shared';
 import { errMsg } from '../common/http';
 import { toAgentBusiness, toProduct } from '../db/mappers';
@@ -12,8 +12,15 @@ import { NegotiationsService } from '../negotiations/negotiations.service';
 import { createBot, makeTransport, startBot } from '../telegram-bot/bot';
 import {
   loadTgApiCreds, ModeHandler, Sender, TgSync, UserbotLogin,
-  type Chat, type DraftReply, type TgMessage, type Transport,
+  type Chat, type DraftReply, type OnSelf, type SendResult, type TgMessage, type Transport,
 } from '../tg-connect';
+
+/** Who owns a connected Telegram account: a business (inbox) or a site user (personal Botir). */
+export type TgOwner = { type: 'business' | 'user'; id: string };
+
+const ownerWhere = (o: TgOwner) => (o.type === 'business' ? { businessId: o.id } : { ownerType: 'user', userId: o.id });
+const ownerData = (o: TgOwner) =>
+  o.type === 'business' ? { ownerType: 'business', businessId: o.id, userId: null } : { ownerType: 'user', userId: o.id, businessId: null };
 
 @Injectable()
 export class TgService implements OnModuleInit, OnModuleDestroy {
@@ -23,8 +30,9 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot | null = null;
   private sender!: Sender;
   private modes!: ModeHandler;
-  private readonly loginBusiness = new Map<string, string>(); // loginId → businessId
+  private readonly loginOwner = new Map<string, TgOwner>(); // loginId → owner
   private disabledReason = '';
+  private selfHandler?: OnSelf;
 
   constructor(
     @Inject(PrismaService) private readonly db: PrismaService,
@@ -41,7 +49,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     try {
       if (!process.env.TG_SESSION_KEY) throw new Error('TG_SESSION_KEY is not set');
       const creds = loadTgApiCreds();
-      this.sync = new TgSync(this.store, onIncoming, creds);
+      this.sync = new TgSync(this.store, onIncoming, creds, (accountId, text) => this.selfHandler?.(accountId, text));
       this.login = new UserbotLogin(this.store, creds);
     } catch (e) {
       this.disabledReason = `Telegram userbot disabled: ${errMsg(e)}`;
@@ -62,32 +70,60 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     void this.bot?.stop();
   }
 
-  async start(businessId: string, phone: string): Promise<{ loginId: string }> {
+  /** B2C: Saved Messages handler (set by TgUserService). */
+  setSelfHandler(handler: OnSelf): void {
+    this.selfHandler = handler;
+  }
+
+  async start(owner: TgOwner, phone: string): Promise<{ loginId: string }> {
     if (!this.login) throw new ServiceUnavailableException(this.disabledReason);
     const res = await this.login.start(phone);
-    this.loginBusiness.set(res.loginId, businessId);
+    this.loginOwner.set(res.loginId, owner);
     return res;
   }
 
-  async code(loginId: string, code: string, password?: string): Promise<TgConnectCodeResult> {
+  /** `owner` given → the login must have been started by that owner (/me endpoints). */
+  async code(loginId: string, code: string, password?: string, owner?: TgOwner): Promise<TgConnectCodeResult> {
     if (!this.login) throw new ServiceUnavailableException(this.disabledReason);
+    const started = this.loginOwner.get(loginId);
+    if (owner && (started?.type !== owner.type || started.id !== owner.id)) throw new NotFoundException('login not found');
     const res = await this.login.submitCode(loginId, code, password);
     if (res.status === 'need_password') return { status: 'need_password' };
     if (res.status === 'error') return { status: /CODE_INVALID|CODE_EMPTY/.test(res.error) ? 'invalid_code' : 'failed' };
-    const businessId = this.loginBusiness.get(loginId);
-    this.loginBusiness.delete(loginId);
-    if (businessId) await this.db.tgAccount.update({ where: { id: res.accountId }, data: { businessId } });
+    this.loginOwner.delete(loginId);
+    if (started) await this.db.tgAccount.update({ where: { id: res.accountId }, data: ownerData(started) });
     void this.sync?.connect(res.accountId).catch((e: unknown) => this.logger.error(`sync ${res.accountId}: ${errMsg(e)}`));
     return { status: 'connected' };
   }
 
-  async disconnect(businessId: string): Promise<{ disconnected: number }> {
-    const accounts = await this.db.tgAccount.findMany({ where: { businessId, deletedAt: null } });
+  async disconnect(owner: TgOwner): Promise<{ disconnected: number }> {
+    const accounts = await this.db.tgAccount.findMany({ where: { ...ownerWhere(owner), deletedAt: null } });
     for (const a of accounts) {
       if (this.sync) await this.sync.disconnect(a.id, true);
       await this.db.tgAccount.update({ where: { id: a.id }, data: { deletedAt: new Date(), sessionEnc: null } });
     }
     return { disconnected: accounts.length };
+  }
+
+  async status(owner: TgOwner): Promise<MeTgStatus> {
+    const a = await this.db.tgAccount.findFirst({
+      where: { ...ownerWhere(owner), kind: 'userbot', deletedAt: null, sessionEnc: { not: null } }, orderBy: { connectedAt: 'desc' },
+    });
+    return {
+      available: Boolean(this.login),
+      connected: Boolean(a),
+      ...(a ? { username: a.username ?? undefined, connectedAt: a.connectedAt.toISOString() } : {}),
+    };
+  }
+
+  /** Owner-approved send through PolicyGuard (Sender). */
+  sendAsOwner(accountId: string, chatId: string, text: string): Promise<SendResult> {
+    return this.sender.send(accountId, chatId, text, 'owner');
+  }
+
+  async sendToSelf(accountId: string, text: string): Promise<void> {
+    if (!this.sync) throw new ServiceUnavailableException(this.disabledReason);
+    await this.sync.sendToSelf(accountId, text);
   }
 
   async chats(businessId: string): Promise<SharedChat[]> {

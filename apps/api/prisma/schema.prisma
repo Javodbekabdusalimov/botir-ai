@@ -158,9 +158,12 @@ model AgentOffer {
   @@index([negotiationId, businessId])
 }
 
+/// Owned by a business (inbox) or by a site user (personal Botir in their own Telegram).
 model TgAccount {
   id                   String    @id
+  ownerType            String    @default("business") // business | user
   businessId           String?
+  userId               String?
   kind                 String
   tgUserId             String
   username             String?
@@ -170,6 +173,23 @@ model TgAccount {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   deletedAt            DateTime?
+}
+
+/// B2C: something the AI wants to send from the user's own Telegram. Sent only after explicit approve.
+model UserAction {
+  id        String    @id @default(uuid())
+  userId    String
+  accountId String
+  chatId    String
+  peerTitle String
+  text      String
+  status    String    @default("pending") // pending | sending | sent | rejected | failed
+  reason    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId, status])
 }
 
 model Chat {

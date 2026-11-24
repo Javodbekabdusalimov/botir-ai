@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, Bot, Receipt, Send, TrendingUp, Wallet } from "lucide-react";
+import { AlertCircle, Bot, Inbox, Receipt, Send, Sparkles, TrendingUp, Wallet, Wand2 } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logos";
 import { useCountUp } from "@/hooks/use-count-up";
 import { Empty, ErrorBox, Loading, Panel } from "@/components/states";
 import { useAsync } from "@/hooks/use-async";
@@ -28,10 +29,26 @@ export function Overview() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Receipt} label="Bugungi buyurtmalar" value={orders.data?.length} />
-        <Stat icon={Wallet} label="Bugungi tushum" value={stats.data?.revenue.today} money />
-        <Stat icon={TrendingUp} label="O'rtacha chek" value={orders.data?.length ? Math.round(orders.data.reduce((s, o) => s + o.total, 0) / orders.data.length) : orders.data ? 0 : undefined} money />
-        <Stat icon={Bot} label="AI javob bergan" value={chats.data?.length ? Math.round((chats.data.filter((c) => !c.needsHuman).length / chats.data.length) * 100) : chats.data ? 0 : undefined} suffix="%" />
+        <Stat icon={Receipt} tone="green" label="Buyurtmalar" value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid").length} ta to'langan` : undefined} spark={sparkOf(orders.data?.map((o) => o.total))} />
+        <Stat icon={Wallet} tone="amber" label="Tushum (30 kun)" value={stats.data?.revenue.month} money hint={stats.data ? `Hafta: ${formatSom(stats.data.revenue.week)}` : undefined} spark={sparkOf(orders.data?.map((o) => o.total))} />
+        <Stat icon={TrendingUp} tone="blue" label="O'rtacha chek" value={orders.data?.length ? Math.round(orders.data.reduce((s, o) => s + o.total, 0) / orders.data.length) : orders.data ? 0 : undefined} money hint={stats.data ? `Bugun: ${formatSom(stats.data.revenue.today)}` : undefined} />
+        <Stat icon={Bot} tone="violet" label="AI javob bergan" value={chats.data?.length ? Math.round((chats.data.filter((c) => !c.needsHuman).length / chats.data.length) * 100) : chats.data ? 0 : undefined} suffix="%" hint={chats.data ? `${chats.data.length} ta suhbat` : undefined} />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          [Sparkles, "Agentni sinash", "/dashboard/chat"],
+          [Inbox, "Inbox", "/dashboard/inbox"],
+          [Send, "Telegram ulash", "/connect/telegram"],
+          [Wand2, "Agentni yaxshilash", "/dashboard/improve"],
+        ].map(([I, t, h]) => {
+          const Icon = I as typeof Sparkles;
+          return (
+            <Link key={h as string} href={h as string} className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold shadow-sm transition-colors hover:border-tint-3 hover:bg-tint-1">
+              <Icon className="size-4 text-green-700" aria-hidden="true" /> {t as string}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -57,8 +74,13 @@ export function Overview() {
                   {orders.data.map((o) => (
                     <tr key={o.id} className="align-top transition-colors hover:bg-tint-1/60">
                       <td className="py-3 pr-3">
-                        <p className="font-medium">#{shortId(o.userId)}</p>
-                        <p className="text-xs text-muted-foreground">{formatWhen(o.createdAt)}</p>
+                        <div className="flex items-center gap-2.5">
+                          <span className={cn("grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold", AV[hash(o.userId) % AV.length])}>{o.userId.slice(0, 2).toUpperCase()}</span>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold" title={o.userId}>{o.userId.length > 14 ? `Mijoz #${shortId(o.userId)}` : o.userId}</p>
+                            <p className="text-xs text-muted-foreground">{formatWhen(o.createdAt)}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="max-w-48 py-3 pr-3 text-muted-foreground">
                         <span className="line-clamp-2">{o.items.map((i) => `${i.name} x${i.qty}`).join(", ")}</span>
@@ -66,7 +88,7 @@ export function Overview() {
                       </td>
                       <td className="whitespace-nowrap py-3 pr-3 text-right font-semibold tabular-nums">{formatSom(o.total)}</td>
                       <td className="py-3">
-                        <span className={cn("inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold", STATUS[o.status]?.cls)}>{STATUS[o.status]?.label ?? o.status}</span>
+                        <span className={cn("inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold", STATUS[o.status]?.cls)}>{STATUS[o.status]?.label ?? o.status}</span>
                       </td>
                     </tr>
                   ))}
@@ -88,9 +110,12 @@ export function Overview() {
               {chats.data.slice(0, 5).map((c) => (
                 <li key={c.id}>
                   <Link href="/dashboard/inbox" className="flex min-h-11 items-start gap-3 py-3">
-                    {c.needsHuman ? <AlertCircle className="mt-0.5 size-4 shrink-0 text-biz" aria-label="Egasi javobi kerak" /> : <Send className="mt-0.5 size-4 shrink-0 text-agent" aria-label="Telegram" />}
+                    <span className="relative shrink-0">
+                      <span className={cn("grid size-10 place-items-center rounded-full text-sm font-bold", AV[hash(c.title) % AV.length])}>{c.title.slice(0, 1).toUpperCase()}</span>
+                      <span className="absolute -bottom-0.5 -right-0.5 grid size-4 place-items-center rounded-full bg-white ring-1 ring-border"><BrandLogo brand="telegram" height={12} /></span>
+                    </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{c.title}</p>
+                      <p className="flex items-center gap-1.5 font-semibold">{c.title}{c.needsHuman && <AlertCircle className="size-3.5 text-biz" aria-label="Egasi javobi kerak" />}</p>
                       <p className="truncate text-sm text-muted-foreground">{c.lastMessageText}</p>
                     </div>
                     <span className="shrink-0 text-xs text-muted-foreground">{formatWhen(c.lastMessageAt)}</span>
@@ -136,21 +161,41 @@ export function Overview() {
   );
 }
 
-function Stat({ icon: Icon, label, value, money, suffix }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | undefined; money?: boolean; suffix?: string }) {
+const AV = ["bg-green-100 text-green-800", "bg-amber-100 text-amber-800", "bg-sky-100 text-sky-800", "bg-violet-100 text-violet-800", "bg-rose-100 text-rose-800"];
+const hash = (t: string) => [...t].reduce((a, c) => a + c.charCodeAt(0), 0);
+const TONES = { green: "bg-green-100 text-green-700", amber: "bg-amber-100 text-amber-700", blue: "bg-sky-100 text-sky-700", violet: "bg-violet-100 text-violet-700" } as const;
+const STROKE = { green: "#16a34a", amber: "#d97706", blue: "#0284c7", violet: "#7c3aed" } as const;
+const sparkOf = (v?: number[]) => (v && v.length > 1 && Math.max(...v) !== Math.min(...v) ? v : undefined);
+
+function Spark({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data), min = Math.min(...data), r = max - min || 1;
+  const pts = data.map((d, i) => `${(i / (data.length - 1)) * 100},${28 - ((d - min) / r) * 24}`).join(" ");
+  return (
+    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-20" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function Stat({ icon: Icon, label, value, money, suffix, tone, hint, spark }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | undefined; money?: boolean; suffix?: string; tone: keyof typeof TONES; hint?: string; spark?: number[] }) {
   const n = useCountUp(value);
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift">
-      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground sm:text-sm">
-        <span className="grid size-8 place-items-center rounded-lg bg-tint-2 text-green-800">
-          <Icon className="size-4" aria-hidden="true" />
+      <div className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
+        <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", TONES[tone])}>
+          <Icon className="size-[18px]" aria-hidden="true" />
         </span>
-        {label}
+        <span className="truncate">{label}</span>
       </div>
-      {value === undefined ? (
-        <div className="mt-3 h-8 w-24 animate-pulse rounded-lg bg-muted" role="status" aria-label="Yuklanmoqda" />
-      ) : (
-        <p className="mt-3 break-words font-display text-xl font-bold tabular-nums sm:text-2xl">{money ? formatSom(n) : `${n}${suffix ?? ""}`}</p>
-      )}
+      <div className="mt-3 flex items-end justify-between gap-2">
+        {value === undefined ? (
+          <div className="h-8 w-24 animate-pulse rounded-lg bg-muted" role="status" aria-label="Yuklanmoqda" />
+        ) : (
+          <p className="min-w-0 break-words font-display text-lg font-bold tabular-nums sm:text-xl xl:text-[22px]">{money ? formatSom(n) : `${n}${suffix ?? ""}`}</p>
+        )}
+        {spark && <Spark data={spark} color={STROKE[tone]} />}
+      </div>
+      {hint && <p className="mt-1.5 truncate text-xs font-medium text-muted-foreground">{hint}</p>}
     </div>
   );
 }

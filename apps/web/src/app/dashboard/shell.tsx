@@ -30,7 +30,7 @@ function hours(b?: Business) {
   return h ? `${h[0]}–${h[1]}` : "Yopiq";
 }
 
-function BizSelect({ list, id, current }: { list: Business[]; id: string; current?: Business }) {
+function BizSelect({ list, current }: { list: Business[]; current?: Business }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -93,7 +93,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="w-full text-white sm:w-auto [&_button]:border-border [&_button]:bg-muted [&_button]:text-foreground">
-            <BizSelect list={all} id={id} current={current} />
+            <BizSelect list={all} current={current} />
           </div>
         </div>
       ) : (
@@ -110,7 +110,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <Crown className="size-3.5" aria-hidden="true" /> {plan === "pro" ? "Pro" : "Start"} tarif
                 </span>
               </div>
-              <BizSelect list={all} id={id} current={current} />
+              <BizSelect list={all} current={current} />
             </div>
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="flex min-w-0 items-center gap-4">

@@ -13,8 +13,10 @@ export type BrandKey = keyof typeof BRANDS;
 
 export function BrandLogo({ brand, height = 24, className }: { brand: BrandKey; height?: number; className?: string }) {
   const b = BRANDS[brand];
-  const width = Math.round((b.w / b.h) * height);
-  return <Image src={b.src} alt={b.name} width={width} height={height} className={cn("object-contain", className)} style={{ height, width }} />;
+  // click.svg: belgi chapda, o'ng tomoni bo'sh joy: faqat belgi qismini kesib olamiz
+  const crop = brand === "click";
+  const width = crop ? height : Math.round((b.w / b.h) * height);
+  return <Image src={b.src} alt={b.name} width={crop ? b.w : width} height={crop ? b.h : height} className={cn(crop ? "object-cover object-left" : "object-contain", className)} style={{ height, width }} />;
 }
 
 export function PayLogos({ height = 20, className }: { height?: number; className?: string }) {

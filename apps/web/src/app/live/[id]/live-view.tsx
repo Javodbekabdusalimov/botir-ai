@@ -72,6 +72,10 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
 
       <NegotiationStage state={state} names={names} />
 
+      <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+        🛡 Narx katalogdan, chegirma ≤ limit · PolicyGuard · Pul faqat tasdiqdan keyin
+      </p>
+
       {state.status === "rejected" || state.status === "failed" ? (
         <p className="mt-6 rounded-xl border border-border p-4 text-sm text-muted-foreground">
           Agentlar kelisha olmadi. Boshqa biznes bilan urinib ko'ring yoki so'rovni o'zgartiring.
@@ -80,6 +84,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
         current && (
           <div className="mt-6 sm:mx-auto sm:max-w-xl">
             <OfferCard
+              key={ready ? "final" : "live"}
               best={current}
               ready={ready}
               confirming={confirming}

@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Building2, Check, Copy, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Bot, Building2, Check, Copy, ExternalLink, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
+import { getPaymentStatus } from "@/lib/api";
+import { savePaidOrder } from "@/lib/orders-store";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { A2AType, BestOffer, ConfirmResult, Lane, NegotiationState } from "@/lib/types";
@@ -22,7 +25,7 @@ function Bubble({ biz, type, text, typing }: { biz: boolean; type?: A2AType; tex
     <div
       className={cn(
         "rise-in col-span-2 max-w-[92%] rounded-2xl border px-4 py-3 text-[15px] leading-relaxed md:col-span-1 md:max-w-full",
-        biz ? "justify-self-end rounded-tr-sm border-biz/30 bg-biz/10 md:col-start-2" : "justify-self-start rounded-tl-sm border-agent/30 bg-agent/10 md:col-start-1",
+        biz ? "justify-self-end rounded-tr-sm border-amber-200 bg-biz-soft md:col-start-2" : "justify-self-start rounded-tl-sm border-tint-3 bg-tint-1 md:col-start-1",
       )}
     >
       {typing ? (
@@ -71,7 +74,7 @@ function RoundProgress({ round, done }: { round: number; done: boolean }) {
 function ColumnHeader({ biz, name }: { biz: boolean; name?: string }) {
   const Icon = biz ? Building2 : Bot;
   return (
-    <div className={cn("flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold", biz ? "border-biz/30 text-biz" : "border-agent/30 text-agent")}>
+    <div className={cn("flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold", biz ? "border-amber-200 bg-biz-soft text-biz" : "border-tint-3 bg-tint-1 text-agent")}>
       <Icon className="size-4 shrink-0" aria-hidden="true" />
       <span className="truncate">{biz ? (name ? `Biznes agenti: ${name}` : "Biznes agenti") : "Mijoz agenti"}</span>
     </div>
@@ -181,7 +184,7 @@ export function OfferCard({
   const { offer } = best;
   const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
-    <div className="slide-up rounded-2xl border border-primary/40 bg-card p-4 shadow-[0_0_40px_-10px_var(--agent)] sm:p-5">
+    <div className="slide-up rounded-2xl border border-primary/50 bg-card p-4 shadow-lift sm:p-5">
       <div className="mb-1 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">
           <Trophy className="size-4 text-biz" aria-hidden="true" />
@@ -201,19 +204,8 @@ export function OfferCard({
           </li>
         ))}
       </ul>
-      <dl className={cn("space-y-1 text-sm", compact ? "mt-1" : "mt-3 border-t border-border pt-3")}>
-        {offer.discountPct > 0 && (
-          <div className="flex justify-between text-muted-foreground">
-            <dt>Chegirmagacha</dt>
-            <dd className="tabular-nums line-through">{formatSom(subtotal)}</dd>
-          </div>
-        )}
-        <div className="flex items-baseline justify-between">
-          <dt className="font-medium">Jami</dt>
-          <dd className="font-display text-2xl font-bold tabular-nums">{formatSom(offer.price)}</dd>
-        </div>
-        {offer.validUntil && <p className="text-xs text-muted-foreground">Amal qiladi: {formatWhen(offer.validUntil)} gacha</p>}
-      </dl>
+      <PriceBlock price={offer.price} subtotal={subtotal} discountPct={offer.discountPct} compact={compact} />
+      {offer.validUntil && <p className="mt-1 text-xs text-muted-foreground">Amal qiladi: {formatWhen(offer.validUntil)} gacha</p>}
 
       {!result && !compact && (
         <div className="mt-4">
@@ -239,43 +231,144 @@ export function OfferCard({
           </p>
         </div>
       )}
-      {result && <PaymentBlock result={result} />}
+      {result && <PaymentFlow result={result} best={best} />}
     </div>
   );
 }
 
-function PaymentBlock({ result }: { result: ConfirmResult }) {
+/** Narx o'zgarsa: eski narx chiziladi, yangisi pastdan chiqadi (270 000 -> ~~270 000~~ 256 500). */
+function PriceBlock({ price, subtotal, discountPct, compact }: { price: number; subtotal: number; discountPct: number; compact?: boolean }) {
+  const [track, setTrack] = useState<{ price: number; prev: number | null }>({ price, prev: null });
+  if (track.price !== price) setTrack({ price, prev: track.price });
+  const struck = track.prev ?? (discountPct > 0 ? subtotal : null);
+  return (
+    <div className={cn("flex items-end justify-between gap-3", compact ? "mt-1" : "mt-3 border-t border-border pt-3")}>
+      <span className="pb-1 text-sm font-medium">Jami</span>
+      <div className="text-right" aria-live="polite">
+        {struck !== null && struck !== price && (
+          <div key={`s${struck}`} className="strike text-sm tabular-nums">
+            {formatSom(struck)}
+          </div>
+        )}
+        <div key={price} className="price-in font-display text-2xl font-bold tabular-nums text-green-800">
+          {formatSom(price)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const OPENED = new Set<string>();
+
+/** Tasdiqdan keyin: to'lov sahifasi ochiladi, har 3s status so'raladi, "To'landi" bo'lsa buyurtma saqlanadi. */
+function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer }) {
+  const [status, setStatus] = useState<"pending" | "paid" | "failed" | "expired">("pending");
+  const [netError, setNetError] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { offer } = best;
+
+  useEffect(() => {
+    if (OPENED.has(result.orderId)) return; // StrictMode / qayta render: faqat bir marta ochamiz
+    OPENED.add(result.orderId);
+    try {
+      window.open(result.paymentLink, "_blank", "noopener");
+    } catch {}
+  }, [result.orderId, result.paymentLink]);
+
+  useEffect(() => {
+    if (status !== "pending") return;
+    let alive = true;
+    const tick = async () => {
+      try {
+        const r = await getPaymentStatus(result.orderId);
+        if (!alive) return;
+        setNetError(false);
+        if (r.status !== "pending") {
+          setStatus(r.status);
+          if (r.status === "paid")
+            savePaidOrder({
+              orderId: result.orderId,
+              businessName: best.businessName,
+              items: offer.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
+              total: offer.price,
+              discountPct: offer.discountPct,
+              paidAt: new Date().toISOString(),
+            });
+        }
+      } catch {
+        if (alive) setNetError(true);
+      }
+    };
+    void tick();
+    const t = setInterval(tick, 3000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [status, result.orderId, best.businessName, offer]);
+
   const copy = () => {
     try {
       void navigator.clipboard.writeText(result.paymentLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {}
   };
-  return (
-    <div className="mt-4 space-y-3" role="status">
-      <div className="pop-in flex items-center gap-3 rounded-xl border border-green-500/40 bg-green-500/10 p-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-green-500 text-green-950">
-          <svg viewBox="0 0 24 24" className="check-draw size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+
+  if (status === "paid")
+    return (
+      <div ref={(el) => el?.scrollIntoView({ block: "center", behavior: "smooth" })} className="slide-up mt-4 rounded-2xl border border-green-500/40 bg-tint-1 p-5 text-center" role="status">
+        <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-green-950">
+          <svg viewBox="0 0 24 24" className="check-draw size-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
+        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">To&apos;landi ✅</p>
+        <p className="mt-1 text-sm text-green-900/80">
+          {formatSom(offer.price)} · {best.businessName}
+        </p>
+        <Link href="/assistant" className={cn(buttonVariants(), "mt-4 h-12 w-full text-base font-semibold")}>
+          Buyurtmani ko&apos;rish
+        </Link>
+      </div>
+    );
+
+  if (status === "failed" || status === "expired")
+    return (
+      <div role="alert" className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+        <p className="font-semibold text-destructive">{status === "expired" ? "To'lov muddati tugadi" : "To'lov amalga oshmadi"}</p>
+        <p className="mt-1 text-muted-foreground">Pul yechilmagan. Muzokarani qaytadan boshlab ko&apos;ring.</p>
+        <Link href="/assistant" className={cn(buttonVariants({ variant: "outline" }), "mt-3 h-11 px-4")}>
+          Yordamchiga qaytish
+        </Link>
+      </div>
+    );
+
+  return (
+    <div className="mt-4 space-y-3" role="status" aria-live="polite">
+      <div className="flex items-center gap-3 rounded-xl border border-tint-3 bg-tint-1 p-3">
+        <Loader2 className="size-5 shrink-0 animate-spin text-green-700 motion-reduce:animate-none" aria-hidden="true" />
         <div>
-          <p className="font-semibold text-green-700">Buyurtma tasdiqlandi</p>
-          <p className="text-xs text-muted-foreground">To'lov havolasi tayyor</p>
+          <p className="font-semibold text-green-900">To&apos;lov kutilmoqda…</p>
+          <p className="text-xs text-green-900/80">To&apos;lov sahifasi ochildi. To&apos;lagach bu yerga qaytasiz, holat avtomatik yangilanadi.</p>
         </div>
       </div>
-      <div className="slide-up rounded-xl border border-border bg-background/60 p-3" style={{ animationDelay: "120ms" }}>
-        <p className="text-sm font-medium">TezCheck orqali to'lov</p>
+      {netError && <p className="text-xs text-destructive">Holatni tekshirib bo&apos;lmadi, qayta urinilmoqda…</p>}
+      <div className="rounded-xl border border-border bg-muted/50 p-3">
+        <p className="text-sm font-medium">TezCheck orqali to&apos;lov</p>
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
           {["Payme", "Click", "Uzum"].map((n) => (
-            <span key={n} className="rounded-md border border-border px-2 py-1 text-muted-foreground">
+            <span key={n} className="rounded-md border border-border bg-card px-2 py-1 text-muted-foreground">
               {n}
             </span>
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-xs">{result.paymentLink}</code>
+          <a href={result.paymentLink} target="_blank" rel="noopener" className={cn(buttonVariants({ variant: "outline" }), "h-11 flex-1 px-3")}>
+            <ExternalLink className="size-4" aria-hidden="true" /> To&apos;lov sahifasini ochish
+          </a>
           <Button variant="outline" size="icon" className="size-11" onClick={copy} aria-label="Havolani nusxalash">
-            <Copy className="size-4" />
+            {copied ? <Check className="size-4 text-green-700" /> : <Copy className="size-4" />}
           </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">Faqat kirim: bitta havola orqali Payme, Click yoki Uzum.</p>

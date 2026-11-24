@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Bot, CalendarClock, Loader2, MapPin, Play, Send, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Bot, CalendarClock, CheckCircle2, Loader2, MapPin, Mic, Play, Send, Users } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { usePaidOrders } from "@/lib/orders-store";
 import { Textarea } from "@/components/ui/textarea";
 import { agentRequest } from "@/lib/api";
-import { CATEGORY_LABEL, formatWhen } from "@/lib/format";
+import { CATEGORY_LABEL, formatSom, formatWhen, shortId } from "@/lib/format";
 import type { NegotiationTask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -18,11 +21,7 @@ interface Msg {
   negotiationId?: string;
 }
 
-const EXAMPLES = [
-  "Ertaga 6 kishilik osh joy band qil",
-  "Cobalt uchun moy almashtirish, shanba kuni",
-  "Ertaga 19:00 ga 4 kishilik osh joy band qil, mashinaga moy almashtirishga ham yozdir",
-];
+const EXAMPLES = ["6 kishilik osh + moy almashtirish", "Ertaga diagnostika", "Ertaga 6 kishilik osh joy band qil", "Cobalt uchun moy almashtirish, shanba kuni"];
 
 export function AssistantChat() {
   const router = useRouter();
@@ -32,6 +31,8 @@ export function AssistantChat() {
   ]);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
+  const { status: authStatus, user } = useAuth();
+  const orders = usePaidOrders();
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +63,14 @@ export function AssistantChat() {
     }
   }
 
+  const launchId = msgs.find((m) => m.negotiationId)?.negotiationId;
+  useEffect(() => {
+    if (!launchId) return;
+    // "Agentlar ishga tushdi…" qisqa ko'rsatiladi, keyin avtomatik /live'ga o'tamiz
+    const t = setTimeout(() => router.push(`/live/${encodeURIComponent(launchId)}`), 1500);
+    return () => clearTimeout(t);
+  }, [launchId, router]);
+
   function start(negotiationId: string) {
     if (starting) return;
     setStarting(true);
@@ -73,14 +82,56 @@ export function AssistantChat() {
       <p className="text-sm font-medium text-agent">Shaxsiy agent</p>
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">Yordamchingizga ayting</h1>
 
+      {authStatus === "out" && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-tint-3 bg-tint-1 px-4 py-3 text-sm">
+          <span className="text-green-900">Kirsangiz, buyurtmalaringiz saqlanadi. Demo kirishsiz ham ishlaydi.</span>
+          <Link href="/login?next=/assistant" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-4 font-semibold")}>
+            Kirish
+          </Link>
+        </div>
+      )}
+      {user && <p className="mt-2 text-sm text-muted-foreground">Salom, {user.name}.</p>}
+
+      {orders.length > 0 && (
+        <section aria-label="Buyurtmalaringiz" className="mt-5 space-y-3">
+          <h2 className="font-sans text-sm font-bold">Buyurtmalaringiz</h2>
+          {orders.map((o) => (
+            <article key={o.orderId} className="rounded-2xl border border-green-500/30 bg-card p-4 shadow-soft">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate font-display text-base font-bold">{o.businessName}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    #{shortId(o.orderId)} · {formatWhen(o.paidAt)}
+                  </p>
+                </div>
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-tint-2 px-2.5 py-1 text-xs font-semibold text-green-900">
+                  <CheckCircle2 className="size-3.5" aria-hidden="true" /> To&apos;landi
+                </span>
+              </div>
+              <ul className="mt-2 text-sm text-muted-foreground">
+                {o.items.map((i) => (
+                  <li key={i.name}>
+                    {i.name} x {i.qty}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 font-display text-lg font-bold tabular-nums">
+                {formatSom(o.total)}
+                {o.discountPct > 0 && <span className="ml-2 rounded-full bg-tint-2 px-2 py-0.5 align-middle text-xs font-semibold text-green-900">-{o.discountPct}%</span>}
+              </p>
+            </article>
+          ))}
+        </section>
+      )}
+
       <div className="mt-6 min-h-[40vh] space-y-3" aria-live="polite">
         {msgs.map((m) => (
           <div key={m.id} className={cn("rise-in flex gap-2", m.from === "me" && "justify-end")}>
             {m.from === "agent" && <Bot className="mt-2 size-5 shrink-0 text-agent" aria-hidden="true" />}
             <div className={cn("max-w-[88%] space-y-3", m.from === "me" && "text-right")}>
-              <p className={cn("inline-block rounded-2xl px-4 py-2.5 text-left text-[15px]", m.from === "me" ? "bg-agent/15" : "border border-border bg-card/60")}>{m.text}</p>
+              <p className={cn("inline-block rounded-2xl px-4 py-2.5 text-left text-[15px]", m.from === "me" ? "bg-primary/20 text-green-950" : "border border-border bg-card shadow-soft")}>{m.text}</p>
               {m.tasks?.map((t) => (
-                <article key={t.taskId} className="rounded-2xl border border-agent/30 bg-card p-4 text-left">
+                <article key={t.taskId} className="rounded-2xl border border-tint-3 bg-card p-4 text-left shadow-soft">
                   <h2 className="font-display text-base font-bold">{CATEGORY_LABEL[t.category] ?? t.category}</h2>
                   <p className="mt-0.5 text-sm text-muted-foreground">{t.need}</p>
                   <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -103,10 +154,14 @@ export function AssistantChat() {
                 </article>
               ))}
               {m.negotiationId && (
-                <Button className="h-11 w-full px-4 sm:w-auto" disabled={starting} onClick={() => start(m.negotiationId!)}>
-                  {starting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
-                  Muzokarani boshlash
-                </Button>
+                <div className="flex flex-wrap items-center gap-3 text-left" role="status">
+                  <span className="flex items-center gap-2 text-sm font-medium text-green-800">
+                    <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Agentlar ishga tushdi…
+                  </span>
+                  <Button variant="outline" className="h-11 px-4" disabled={starting} onClick={() => start(m.negotiationId!)}>
+                    <Play className="size-4" aria-hidden="true" /> Hoziroq ochish
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -127,8 +182,8 @@ export function AssistantChat() {
 
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         {EXAMPLES.map((ex) => (
-          <button key={ex} type="button" onClick={() => setText(ex)} className="min-h-11 shrink-0 rounded-full border border-border px-3 text-xs text-muted-foreground hover:text-foreground">
-            {ex.length > 34 ? `${ex.slice(0, 32)}...` : ex}
+          <button key={ex} type="button" onClick={() => setText(ex)} className="min-h-11 shrink-0 rounded-full border border-tint-3 bg-card px-4 text-sm font-medium text-green-900 shadow-sm transition-colors hover:bg-tint-1 focus-visible:outline-2 focus-visible:outline-ring">
+            {ex}
           </button>
         ))}
       </div>
@@ -156,6 +211,15 @@ export function AssistantChat() {
           placeholder="Ertaga 6 kishilik osh joy band qil"
           className="min-h-12 flex-1 text-base sm:text-sm"
         />
+        <button
+          type="button"
+          disabled
+          title="Ovoz bilan yozish: tez orada"
+          aria-label="Mikrofon: tez orada"
+          className="grid size-12 shrink-0 place-items-center rounded-lg border border-border bg-muted text-muted-foreground opacity-70"
+        >
+          <Mic className="size-4" aria-hidden="true" />
+        </button>
         <Button type="submit" className="size-12" disabled={busy || !text.trim()} aria-label="Yuborish">
           <Send className="size-4" />
         </Button>

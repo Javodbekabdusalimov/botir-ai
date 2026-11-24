@@ -1,29 +1,65 @@
 import Link from "next/link";
-import { ArrowRight, Bot, Building2, Handshake, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bot, Building2, Check, Handshake, MessageSquareText, ShieldCheck, Sparkles, Upload } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { LandingPreview } from "@/components/landing-preview";
 import { LogoMark } from "@/components/logo";
+import { NetworkDiagram } from "@/components/network-diagram";
 import { cn } from "@/lib/utils";
 
-const STEPS = [
+const GITHUB = "https://github.com/Javodbekabdusalimov/botir-ai";
+
+const BLOCKS = [
   {
     icon: Building2,
-    tone: "text-biz border-biz/30",
-    title: "Biznes agenti",
-    text: "Katalogni yuklaysiz, narx va maksimal chegirmani aytasiz. Agent mijozlar bilan o'zbek tilida gaplashadi, siz uxlayotganda ham.",
+    tone: "bg-biz-soft text-biz",
+    title: "Biznes uchun",
+    text: "Katalog va maksimal chegirmani kiriting. AI sotuvchi mijozlar bilan o'zbek tilida, Telegram'da 24/7 gaplashadi.",
+    cta: { href: "/register", label: "Biznesni ulash" },
   },
   {
     icon: Bot,
-    tone: "text-agent border-agent/30",
-    title: "Shaxsiy agent",
-    text: "\"Ertaga 6 kishilik osh joy band qil\" deysiz. Agent joy topadi, narx so'raydi va sizning o'rningizda gaplashadi.",
+    tone: "bg-tint-2 text-green-800",
+    title: "Mijoz uchun",
+    text: "\"Ertaga 6 kishilik osh joy band qil\" deysiz. Shaxsiy agent bir nechta biznesdan eng yaxshi narxni topadi.",
+    cta: { href: "/assistant", label: "Yordamchini sinash" },
   },
   {
     icon: Handshake,
-    tone: "text-foreground border-border",
-    title: "Muzokara",
-    text: "Ikki agent o'zaro kelishadi: so'rov, taklif, chegirma, bitim. Siz faqat \"Tasdiqlayman\" tugmasini bosasiz.",
+    tone: "bg-muted text-foreground",
+    title: "Agentlar muzokarasi",
+    text: "So'rov, taklif, qarshi taklif, bitim: ko'pi bilan 3 raund. Narx katalogdan, chegirma biznes limitidan oshmaydi.",
+    cta: { href: "/live/demo-chorsu", label: "Jonli ko'rish" },
   },
+];
+
+const STEPS = [
+  { icon: Upload, title: "Ulang", text: "Biznes katalogni (Excel/CSV) yuklaydi, mijoz yordamchiga so'rov yozadi." },
+  { icon: MessageSquareText, title: "Agentlar gaplashadi", text: "Ikki agent o'zaro kelishadi. Siz jonli ko'rasiz, hech narsa qilmaysiz." },
+  { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. Pul faqat shundan keyin." },
+];
+
+// TODO: narxlarni Habibulloh tasdiqlaydi (hozircha placeholder)
+const PLANS = [
+  {
+    name: "Start",
+    price: "bepul",
+    note: "Boshlash uchun",
+    features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Oyiga 100 tagacha suhbat"],
+    featured: false,
+  },
+  {
+    name: "Pro",
+    price: "199 000 so'm/oy",
+    note: "Faol bizneslar uchun",
+    features: ["Cheksiz suhbat va muzokara", "Autopilot rejimi", "Agentni avtomatik yaxshilash", "Analitika va buyurtmalar paneli"],
+    featured: true,
+  },
+];
+
+const TEAM = [
+  { name: "Habibulloh Shuhratov", role: "arxitektura, agentlar" },
+  { name: "Ibrat", role: "backend" },
+  { name: "Javodbek Abdusalimov", role: "frontend, UI" },
 ];
 
 export default function Home() {
@@ -32,61 +68,142 @@ export default function Home() {
       <section className="khatam relative overflow-hidden">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-10 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20">
           <div>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-              <LogoMark className="size-4" /> O'zbekiston uchun AI agentlar tarmog'i
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-tint-3 bg-tint-1 px-3 py-1.5 text-xs font-semibold text-green-900">
+              <LogoMark className="size-4" /> O&apos;zbekiston uchun AI agentlar tarmog&apos;i
             </p>
             <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.05] sm:text-6xl">
-              Agent agent bilan <span className="text-agent">gaplashadi</span>, siz faqat{" "}
-              <span className="text-biz">tasdiqlaysiz</span>.
+              Agent agent bilan <span className="text-agent">gaplashadi</span>, siz faqat <span className="rounded-lg bg-tint-2 px-2">tasdiqlaysiz</span>.
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Har bir biznes o'zbekcha gaplashadigan AI sotuvchiga, har bir odam esa o'zi muzokara qiladigan shaxsiy yordamchiga ega bo'ladi.
+              Har bir biznes o&apos;zbekcha gaplashadigan AI sotuvchiga, har bir odam esa o&apos;zi muzokara qiladigan shaxsiy yordamchiga ega bo&apos;ladi.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href="/connect" className={cn(buttonVariants({ size: "lg" }), "h-12 px-5 text-base")}>
+              <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base font-semibold shadow-lift")}>
                 Biznesni ulash <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
-              <Link
-                href="/assistant"
-                className={cn(buttonVariants({ size: "lg", variant: "outline" }), "h-12 px-5 text-base")}
-              >
+              <Link href="/assistant" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "h-12 px-6 text-base font-semibold")}>
                 Yordamchini sinash
               </Link>
             </div>
-            <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="size-4 text-agent" aria-hidden="true" />
-              To'lov TezCheck orqali: Payme, Click, Uzum bitta havolada.
-            </p>
+            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+              <li className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-green-700" aria-hidden="true" /> PolicyGuard</li>
+              <li className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-green-700" aria-hidden="true" /> Pul faqat tasdiqdan keyin</li>
+              <li className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-green-700" aria-hidden="true" /> TezCheck: Payme, Click, Uzum</li>
+            </ul>
           </div>
           <LandingPreview />
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-14" aria-labelledby="how">
-        <h2 id="how" className="text-3xl font-bold sm:text-4xl">
-          Qanday ishlaydi
-        </h2>
-        <ol className="mt-8 grid gap-4 md:grid-cols-3">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
+      <section className="mx-auto max-w-6xl px-4 py-12" aria-label="Imkoniyatlar">
+        <div className="grid gap-4 md:grid-cols-3">
+          {BLOCKS.map((b) => {
+            const Icon = b.icon;
             return (
-              <li key={s.title} className="rounded-2xl border border-border bg-card/60 p-5">
-                <div className="flex items-center gap-3">
-                  <span className={cn("grid size-11 place-items-center rounded-xl border", s.tone)}>
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
-                  <span className="text-sm text-muted-foreground">{i + 1}-qadam</span>
-                </div>
-                <h3 className="mt-4 text-xl font-bold">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.text}</p>
-              </li>
+              <article key={b.title} className="flex flex-col rounded-3xl border border-border bg-card p-6 shadow-soft">
+                <span className={cn("grid size-12 place-items-center rounded-2xl", b.tone)}>
+                  <Icon className="size-6" aria-hidden="true" />
+                </span>
+                <h2 className="mt-5 font-display text-2xl font-bold">{b.title}</h2>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{b.text}</p>
+                <Link href={b.cta.href} className="mt-5 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-700 hover:underline">
+                  {b.cta.label} <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </article>
             );
           })}
-        </ol>
+        </div>
       </section>
 
-      <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        Botir AI · Mars IT Hackathon 2026
+      <section id="how" className="scroll-mt-16 bg-tint-1/70 py-14" aria-labelledby="how-h">
+        <div className="mx-auto max-w-6xl px-4">
+          <h2 id="how-h" className="text-3xl font-extrabold sm:text-4xl">Qanday ishlaydi</h2>
+          <ol className="mt-8 grid gap-4 md:grid-cols-3">
+            {STEPS.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <li key={s.title} className="relative rounded-2xl border border-tint-3 bg-card p-5 shadow-soft">
+                  <span className="absolute right-4 top-3 font-display text-5xl font-extrabold text-tint-2" aria-hidden="true">{i + 1}</span>
+                  <span className="grid size-11 place-items-center rounded-xl bg-primary text-green-950">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-4 text-xl font-bold">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.text}</p>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-4xl px-4 py-14" aria-labelledby="net-h">
+        <h2 id="net-h" className="text-3xl font-extrabold sm:text-4xl">Tarmoq effekti</h2>
+        <p className="mt-2 max-w-2xl text-muted-foreground">Har yangi biznes va har yangi mijoz tarmoqni boyitadi: agentlar ko&apos;proq variantni solishtiradi, narx tushadi, buyurtma ko&apos;payadi.</p>
+        <div className="mt-6 rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
+          <NetworkDiagram />
+        </div>
+      </section>
+
+      <section id="pricing" className="scroll-mt-16 mx-auto max-w-4xl px-4 pb-14" aria-labelledby="price-h">
+        <h2 id="price-h" className="text-3xl font-extrabold sm:text-4xl">Biznes obunasi</h2>
+        <p className="mt-2 text-muted-foreground">Mijozlar uchun yordamchi bepul.</p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {PLANS.map((p) => (
+            <article key={p.name} className={cn("rounded-3xl border p-6", p.featured ? "border-primary bg-card shadow-lift" : "border-border bg-card shadow-soft")}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-2xl font-bold">{p.name}</h3>
+                {p.featured && <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-green-950">Mashhur</span>}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{p.note}</p>
+              <p className="mt-4 font-display text-3xl font-extrabold tabular-nums">{p.price}</p>
+              <ul className="mt-5 space-y-2 text-sm">
+                {p.features.map((f) => (
+                  <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden="true" />{f}</li>
+                ))}
+              </ul>
+              <Link href="/register" className={cn(buttonVariants({ variant: p.featured ? "default" : "outline" }), "mt-6 h-12 w-full text-base font-semibold")}>
+                {p.name === "Start" ? "Bepul boshlash" : "Pro'ni tanlash"}
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-16" aria-label="Boshlash">
+        <div className="rounded-3xl bg-green-800 px-6 py-10 text-center text-white sm:px-12 sm:py-14">
+          <Sparkles className="mx-auto size-7 text-green-300" aria-hidden="true" />
+          <h2 className="mx-auto mt-3 max-w-2xl text-balance text-3xl font-extrabold text-white sm:text-4xl">Agentlar sizning o&apos;rningizga gaplashsin</h2>
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base font-semibold")}>
+              Biznesni ulash
+            </Link>
+            <Link href="/assistant" className="inline-flex h-12 items-center justify-center rounded-lg border border-white/40 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white">
+              Yordamchini sinash
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 text-sm sm:grid-cols-[1fr_auto] sm:items-start">
+          <div>
+            <p className="font-display text-lg font-bold">Botir AI</p>
+            <p className="mt-1 text-muted-foreground">Mars IT Hackathon 2026 · Agent agent bilan gaplashadi.</p>
+            <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-2 font-semibold text-green-700 hover:underline">
+              <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 0 0 .5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></svg> GitHub: Javodbekabdusalimov/botir-ai
+            </a>
+          </div>
+          <div>
+            <p className="font-semibold">Jamoa</p>
+            <ul className="mt-1 space-y-1 text-muted-foreground">
+              {TEAM.map((t) => (
+                <li key={t.name}>
+                  <span className="font-medium text-foreground">{t.name}</span> · {t.role}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </footer>
     </>
   );

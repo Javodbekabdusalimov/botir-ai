@@ -377,7 +377,7 @@ function loadUsers(): (AuthUser & { password: string })[] {
     return SEED;
   }
 }
-const strip = ({ password: _p, ...u }: AuthUser & { password: string }): AuthUser => u;
+const strip = (u: AuthUser & { password: string }): AuthUser => ({ id: u.id, name: u.name, phone: u.phone, role: u.role, businessId: u.businessId });
 
 export function mockLogin(phone: string, password: string): AuthResult | null {
   const u = loadUsers().find((x) => x.phone === phone && x.password === password);

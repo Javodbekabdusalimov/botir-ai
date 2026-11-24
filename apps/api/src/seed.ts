@@ -2,7 +2,7 @@
 import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type { WorkHours } from '@botir/shared';
-import { DEMO_BUSINESSES, DEMO_PRODUCTS } from './agents';
+import { DEMO_BUSINESSES, DEMO_GOLDEN_CASES, DEMO_PRODUCTS } from './agents';
 
 const ADDRESS: Record<string, string> = {
   'biz-osh': 'Chilonzor tumani, Bunyodkor shoh ko‘chasi',
@@ -26,7 +26,11 @@ async function main(): Promise<void> {
     const data = { businessId: p.businessId, name: p.name, price: p.price, unit: p.unit };
     await db.catalogItem.upsert({ where: { id: p.id }, create: { id: p.id, ...data }, update: data });
   }
-  logger.log(`seeded ${DEMO_BUSINESSES.length} businesses, ${DEMO_PRODUCTS.length} catalog items`);
+  for (const g of DEMO_GOLDEN_CASES) {
+    const data = { businessId: g.businessId, question: g.question, expected: JSON.stringify(g.expected), forbidden: g.forbidden ? JSON.stringify(g.forbidden) : null };
+    await db.goldenCase.upsert({ where: { id: g.id }, create: { id: g.id, ...data }, update: data });
+  }
+  logger.log(`seeded ${DEMO_BUSINESSES.length} businesses, ${DEMO_PRODUCTS.length} catalog items, ${DEMO_GOLDEN_CASES.length} golden cases`);
   await db.$disconnect();
 }
 

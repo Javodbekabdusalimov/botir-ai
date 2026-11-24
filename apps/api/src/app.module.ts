@@ -9,8 +9,9 @@ import { LoopController } from './loop/loop.controller';
 import { agentsProvider } from './negotiations/agents.provider';
 import { NegotiationsController } from './negotiations/negotiations.controller';
 import { NegotiationsService } from './negotiations/negotiations.service';
-import { PaymentsController } from './payments/payments.controller';
-import { PaymentsService } from './payments/payments.service';
+import { PAYMENT_LINK } from './payments/payment-link';
+import { TestPayController } from './payments/test-pay.controller';
+import { TestPaymentLinkProvider } from './payments/test-payment.provider';
 import { TgController } from './tg/tg.controller';
 import { TgService } from './tg/tg.service';
 
@@ -25,7 +26,7 @@ class HealthController {
       status: 'ok',
       db: 'sqlite',
       businesses,
-      tezcheck: process.env.TEZCHECK_API_KEY ? 'live' : 'test-link',
+      payments: 'test-link', // replaced when the TezCheck module binds PAYMENT_LINK
       telegramBot: Boolean(process.env.TELEGRAM_BOT_TOKEN),
       userbot: Boolean(process.env.TG_API_ID && process.env.TG_API_HASH && process.env.TG_SESSION_KEY),
     });
@@ -33,9 +34,12 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, BusinessesController, NegotiationsController, PaymentsController, TgController, LoopController],
+  controllers: [HealthController, BusinessesController, NegotiationsController, TestPayController, TgController, LoopController],
   providers: [
-    PrismaService, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, PaymentsService, NegotiationsService, TgService,
+    PrismaService, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
+    TestPaymentLinkProvider,
+    // Swap point for the real TezCheck module: { provide: PAYMENT_LINK, useExisting: TezcheckPaymentLinkProvider }
+    { provide: PAYMENT_LINK, useExisting: TestPaymentLinkProvider },
   ],
 })
 export class AppModule {}

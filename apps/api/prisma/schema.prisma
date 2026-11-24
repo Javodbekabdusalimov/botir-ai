@@ -214,38 +214,46 @@ model AuditFinding {
 }
 
 model LoopProposal {
-  id         String    @id @default(uuid())
-  businessId String
-  kind       String
-  title      String
-  diff       String
-  reason     String
-  evalBefore Float     @default(0)
-  evalAfter  Float     @default(0)
-  status     String    @default("pending")
-  payload    String? // JSON, engine-specific
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
+  id               String    @id @default(uuid())
+  businessId       String
+  kind             String // agents ProposalKind: prompt | catalog | faq
+  change           String
+  reason           String
+  sourceFindingIds String    @default("[]")
+  evalBefore       Float?
+  evalAfter        Float?
+  status           String    @default("pending")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  @@index([businessId])
 }
 
 model PromptVersion {
-  id         String    @id @default(uuid())
-  businessId String?
-  name       String
-  content    String
-  isActive   Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  deletedAt  DateTime?
+  id                String    @id @default(uuid())
+  businessId        String
+  version           Int
+  extraInstructions String
+  status            String
+  scoreBefore       Float?
+  scoreAfter        Float?
+  createdAt         DateTime  @default(now())
+  deletedAt         DateTime?
+
+  @@index([businessId])
 }
 
 model GoldenCase {
-  id         String    @id @default(uuid())
-  businessId String?
-  input      String
-  expected   String
+  id         String    @id
+  businessId String
+  question   String
+  expected   String // JSON string[]
+  forbidden  String? // JSON string[]
   createdAt  DateTime  @default(now())
   deletedAt  DateTime?
+
+  @@index([businessId])
 }
 
 model PolicyViolation {

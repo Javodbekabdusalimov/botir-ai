@@ -7,7 +7,7 @@ import { detectLang, type AgentBusiness, type NegotiationResult, type Product, t
 import { errMsg, parseJson } from '../common/http';
 import { PrismaAgentStore, sessionIdOf } from '../db/prisma-agent-store';
 import { PrismaService } from '../db/prisma.service';
-import { PaymentsService } from '../payments/payments.service';
+import { PAYMENT_LINK, type PaymentLinkProvider } from '../payments/payment-link';
 import { AGENTS, type Agents } from './agents.provider';
 import { LaneMapper, toOfferPayload } from './event-mapper';
 
@@ -26,7 +26,7 @@ export class NegotiationsService {
   constructor(
     @Inject(PrismaService) private readonly db: PrismaService,
     @Inject(AGENTS) private readonly agents: Agents,
-    @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(PAYMENT_LINK) private readonly payments: PaymentLinkProvider,
     @Inject(PrismaAgentStore) private readonly store: PrismaAgentStore,
   ) {}
 
@@ -74,8 +74,8 @@ export class NegotiationsService {
     if (!neg) throw new NotFoundException('negotiation not found');
     const existing = await this.db.order.findFirst({ where: { negotiationId, businessId, deletedAt: null } });
     if (existing) {
-      const pay = await this.payments.linkFor(existing.id, existing.total);
-      return { orderId: existing.id, paymentLink: pay.link };
+      const pay = await this.payments.createPaymentLink(existing);
+      return { orderId: existing.id, paymentLink: pay.payUrl };
     }
     const offer = await this.db.agentOffer.findFirst({
       where: { negotiationId, businessId, status: 'proposed', deletedAt: null }, orderBy: { createdAt: 'desc' },
@@ -95,10 +95,10 @@ export class NegotiationsService {
         total: offer.total, discountPct: offer.discountPct, status: 'confirmed',
       },
     });
-    const pay = await this.payments.linkFor(order.id, order.total);
+    const pay = await this.payments.createPaymentLink(order);
     await this.db.negotiation.update({ where: { id: negotiationId }, data: { status: 'confirmed' } });
     await this.emit(negotiationId, { type: 'status', status: 'confirmed' });
-    return { orderId: order.id, paymentLink: pay.link };
+    return { orderId: order.id, paymentLink: pay.payUrl };
   }
 
   private async runAll(negId: string, userId: string, text: string): Promise<void> {
@@ -115,7 +115,7 @@ export class NegotiationsService {
     for (const task of tasks) {
       const businesses = (await this.agents.personalAgent.findBusinesses(task)).slice(0, MAX_BUSINESSES_PER_TASK);
       if (businesses.length === 0) {
-        await this.db.auditFinding.create({ data: { sessionId: negId, type: 'not_found', detail: task.need, at: new Date() } });
+        await this.db.auditFinding.create({ data: { sessionId: negId, type: 'not_found', detail: `${task.category}: ${task.need}`, at: new Date() } });
         continue;
       }
       for (const business of businesses) lanes.push(this.runLane(negId, userId, text, lang, task, business));
@@ -155,7 +155,7 @@ export class NegotiationsService {
   /** Auditor + memory after the session (best effort, never blocks the stream). */
   private async postSession(r: NegotiationResult, text: string, products: Product[], maxDiscountPct: number) {
     await Promise.all([
-      this.agents.auditor.review({ sessionId: r.sessionId, transcript: r.transcript, products, maxDiscountPct }),
+      this.agents.auditor.review({ sessionId: r.sessionId, businessId: r.businessId, transcript: r.transcript, products, maxDiscountPct }),
       this.agents.memory.extract({ userId: r.userId, sessionId: r.sessionId, userText: text, transcript: r.transcript }),
     ]).catch((e: unknown) => this.logger.warn(`post-session ${r.sessionId}: ${errMsg(e)}`));
   }
@@ -170,7 +170,7 @@ export class NegotiationsService {
 
   private async emit(negId: string, e: NegotiationEvent): Promise<void> {
     const live = this.live.get(negId);
-    const seq = live ? live.seq++ : Date.now();
+    const seq = live ? live.seq++ : await this.db.negotiationEventLog.count({ where: { negotiationId: negId } });
     live?.subject.next(e);
     await this.db.negotiationEventLog.create({ data: { negotiationId: negId, seq, event: JSON.stringify(e) } });
     if (e.type === 'message') {

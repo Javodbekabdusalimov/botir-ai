@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/http';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create(AppModule, { rawBody: true }); // rawBody: webhook signature checks
   const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',').map((s) => s.trim());
   app.enableCors({ origin: origins });
   app.useGlobalFilters(new ApiExceptionFilter());

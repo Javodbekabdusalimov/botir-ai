@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { LoopProposal as DbProposal } from '@prisma/client';
 import type {
-  AgentBusiness, AgentStore, AuditFinding, BusinessCategory, LlmCallRecord, MemoryFact, PolicyViolationRecord, Product,
+  AgentBusiness, AgentStore, AuditFinding, AuditFindingType, BusinessCategory, GoldenCase, LlmCallRecord, MemoryFact,
+  PolicyViolationRecord, Product, PromptVersion, PromptVersionStatus, Proposal, ProposalKind, ProposalStatus,
 } from '../agents';
 import type { AgentMessage, Offer } from '../agents/shared';
 import { parseJson } from '../common/http';
@@ -67,8 +69,60 @@ export class PrismaAgentStore implements AgentStore {
   }
 
   async saveAuditFinding(f: AuditFinding): Promise<void> {
-    const businessId = splitSessionId(f.sessionId).businessId || null;
-    await this.db.auditFinding.create({ data: { sessionId: f.sessionId, businessId, type: f.type, detail: f.detail, at: new Date(f.at) } });
+    const businessId = f.businessId ?? (splitSessionId(f.sessionId).businessId || null);
+    await this.db.auditFinding.create({
+      data: { id: f.id, sessionId: f.sessionId, businessId, type: f.type, detail: f.detail, at: new Date(f.at) },
+    });
+  }
+
+  async getAuditFindings(businessId: string): Promise<AuditFinding[]> {
+    const rows = await this.db.auditFinding.findMany({ where: { businessId, deletedAt: null }, orderBy: { at: 'asc' } });
+    return rows.map((r) => ({
+      id: r.id, sessionId: r.sessionId, businessId: r.businessId ?? undefined, type: r.type as AuditFindingType, detail: r.detail, at: r.at.toISOString(),
+    }));
+  }
+
+  async getGoldenCases(businessId: string): Promise<GoldenCase[]> {
+    const rows = await this.db.goldenCase.findMany({ where: { businessId, deletedAt: null } });
+    return rows.map((r) => ({
+      id: r.id, businessId: r.businessId, question: r.question, expected: parseJson<string[]>(r.expected, []),
+      ...(r.forbidden ? { forbidden: parseJson<string[]>(r.forbidden, []) } : {}),
+    }));
+  }
+
+  async getPromptVersions(businessId: string): Promise<PromptVersion[]> {
+    const rows = await this.db.promptVersion.findMany({ where: { businessId, deletedAt: null }, orderBy: { version: 'asc' } });
+    return rows.map((r) => ({
+      id: r.id, businessId: r.businessId, version: r.version, extraInstructions: r.extraInstructions,
+      status: r.status as PromptVersionStatus, scoreBefore: r.scoreBefore ?? undefined, scoreAfter: r.scoreAfter ?? undefined,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  async savePromptVersion(v: PromptVersion): Promise<void> {
+    const data = {
+      businessId: v.businessId, version: v.version, extraInstructions: v.extraInstructions, status: v.status,
+      scoreBefore: v.scoreBefore ?? null, scoreAfter: v.scoreAfter ?? null, createdAt: new Date(v.createdAt),
+    };
+    await this.db.promptVersion.upsert({ where: { id: v.id }, create: { id: v.id, ...data }, update: data });
+  }
+
+  async getProposals(businessId: string): Promise<Proposal[]> {
+    const rows = await this.db.loopProposal.findMany({ where: { businessId, deletedAt: null }, orderBy: { createdAt: 'desc' } });
+    return rows.map(toProposal);
+  }
+
+  async getProposal(id: string): Promise<Proposal | undefined> {
+    const r = await this.db.loopProposal.findFirst({ where: { id, deletedAt: null } });
+    return r ? toProposal(r) : undefined;
+  }
+
+  async saveProposal(p: Proposal): Promise<void> {
+    const data = {
+      businessId: p.businessId, kind: p.kind, change: p.change, reason: p.reason, sourceFindingIds: JSON.stringify(p.sourceFindingIds),
+      evalBefore: p.evalBefore ?? null, evalAfter: p.evalAfter ?? null, status: p.status, createdAt: new Date(p.createdAt),
+    };
+    await this.db.loopProposal.upsert({ where: { id: p.id }, create: { id: p.id, ...data }, update: data });
   }
 
   async getOffer(id: string): Promise<Offer | undefined> {
@@ -77,3 +131,9 @@ export class PrismaAgentStore implements AgentStore {
     return { id: r.id, sessionId: r.sessionId, items: parseJson(r.items, []), total: r.total, discountPct: r.discountPct, status: r.status as Offer['status'] };
   }
 }
+
+const toProposal = (r: DbProposal): Proposal => ({
+  id: r.id, businessId: r.businessId, kind: r.kind as ProposalKind, change: r.change, reason: r.reason,
+  sourceFindingIds: parseJson<string[]>(r.sourceFindingIds, []), status: r.status as ProposalStatus,
+  evalBefore: r.evalBefore ?? undefined, evalAfter: r.evalAfter ?? undefined, createdAt: r.createdAt.toISOString(),
+});

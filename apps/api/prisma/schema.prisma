@@ -1,0 +1,535 @@
+// Botir AI database schema (docs/ARCHITECTURE.md section 5).
+// Model names follow packages/shared contract — code is the source of truth.
+// Every table carries soft delete: isDeleted + deletedAt.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Lang {
+  uz
+  ru
+}
+
+enum BusinessCategory {
+  restaurant
+  shop
+  autoservice
+  clinic
+  beauty
+  other
+}
+
+enum OrderStatus {
+  draft
+  pending_confirm
+  confirmed
+  paid
+  cancelled
+}
+
+enum BookingStatus {
+  pending_confirm
+  confirmed
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  expired
+}
+
+enum NegotiationStatus {
+  running
+  agreed
+  rejected
+  confirmed
+  failed
+}
+
+enum AgentKind {
+  personal
+  business
+}
+
+enum A2AType {
+  REQUEST
+  OFFER
+  COUNTER
+  ACCEPT
+  REJECT
+}
+
+enum TgAccountMode {
+  business
+  userbot
+}
+
+enum TgAccountStatus {
+  pending
+  connected
+  failed
+  disconnected
+}
+
+enum ChatMode {
+  copilot
+  command
+  autopilot
+  off
+}
+
+enum MessageDirection {
+  in
+  out
+}
+
+enum MessageAuthor {
+  customer
+  owner
+  ai
+}
+
+enum MemorySubjectType {
+  customer
+  user
+  business
+}
+
+enum ProposalKind {
+  prompt_fix
+  catalog_item
+  faq
+}
+
+enum ProposalStatus {
+  pending
+  approved
+  rejected
+  rolled_back
+}
+
+model User {
+  id        String    @id @default(uuid())
+  tgId      String?   @unique
+  name      String
+  phone     String?
+  lang      Lang      @default(uz)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  businesses   Business[]
+  orders       Order[]
+  bookings     Booking[]
+  negotiations Negotiation[]
+
+  @@index([isDeleted])
+  @@map("users")
+}
+
+model Business {
+  id             String           @id @default(uuid())
+  name           String
+  category       BusinessCategory
+  address        String
+  district       String
+  geoLat         Float?
+  geoLng         Float?
+  /// { mon: ["09:00","21:00"], ... } — closed day is null
+  workHours      Json
+  maxDiscountPct Int              @default(0)
+  lang           Lang             @default(uz)
+  ownerUserId    String
+  isDemo         Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  isDeleted      Boolean          @default(false)
+  deletedAt      DateTime?
+
+  owner        User                 @relation(fields: [ownerUserId], references: [id])
+  catalogItems CatalogItem[]
+  orders       Order[]
+  bookings     Booking[]
+  tgAccounts   TgAccount[]
+  memoryFacts  MemoryFact[]
+  kbChunks     KbChunk[]
+  findings     AuditFinding[]
+  promptVers   PromptVersion[]
+  goldenCases  GoldenCase[]
+  violations   PolicyViolation[]
+  proposals    LoopProposal[]
+  negoMessages NegotiationMessage[]
+
+  @@index([category, district])
+  @@index([isDeleted])
+  @@map("businesses")
+}
+
+model CatalogItem {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  /// price in UZS
+  price       Int
+  unit        String
+  durationMin Int?
+  inStock     Boolean   @default(true)
+  tags        String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, isDeleted])
+  @@map("catalog_items")
+}
+
+model Booking {
+  id         String        @id @default(uuid())
+  businessId String
+  userId     String
+  start      DateTime
+  end        DateTime
+  people     Int?
+  status     BookingStatus @default(pending_confirm)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  isDeleted  Boolean       @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([businessId, start])
+  @@map("bookings")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  businessId  String
+  userId      String
+  /// OrderItem[] as defined in packages/shared
+  items       Json
+  total       Int
+  discountPct Int         @default(0)
+  status      OrderStatus @default(draft)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  isDeleted   Boolean     @default(false)
+  deletedAt   DateTime?
+
+  business Business  @relation(fields: [businessId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  payments Payment[]
+
+  @@index([businessId, status])
+  @@map("orders")
+}
+
+/// Incoming money only. Refund / payout / withdraw fields and handlers are
+/// deliberately absent — see ARCHITECTURE section 1 and section 3.4.
+model Payment {
+  id         String        @id @default(uuid())
+  orderId    String
+  provider   String        @default("tezcheck")
+  billId     String        @unique
+  link       String
+  amount     Int
+  status     PaymentStatus @default(pending)
+  webhookRaw Json?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  isDeleted  Boolean       @default(false)
+  deletedAt  DateTime?
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+model Negotiation {
+  id        String            @id @default(uuid())
+  userId    String
+  /// NegotiationTask[]
+  tasks     Json
+  status    NegotiationStatus @default(running)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  isDeleted Boolean           @default(false)
+  deletedAt DateTime?
+
+  user     User                 @relation(fields: [userId], references: [id])
+  messages NegotiationMessage[]
+
+  @@index([userId, status])
+  @@map("negotiations")
+}
+
+model NegotiationMessage {
+  id            String    @id @default(uuid())
+  negotiationId String
+  fromAgent     AgentKind
+  businessId    String
+  round         Int       @default(1)
+  /// human-readable line rendered in the UI
+  text          String
+  type          A2AType
+  /// A2APayload
+  payload       Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+
+  negotiation Negotiation @relation(fields: [negotiationId], references: [id])
+  business    Business    @relation(fields: [businessId], references: [id])
+
+  @@index([negotiationId, createdAt])
+  @@map("negotiation_messages")
+}
+
+model TgAccount {
+  id         String          @id @default(uuid())
+  businessId String
+  mode       TgAccountMode
+  phone      String
+  /// AES-256-GCM encrypted StringSession, never stored in plaintext
+  sessionEnc String?
+  status     TgAccountStatus @default(pending)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  isDeleted  Boolean         @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+  chats    Chat[]
+
+  @@index([businessId, isDeleted])
+  @@map("tg_accounts")
+}
+
+model Chat {
+  id              String    @id @default(uuid())
+  tgAccountId     String
+  peerId          String
+  title           String
+  mode            ChatMode  @default(copilot)
+  lastMessageAt   DateTime  @default(now())
+  lastMessageText String?
+  needsHuman      Boolean   @default(false)
+  unread          Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
+
+  tgAccount TgAccount   @relation(fields: [tgAccountId], references: [id])
+  messages  TgMessage[]
+
+  @@unique([tgAccountId, peerId])
+  @@index([tgAccountId, lastMessageAt])
+  @@map("chats")
+}
+
+model TgMessage {
+  id         String           @id @default(uuid())
+  chatId     String
+  direction  MessageDirection
+  author     MessageAuthor
+  text       String
+  voiceUrl   String?
+  transcript String?
+  tgMsgId    String?
+  /// AI draft prepared in copilot mode, not sent yet
+  isDraft    Boolean          @default(false)
+  sentAt     DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  isDeleted  Boolean          @default(false)
+  deletedAt  DateTime?
+
+  chat Chat @relation(fields: [chatId], references: [id])
+
+  @@index([chatId, sentAt])
+  @@map("messages")
+}
+
+model MemoryFact {
+  id          String            @id @default(uuid())
+  subjectType MemorySubjectType
+  subjectId   String
+  businessId  String?
+  fact        String
+  source      String
+  /// 0..1
+  confidence  Float             @default(0.5)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  isDeleted   Boolean           @default(false)
+  deletedAt   DateTime?
+
+  business Business? @relation(fields: [businessId], references: [id])
+
+  @@index([subjectType, subjectId])
+  @@map("memory_facts")
+}
+
+/// RAG storage. v1 keeps embeddings as Float[] so any plain Postgres works;
+/// pgvector(1024) lands in the pilot stage.
+model KbChunk {
+  id         String    @id @default(uuid())
+  businessId String
+  text       String
+  embedding  Float[]
+  source     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@map("kb_chunks")
+}
+
+model AuditFinding {
+  id         String    @id @default(uuid())
+  businessId String
+  chatId     String?
+  kind       String
+  detail     String
+  severity   String    @default("medium")
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, resolved])
+  @@map("audit_findings")
+}
+
+model PromptVersion {
+  id         String    @id @default(uuid())
+  businessId String
+  agent      String
+  version    Int       @default(1)
+  content    String
+  isActive   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@unique([businessId, agent, version])
+  @@map("prompt_versions")
+}
+
+model GoldenCase {
+  id         String    @id @default(uuid())
+  businessId String
+  question   String
+  expected   String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+
+  business Business  @relation(fields: [businessId], references: [id])
+  evalRuns  EvalRun[]
+
+  @@index([businessId])
+  @@map("golden_cases")
+}
+
+model EvalRun {
+  id            String    @id @default(uuid())
+  goldenCaseId  String
+  promptVersion Int
+  /// 0..100
+  score         Int
+  answer        String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+
+  goldenCase GoldenCase @relation(fields: [goldenCaseId], references: [id])
+
+  @@index([goldenCaseId])
+  @@map("eval_runs")
+}
+
+model LoopProposal {
+  id         String         @id @default(uuid())
+  businessId String
+  kind       ProposalKind
+  title      String
+  diff       String
+  reason     String
+  evalBefore Int            @default(0)
+  evalAfter  Int            @default(0)
+  status     ProposalStatus @default(pending)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  isDeleted  Boolean        @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, status])
+  @@map("loop_proposals")
+}
+
+model PolicyViolation {
+  id         String    @id @default(uuid())
+  businessId String
+  rule       String
+  detail     String
+  blocked    Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, createdAt])
+  @@map("policy_violations")
+}
+
+model LlmCall {
+  id         String    @id @default(uuid())
+  businessId String?
+  agent      String
+  model      String
+  tokensIn   Int       @default(0)
+  tokensOut  Int       @default(0)
+  ms         Int       @default(0)
+  ok         Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+
+  @@index([agent, createdAt])
+  @@map("llm_calls")
+}

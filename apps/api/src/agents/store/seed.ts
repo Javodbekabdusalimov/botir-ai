@@ -1,0 +1,62 @@
+import type { AgentBusiness, Product } from '../types';
+
+export const DEMO_BUSINESSES: AgentBusiness[] = [
+  {
+    id: 'biz-osh',
+    name: 'Chilonzor Osh Markazi',
+    category: 'restaurant',
+    area: 'Chilonzor',
+    maxDiscountPct: 10,
+    hours: { open: '10:00', close: '23:00' },
+    isDemo: true,
+    notes: "Stollar: 6, 8 va 10 kishilik. Joy band qilish bepul, osh porsiya bilan buyurtma qilinadi.",
+  },
+  {
+    id: 'biz-auto',
+    name: 'Chilonzor AutoService',
+    category: 'autoservice',
+    area: 'Chilonzor',
+    maxDiscountPct: 5,
+    hours: { open: '09:00', close: '19:00' },
+    isDemo: true,
+    notes: '1 soatlik slotlar 09:00–19:00 oralig‘ida.',
+  },
+  {
+    id: 'biz-shop',
+    name: 'Mini Market',
+    category: 'shop',
+    area: 'Chilonzor',
+    maxDiscountPct: 3,
+    hours: { open: '08:00', close: '22:00' },
+    isDemo: true,
+  },
+];
+
+const shop = (id: string, name: string, price: number, unit: string): Product => ({
+  id: `shop-${id}`,
+  businessId: 'biz-shop',
+  name,
+  price,
+  unit,
+});
+
+export const DEMO_PRODUCTS: Product[] = [
+  { id: 'osh-portion', businessId: 'biz-osh', name: 'Osh (porsiya)', price: 45000, unit: 'porsiya' },
+  { id: 'osh-table-6', businessId: 'biz-osh', name: '6 kishilik stol band qilish', price: 0, unit: 'stol' },
+  { id: 'osh-table-8', businessId: 'biz-osh', name: '8 kishilik stol band qilish', price: 0, unit: 'stol' },
+  { id: 'osh-table-10', businessId: 'biz-osh', name: '10 kishilik stol band qilish', price: 0, unit: 'stol' },
+  { id: 'auto-oil', businessId: 'biz-auto', name: 'Moy almashtirish', price: 120000, unit: 'xizmat' },
+  { id: 'auto-diag', businessId: 'biz-auto', name: 'Diagnostika', price: 80000, unit: 'xizmat' },
+  shop('bread', 'Non', 4000, 'dona'),
+  shop('milk', 'Sut 1L', 13000, 'dona'),
+  shop('eggs', 'Tuxum (10 ta)', 18000, 'qadoq'),
+  shop('sugar', 'Shakar 1kg', 14000, 'kg'),
+  shop('rice', 'Guruch 1kg', 22000, 'kg'),
+  shop('oil', "O'simlik yog'i 1L", 24000, 'dona'),
+  shop('tea', "Ko'k choy 100g", 9000, 'qadoq'),
+  shop('water', 'Suv 1.5L', 4000, 'dona'),
+  shop('cola', 'Coca-Cola 1.5L', 12000, 'dona'),
+  shop('pasta', 'Makaron 400g', 8000, 'qadoq'),
+  shop('flour', 'Un 2kg', 16000, 'qadoq'),
+  shop('salt', 'Tuz 1kg', 3000, 'kg'),
+];

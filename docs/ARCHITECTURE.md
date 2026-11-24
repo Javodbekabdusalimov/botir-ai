@@ -111,6 +111,7 @@ Kunlik + kabinetda "Yaxshilash" tugmasi:
 - **Buyruq rejimi:** egasi botga "Aliga yoz: buyurtmangiz tayyor" → resolve chat → PolicyGuard → egasining nomidan yuboriladi.
 - Uzish: bitta tugma → sessiya o'chiriladi (soft delete + sessionEnc tozalanadi).
 - Demo: Habibullohning akkaunti. Autopilot demoda faqat oq ro'yxatdagi 1–2 test chatda.
+- **B2C (oddiy foydalanuvchi):** `POST /me/tg-connect/start|code`, `GET|DELETE /me/tg-connect` (Bearer). `TgAccount.ownerType = business | user`. Foydalanuvchi o'z "Saved Messages"iga `Botir, ...` yozadi → personal agent (`/live/:id` + natija); `Botir, Aliga yoz: ...` → `UserAction` (pending) → faqat `ha` yoki `POST /me/actions/:id/approve` dan keyin Sender (PolicyGuard) orqali yuboriladi.
 
 ## 5. Ma'lumotlar bazasi (Ibrat) — asosiy jadvallar
 Hammasida `id uuid, createdAt, updatedAt, isDeleted, deletedAt` (soft delete).

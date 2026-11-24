@@ -5,5 +5,13 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api start:dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.331"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
   }
 }

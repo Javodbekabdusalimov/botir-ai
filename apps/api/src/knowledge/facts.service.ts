@@ -6,7 +6,7 @@ import { CatalogWriter } from './catalog-writer.service';
 import { isValidPrice, LIMITS } from './fact-validation';
 import { MetricsService } from './metrics.service';
 import { toSource } from './sources.service';
-import { cleanLine } from './text-utils';
+import { cleanLine, normalizeName } from './text-utils';
 
 const STATUSES: readonly KnowledgeFactStatus[] = ['draft', 'confirmed', 'rejected'];
 const MAX_CONFIRM = 500;
@@ -84,7 +84,10 @@ export class KnowledgeFactsService {
     const priced = facts.filter((f): f is DbFact & { price: number } => f.kind === 'catalog' && f.price !== null);
     if (priced.length !== facts.filter((f) => f.kind === 'catalog').length) throw new BadRequestException('Katalog fakti uchun narx kerak');
     const { ids } = await this.catalog.upsert(
-      businessId, priced.map((f) => ({ name: f.topic, price: f.price, unit: f.unit ?? undefined, itemId: f.catalogItemId })),
+      businessId, priced.map((f) => ({
+        name: f.topic, price: f.price, unit: f.unit ?? undefined, itemId: f.catalogItemId,
+        description: normalizeName(f.content) === normalizeName(f.topic) ? undefined : f.content,
+      })),
     );
     const now = new Date();
     await this.db.$transaction([

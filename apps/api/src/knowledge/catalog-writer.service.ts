@@ -7,6 +7,8 @@ export interface CatalogUpsert {
   price: number;
   unit?: string;
   inStock?: boolean;
+  /** Only fills an empty description: the owner's own text is never overwritten. */
+  description?: string;
   /** Known target (fact already linked to an item): update it even if the name changed. */
   itemId?: string | null;
 }
@@ -29,9 +31,10 @@ export class CatalogWriter {
   }
 
   private async write(businessId: string, rows: CatalogUpsert[]) {
-    const items = await this.db.catalogItem.findMany({ where: { businessId, deletedAt: null }, select: { id: true, name: true } });
+    const items = await this.db.catalogItem.findMany({ where: { businessId, deletedAt: null }, select: { id: true, name: true, description: true } });
     const byName = new Map(items.map((i) => [normalizeName(i.name), i.id]));
     const live = new Set(items.map((i) => i.id));
+    const described = new Set(items.filter((i) => i.description?.trim()).map((i) => i.id));
     const result = { ids: [] as string[], created: 0, updated: 0 };
     await this.db.$transaction(
       async (tx) => {
@@ -41,12 +44,13 @@ export class CatalogWriter {
           const linked = r.itemId && live.has(r.itemId) ? r.itemId : undefined;
           const id = linked ?? byName.get(key);
           if (id) {
-            await tx.catalogItem.update({ where: { id }, data: linked ? { ...data, name: r.name } : data });
+            const description = r.description && !described.has(id) ? { description: r.description } : {};
+            await tx.catalogItem.update({ where: { id }, data: { ...data, ...description, ...(linked && { name: r.name }) } });
             result.updated += 1;
             result.ids.push(id);
             continue;
           }
-          const row = await tx.catalogItem.create({ data: { businessId, name: r.name, ...data } });
+          const row = await tx.catalogItem.create({ data: { businessId, name: r.name, ...data, ...(r.description && { description: r.description }) } });
           byName.set(key, row.id);
           live.add(row.id);
           result.created += 1;

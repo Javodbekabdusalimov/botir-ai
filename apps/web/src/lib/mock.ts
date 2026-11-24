@@ -21,8 +21,13 @@ import type {
   OrderItem,
   AuthResult,
   AuthUser,
+  MeResponse,
+  MeTgStatus,
   PaymentStatus,
+  Plan as BillingPlan,
   RegisterDto,
+  SubscriptionResult,
+  UserAction,
 } from "./types";
 import { formatSom } from "./format";
 
@@ -392,11 +397,67 @@ export function mockRegister(dto: RegisterDto): AuthResult | "exists" {
   } catch {}
   return { token: `mock.${u.id}`, user: strip(u) };
 }
-export function mockMe(token: string): AuthUser | null {
+export function mockMe(token: string): MeResponse | null {
   const u = loadUsers().find((x) => `mock.${x.id}` === token);
-  return u ? strip(u) : null;
+  if (!u) return null;
+  const user = strip(u);
+  if (u.role !== "business" || !u.businessId) return { user };
+  let plan: "start" | "pro" = "start";
+  let planUntil: string | null = null;
+  try {
+    const saved = JSON.parse(localStorage.getItem(`botir.plan.${u.businessId}`) ?? "null") as { until: string } | null;
+    if (saved && new Date(saved.until) > new Date()) {
+      plan = "pro";
+      planUntil = saved.until;
+    }
+  } catch {}
+  return { user, businessId: u.businessId, business: { id: u.businessId, name: u.name, plan, planUntil, aiCredits: plan === "pro" ? 1000 : 100 } };
 }
 
+export const MOCK_PLANS: BillingPlan[] = [
+  { id: "start", name: "Start", price: 0, aiCredits: 100, periodDays: 30 },
+  { id: "pro", name: "Pro", price: 1000, aiCredits: 1000, periodDays: 30 },
+];
+export function mockSubscribe(): SubscriptionResult {
+  const ref = `sub-${rid()}`;
+  return { paymentRef: ref, payUrl: `/pay/${ref}`, amount: 1000 };
+}
+/** Pro faollashganda demo rejimda 30 kunlik muddat saqlanadi */
+export function mockActivatePro(businessId: string) {
+  try {
+    localStorage.setItem(`botir.plan.${businessId}`, JSON.stringify({ until: new Date(Date.now() + 30 * 86400_000).toISOString() }));
+  } catch {}
+}
+
+/* ---------- Mijozning shaxsiy Telegrami va AI ruxsat so'ragan amallar (demo) ---------- */
+const ME_TG = "botir.meTg";
+export function mockMeTg(): MeTgStatus {
+  try {
+    const on = localStorage.getItem(ME_TG) === "1";
+    return { available: true, connected: on, username: on ? "demo_user" : undefined, connectedAt: on ? new Date().toISOString() : undefined };
+  } catch {
+    return { available: true, connected: false };
+  }
+}
+export function setMockMeTg(on: boolean) {
+  try {
+    if (on) localStorage.setItem(ME_TG, "1");
+    else localStorage.removeItem(ME_TG);
+  } catch {}
+}
+let actions: UserAction[] | null = null;
+export function mockActions(): UserAction[] {
+  actions ??= [
+    { id: "a1", chatId: "c1", peerTitle: "Chilonzor Osh Markazi", text: "Assalomu alaykum! Ertaga 19:00 ga 6 kishilik joy band qilmoqchiman. Bo'shmi?", status: "pending", reason: "Siz: \"Botir, ertaga osh joy band qil\"", createdAt: iso(4) },
+    { id: "a2", chatId: "c2", peerTitle: "Chilonzor AutoServis", text: "Salom, shanba kuni Cobalt uchun moy almashtirish mumkinmi? Narxi qancha?", status: "pending", reason: "Siz: \"Botir, moy almashtirishga yoz\"", createdAt: iso(11) },
+    { id: "a3", chatId: "c3", peerTitle: "Malika Do'kon", text: "Salom! 10 kg guruch va 2 litr yog' yetkazib bera olasizmi?", status: "sent", createdAt: iso(95) },
+  ];
+  return actions.map((a) => ({ ...a }));
+}
+export function mockDecideAction(id: string, d: "approve" | "reject") {
+  mockActions();
+  actions = actions!.map((a) => (a.id === id ? { ...a, status: d === "approve" ? "sent" : "rejected" } : a));
+}
 /** To'lov holati: tasdiqdan ~5s keyin "paid". */
 export function mockPaymentStatus(orderId: string): PaymentStatus {
   const key = `botir.pay.${orderId}`;

@@ -8,6 +8,7 @@ import { DEMO_BUSINESSES } from "@/lib/mock";
 import { bizPhoto } from "@/lib/photos";
 import { CATEGORY_LABEL } from "@/lib/format";
 import { selectClass } from "@/components/field";
+import { PlanBar } from "@/components/plan-bar";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -46,6 +47,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+      <PlanBar />
       <nav aria-label="Panel bo'limlari" className="mt-6 flex gap-1 overflow-x-auto border-b border-border">
         {TABS.map((t) => {
           const active = t.href === "/dashboard" ? path === t.href : path.startsWith(t.href);

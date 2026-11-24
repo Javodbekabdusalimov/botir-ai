@@ -17,9 +17,13 @@ import type {
   TgConnectCodeResult,
   TgConnectStartResult,
   AuthResult,
-  AuthUser,
+  MeResponse,
+  MeTgStatus,
   PaymentStatus,
+  Plan as BillingPlan,
   RegisterDto,
+  SubscriptionResult,
+  UserAction,
 } from "./types";
 import type { ApiResponse } from "@botir/shared";
 import * as mock from "./mock";
@@ -302,10 +306,10 @@ export const register = (dto: RegisterDto) =>
     return delay(500, r);
   });
 export const getMe = (token: string) =>
-  request<{ user: AuthUser; businessId?: string }>("/auth/me", { headers: { Authorization: `Bearer ${token}` } }, () => {
-    const user = mock.mockMe(token);
-    if (!user) throw new ApiError("Sessiya tugagan");
-    return { user, businessId: user.businessId };
+  request<MeResponse>("/auth/me", { headers: { Authorization: `Bearer ${token}` } }, () => {
+    const me = mock.mockMe(token);
+    if (!me) throw new ApiError("Sessiya tugagan");
+    return me;
   });
 
 /* ---- To'lov holati (3s polling) ---- */
@@ -315,3 +319,37 @@ export const getPaymentStatus = (orderId: string) =>
 /* ---- Rollback ---- */
 export const rollbackLoop = (businessId: string) =>
   request<{ ok: true }>("/loop/rollback", json("POST", { businessId }), () => delay(500, { ok: true as const }));
+
+/* ---- Obuna (Pro): POST /businesses/:id/subscription -> payUrl; holat /payments/:paymentRef/status ---- */
+export const getPlans = () => request<BillingPlan[]>("/plans", undefined, () => mock.MOCK_PLANS);
+export const subscribePro = (businessId: string) =>
+  request<SubscriptionResult>(`/businesses/${encodeURIComponent(businessId)}/subscription`, json("POST", { plan: "pro" }), () => mock.mockSubscribe());
+
+/* ---- Mijozning shaxsiy Telegrami: /me/tg-connect, /me/actions ---- */
+export const meTgStatus = () => request<MeTgStatus>("/me/tg-connect", undefined, () => mock.mockMeTg());
+export const meTgStart = (phone: string) =>
+  request<{ loginId: string }>("/me/tg-connect/start", json("POST", { phone }), () => delay(500, { loginId: `demo-${Date.now()}` }));
+export const meTgCode = (loginId: string, code: string, password?: string) =>
+  request<TgConnectCodeResult>("/me/tg-connect/code", json("POST", { loginId, code, password }), () => {
+    let status: TgConnectCodeResult["status"];
+    if (code.length < 5) status = "invalid_code";
+    else if (!password && !needPassword.has(`me-${loginId}`)) {
+      needPassword.add(`me-${loginId}`);
+      status = "need_password";
+    } else {
+      status = "connected";
+      mock.setMockMeTg(true);
+    }
+    return delay(600, { status });
+  });
+export const meTgDisconnect = () =>
+  request<{ ok: true }>("/me/tg-connect", json("DELETE"), () => {
+    mock.setMockMeTg(false);
+    return { ok: true as const };
+  });
+export const getActions = () => request<UserAction[]>("/me/actions", undefined, () => mock.mockActions());
+export const decideAction = (id: string, d: "approve" | "reject") =>
+  request<{ ok: true }>(`/me/actions/${encodeURIComponent(id)}/${d}`, json("POST"), () => {
+    mock.mockDecideAction(id, d);
+    return delay(400, { ok: true as const });
+  });

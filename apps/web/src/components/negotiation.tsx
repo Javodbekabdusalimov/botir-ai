@@ -6,6 +6,8 @@ import { Bot, Building2, Check, Copy, ExternalLink, Loader2, Repeat, ShieldCheck
 import { getPaymentStatus } from "@/lib/api";
 import { savePaidOrder } from "@/lib/orders-store";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { BizAvatar } from "@/components/biz-avatar";
+import { PayLogos } from "@/components/brand-logos";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { A2AType, BestOffer, ConfirmResult, Lane, NegotiationState } from "@/lib/types";
@@ -86,13 +88,16 @@ export function NegotiationStage({
   names,
   className,
   autoScroll = true,
+  initialLane,
 }: {
   state: NegotiationState;
   names: Record<string, string>;
   className?: string;
   autoScroll?: boolean;
+  /** /live/:id?confirm=<businessId>: shu biznes tabi tanlangan holda ochiladi */
+  initialLane?: string;
 }) {
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(initialLane ?? null);
   const active = picked && state.lanes[picked] ? picked : state.order[0];
   const lane: Lane | undefined = active ? state.lanes[active] : undefined;
   const endRef = useRef<HTMLDivElement>(null);
@@ -118,9 +123,10 @@ export function NegotiationStage({
                 role="tab"
                 aria-selected={sel}
                 onClick={() => setPicked(id)}
-                className={cn("min-h-11 shrink-0 rounded-xl border px-3 py-1.5 text-left text-sm", sel ? "border-biz bg-biz/10" : "border-border text-muted-foreground hover:text-foreground")}
+                className={cn("min-h-11 shrink-0 rounded-xl border px-3 py-1.5 text-left text-sm", sel ? "border-primary bg-tint-1 shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground")}
               >
-                <span className="flex items-center gap-1.5 font-medium">
+                <span className="flex items-center gap-2 font-medium">
+                  <BizAvatar id={id} name="" size={24} />
                   {l.typing && <span className="size-1.5 animate-pulse rounded-full bg-biz" />}
                   {nameOf(id)}
                 </span>
@@ -169,6 +175,7 @@ export function OfferCard({
   onOther,
   othersLeft,
   compact,
+  focusConfirm,
 }: {
   best: BestOffer;
   /** Muzokara tugagan (status agreed) */
@@ -180,8 +187,14 @@ export function OfferCard({
   onOther?: () => void;
   othersLeft?: boolean;
   compact?: boolean;
+  /** Telegram havolasidan kelganda [Tasdiqlayman] fokus oladi */
+  focusConfirm?: boolean;
 }) {
   const { offer } = best;
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusConfirm && ready && !result) confirmRef.current?.focus();
+  }, [focusConfirm, ready, result]);
   const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
     <div className="slide-up rounded-2xl border border-primary/50 bg-card p-4 shadow-lift sm:p-5">
@@ -192,7 +205,10 @@ export function OfferCard({
         </h2>
         {offer.discountPct > 0 && <span key={offer.discountPct} className="pop-in shrink-0 rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold tabular-nums text-agent">-{offer.discountPct}%</span>}
       </div>
-      <p className="mb-3 text-sm text-muted-foreground">{best.businessName}</p>
+      <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+        <BizAvatar id={best.businessId} name={best.businessName} size={28} />
+        {best.businessName}
+      </p>
       <ul className={cn("divide-y divide-border text-sm", compact && "hidden")}>
         {offer.items.map((i) => (
           <li key={i.catalogItemId} className="flex items-start justify-between gap-3 py-2">
@@ -210,7 +226,7 @@ export function OfferCard({
       {!result && !compact && (
         <div className="mt-4">
           <div className="flex gap-2">
-            <Button size="lg" className="h-12 flex-1 text-base" disabled={!ready || confirming || !onConfirm} onClick={onConfirm}>
+            <Button ref={confirmRef} size="lg" className="h-12 flex-1 text-base font-semibold" disabled={!ready || confirming || !onConfirm} onClick={onConfirm}>
               {confirming ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
               {confirming ? "Tasdiqlanmoqda..." : ready ? "Tasdiqlayman" : "Muzokara davom etmoqda"}
             </Button>
@@ -266,6 +282,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
   const [netError, setNetError] = useState(false);
   const [copied, setCopied] = useState(false);
   const { offer } = best;
+  const [paidAt] = useState(() => Date.now());
 
   useEffect(() => {
     if (OPENED.has(result.orderId)) return; // StrictMode / qayta render: faqat bir marta ochamiz
@@ -324,9 +341,20 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
           </svg>
         </span>
         <p className="mt-3 font-display text-2xl font-extrabold text-green-900">To&apos;landi ✅</p>
-        <p className="mt-1 text-sm text-green-900/80">
-          {formatSom(offer.price)} · {best.businessName}
-        </p>
+        <p className="mt-1 text-sm font-medium text-green-900/80">TezCheck orqali to&apos;landi</p>
+        <dl className="mx-auto mt-4 max-w-xs divide-y divide-tint-3 rounded-xl border border-tint-3 bg-card text-left text-sm">
+          {[
+            ["Summa", formatSom(offer.price)],
+            ["Biznes", best.businessName],
+            ["Vaqt", formatWhen(new Date(paidAt).toISOString())],
+            ["Buyurtma", `#${result.orderId.slice(-6).toUpperCase()}`],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-3 px-3 py-2">
+              <dt className="text-muted-foreground">{k}</dt>
+              <dd className="text-right font-semibold tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
         <Link href="/assistant" className={cn(buttonVariants(), "mt-4 h-12 w-full text-base font-semibold")}>
           Buyurtmani ko&apos;rish
         </Link>
@@ -356,13 +384,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
       {netError && <p className="text-xs text-destructive">Holatni tekshirib bo&apos;lmadi, qayta urinilmoqda…</p>}
       <div className="rounded-xl border border-border bg-muted/50 p-3">
         <p className="text-sm font-medium">TezCheck orqali to&apos;lov</p>
-        <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-          {["Payme", "Click", "Uzum"].map((n) => (
-            <span key={n} className="rounded-md border border-border bg-card px-2 py-1 text-muted-foreground">
-              {n}
-            </span>
-          ))}
-        </div>
+        <PayLogos className="mt-2" height={16} />
         <div className="mt-3 flex items-center gap-2">
           <a href={result.paymentLink} target="_blank" rel="noopener" className={cn(buttonVariants({ variant: "outline" }), "h-11 flex-1 px-3")}>
             <ExternalLink className="size-4" aria-hidden="true" /> To&apos;lov sahifasini ochish

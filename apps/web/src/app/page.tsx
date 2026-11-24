@@ -47,7 +47,6 @@ const STEPS = [
   { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. Pul faqat shundan keyin." },
 ];
 
-// TODO: narxlarni Habibulloh tasdiqlaydi (hozircha placeholder)
 const PLANS = [
   {
     name: "Start",
@@ -58,9 +57,9 @@ const PLANS = [
   },
   {
     name: "Pro",
-    price: "199 000 so'm/oy",
-    note: "Faol bizneslar uchun",
-    features: ["Cheksiz suhbat va muzokara", "Autopilot rejimi", "Agentni avtomatik yaxshilash", "Analitika va buyurtmalar paneli"],
+    price: "1 000 so'm/oy",
+    note: "Foiz yo'q: sotuvdan komissiya olinmaydi",
+    features: ["10 barobar ko'p AI kredit", "Autopilot rejimi", "Agentni avtomatik yaxshilash", "Analitika va buyurtmalar paneli"],
     featured: true,
   },
 ];

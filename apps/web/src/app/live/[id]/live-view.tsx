@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertTriangle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NegotiationStage, OfferCard } from "@/components/negotiation";
@@ -16,6 +17,7 @@ export function LiveView({ id }: { id: string }) {
 
 function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   const state = useNegotiation(id);
+  const confirmFor = useSearchParams().get("confirm");
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(ALL_MOCK_BUSINESSES.map((b) => [b.id, b.name])));
   const [skip, setSkip] = useState(0);
   const [result, setResult] = useState<ConfirmResult | null>(null);
@@ -34,7 +36,8 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
 
   // Takliflar narx bo'yicha o'sish tartibida; "Boshqasi" keyingisiga o'tkazadi
   const ranked = useMemo(() => Object.values(state.best).sort((a, b) => a.offer.price - b.offer.price), [state.best]);
-  const current = ranked.length ? ranked[skip % ranked.length] : null;
+  const forced = confirmFor && skip === 0 ? ranked.find((b) => b.businessId === confirmFor) : undefined;
+  const current = forced ?? (ranked.length ? ranked[skip % ranked.length] : null);
   const ready = state.status === "agreed" || state.status === "confirmed";
 
   async function onConfirm() {
@@ -70,7 +73,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
         </div>
       )}
 
-      <NegotiationStage state={state} names={names} />
+      <NegotiationStage state={state} names={names} initialLane={confirmFor ?? undefined} />
 
       <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         🛡 Narx katalogdan, chegirma ≤ limit · PolicyGuard · Pul faqat tasdiqdan keyin
@@ -85,6 +88,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
           <div className="mt-6 sm:mx-auto sm:max-w-xl">
             <OfferCard
               key={ready ? "final" : "live"}
+              focusConfirm={!!confirmFor}
               best={current}
               ready={ready}
               confirming={confirming}

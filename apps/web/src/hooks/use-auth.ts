@@ -3,12 +3,14 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { getMe, getToken, login as apiLogin, register as apiRegister, setToken } from "@/lib/api";
 import { setBusinessId } from "@/hooks/use-business";
-import type { AuthResult, AuthUser, RegisterDto } from "@/lib/types";
+import type { AuthResult, AuthUser, MeResponse, RegisterDto } from "@/lib/types";
 
 export interface AuthState {
   /** loading: token tekshirilmoqda (SSR va birinchi render ham shu) */
   status: "loading" | "out" | "in";
   user: AuthUser | null;
+  /** Biznes egasining obuna holati (GET /auth/me) */
+  business?: MeResponse["business"];
 }
 
 const SERVER: AuthState = { status: "loading", user: null };
@@ -21,10 +23,28 @@ function set(next: AuthState) {
   listeners.forEach((l) => l());
 }
 
-function applySession(r: AuthResult) {
+function applyMe(me: MeResponse) {
+  const u = { ...me.user, businessId: me.user.businessId ?? me.businessId };
+  if (u.businessId) setBusinessId(u.businessId);
+  set({ status: "in", user: u, business: me.business });
+}
+
+async function applySession(r: AuthResult) {
   setToken(r.token);
   if (r.user.businessId) setBusinessId(r.user.businessId);
   set({ status: "in", user: r.user });
+  try {
+    applyMe(await getMe(r.token)); // obuna holatini ham olamiz
+  } catch {}
+}
+
+/** Obuna holatini qayta o'qish (Pro faollashgandan keyin) */
+export async function refreshMe() {
+  const token = getToken();
+  if (!token) return;
+  try {
+    applyMe(await getMe(token));
+  } catch {}
 }
 
 async function init() {
@@ -33,10 +53,7 @@ async function init() {
   const token = getToken();
   if (!token) return set({ status: "out", user: null });
   try {
-    const { user, businessId } = await getMe(token);
-    const u = { ...user, businessId: user.businessId ?? businessId };
-    if (u.businessId) setBusinessId(u.businessId);
-    set({ status: "in", user: u });
+    applyMe(await getMe(token));
   } catch {
     setToken(null);
     set({ status: "out", user: null });
@@ -44,10 +61,10 @@ async function init() {
 }
 
 export async function loginUser(phone: string, password: string) {
-  applySession(await apiLogin(phone, password));
+  await applySession(await apiLogin(phone, password));
 }
 export async function registerUser(dto: RegisterDto) {
-  applySession(await apiRegister(dto));
+  await applySession(await apiRegister(dto));
 }
 export function logoutUser() {
   setToken(null);

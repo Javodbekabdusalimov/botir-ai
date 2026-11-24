@@ -27,6 +27,7 @@ export function InboxView() {
   const chats = useAsync(`chats:${id}`, () => getChats(id));
   const [selected, setSelected] = useState<string | null>(null);
   const [modes, setModes] = useState<Record<string, ChatMode>>({});
+  const [filter, setFilter] = useState<"human" | "all">("all");
   const list = chats.data;
   const current = list?.find((c) => c.id === selected) ?? null;
 
@@ -38,6 +39,8 @@ export function InboxView() {
   // Egasi javobi kerak bo'lganlar tepada; qolgani oxirgi xabar bo'yicha
   const sorted = [...list].sort((a, b) => Number(b.needsHuman) - Number(a.needsHuman) || +new Date(b.lastMessageAt) - +new Date(a.lastMessageAt));
 
+  const visible = filter === "human" ? sorted.filter((c) => c.needsHuman) : sorted;
+
   return (
     <div className="grid h-[calc(100dvh-16rem)] min-h-[30rem] gap-4 md:grid-cols-[21rem_1fr]">
       <div className={cn("min-h-0 overflow-y-auto pr-1", current && "hidden md:block")}>
@@ -46,8 +49,27 @@ export function InboxView() {
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" /> {urgent} ta chatda sizning javobingiz kerak
           </p>
         )}
+        <div className="mb-3 flex gap-2" role="group" aria-label="Filtr">
+          {(
+            [
+              ["human", `Odam kerak 🔴 (${urgent})`],
+              ["all", `Hammasi (${list.length})`],
+            ] as const
+          ).map(([f, label]) => (
+            <button
+              key={f}
+              type="button"
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+              className={cn("min-h-11 rounded-full border px-3.5 text-xs font-semibold transition-colors", filter === f ? "border-primary bg-tint-2 text-green-900" : "border-border bg-card text-muted-foreground hover:bg-muted")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {visible.length === 0 && <Empty>Odam javobi kerak bo&apos;lgan chat yo&apos;q. Agent hammasini o&apos;zi hal qilmoqda.</Empty>}
         <ul className="space-y-2" aria-label="Chatlar">
-          {sorted.map((c) => {
+          {visible.map((c) => {
             const mode = modes[c.id] ?? c.mode;
             return (
               <li key={c.id}>

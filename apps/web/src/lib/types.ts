@@ -32,26 +32,7 @@ export interface CatalogRowInput {
   unit: string;
 }
 
-/* ---- Auth va to'lov holati (backend kontraktiga hali qo'shilmagan: faqat web uchun lokal tiplar) ---- */
-export type UserRole = "business" | "user";
-export interface AuthUser {
-  id: string;
-  name: string;
-  phone: string;
-  role: UserRole;
-  businessId?: string;
-}
-export interface AuthResult {
-  token: string;
-  user: AuthUser;
-}
-export interface RegisterDto {
-  name: string;
-  phone: string;
-  password: string;
-  role: UserRole;
-}
-export type PaymentState = "pending" | "paid" | "failed" | "expired";
-export interface PaymentStatus {
-  status: PaymentState;
-}
+/* ---- Auth / to'lov: tiplar @botir/shared'da (AuthUser, AuthResponse, MeResponse, PaymentStatusResult...) ---- */
+export type AuthResult = import("@botir/shared").AuthResponse;
+export type PaymentState = import("@botir/shared").Payment["status"];
+export type PaymentStatus = Pick<import("@botir/shared").PaymentStatusResult, "status">;

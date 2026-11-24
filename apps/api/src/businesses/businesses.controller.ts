@@ -105,8 +105,8 @@ export class BusinessesController {
 
   /** multipart `file` (CSV/XLSX) or JSON `{ rows: [{name, price, unit}] }`. */
   @Post(':id/catalog/import')
-  @Auth()
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @Auth()
   async import(
     @Param('id') id: string,
     @UploadedFile() file: { buffer: Buffer } | undefined,

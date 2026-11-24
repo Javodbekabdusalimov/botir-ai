@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Empty, ErrorBox, Loading, Panel } from "@/components/states";
 import { useAsync } from "@/hooks/use-async";
 import { useBusinessId } from "@/hooks/use-business";
-import { decideProposal, getFacts, modeStore, rollbackLoop, runLoop } from "@/lib/api";
+import { decideProposal, getFacts, getProposals, modeStore, rollbackLoop, runLoop } from "@/lib/api";
 import { addVersion, popVersion, useVersions } from "@/lib/versions-store";
 import { formatWhen } from "@/lib/format";
 import type { LoopProposal, ProposalKind } from "@/lib/types";
@@ -32,6 +32,19 @@ export function ImproveView() {
   // Real rejimda /loop/run ~90s: har ~11s da bitta test savol. Demoda tezlashtirilgan.
   const stepMs = demo ? 900 : 11_000;
 
+  // Oldin yaratilgan takliflar: sahifa qayta ochilganda ham ko'rinsin (har safar 90 s kutmaslik).
+  useEffect(() => {
+    let alive = true;
+    getProposals(id)
+      .then((list) => {
+        if (alive && list.length) setProposals((cur) => cur ?? list);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setTick((n) => Math.min(TESTS, n + 1)), stepMs);
@@ -46,7 +59,13 @@ export function ImproveView() {
     setErr(null);
     try {
       const [res] = await Promise.all([runLoop(id), demo ? sleep(TESTS * stepMs) : Promise.resolve()]);
-      setProposals(res);
+      if (res.length) {
+        // Yangi takliflar tepada, oldingilari (id bo'yicha takrorsiz) pastda.
+        setProposals((cur) => [...res, ...(cur ?? []).filter((p) => !res.some((r) => r.id === p.id))]);
+      } else {
+        setNote("Yangi topilma yo'q: agent oxirgi tahlildan beri yangi xato qilmagan. Oldingi takliflar pastda.");
+        setProposals((cur) => cur ?? []);
+      }
     } catch (e) {
       setErr(e instanceof Error ? friendlyError(e.message) : "Tahlilni ishga tushirib bo'lmadi");
     } finally {

@@ -76,6 +76,10 @@ export async function registerUser(dto: RegisterDto) {
 }
 export function logoutUser() {
   setToken(null);
+  // Mehmon sifatida ro'yxatdagi user id'si bilan /agent/request yuborilsa API 401 beradi: yangi mehmon id.
+  try {
+    localStorage.setItem("botir.userId", crypto.randomUUID());
+  } catch {}
   set({ status: "out", user: null });
 }
 

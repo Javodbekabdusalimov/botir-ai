@@ -23,6 +23,9 @@ import * as mock from "./mock";
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 const FORCE_DEMO = process.env.NEXT_PUBLIC_DEMO === "1" || !API_URL;
 const TIMEOUT_MS = 4000;
+/** LLM ishlaydigan endpointlar sekin: /loop/run ~90s, agent so'rovi/tasdiq bir necha soniya. */
+const LOOP_TIMEOUT_MS = 180_000;
+const AGENT_TIMEOUT_MS = 60_000;
 
 /* ---- rejim holati ("Demo" / "Jonli" belgisi uchun) ---- */
 let demoActive = FORCE_DEMO;
@@ -44,10 +47,15 @@ export const modeStore = {
 export class ApiError extends Error {}
 
 /** Tarmoq xatosi, timeout, 404 yoki 5xx = "API yo'q" (mock'ga o'tamiz). 4xx / {ok:false} = haqiqiy xato. */
-async function request<T>(path: string, init: RequestInit | undefined, fallback: () => T | Promise<T>): Promise<T> {
+async function request<T>(
+  path: string,
+  init: RequestInit | undefined,
+  fallback: () => T | Promise<T>,
+  timeoutMs: number = TIMEOUT_MS,
+): Promise<T> {
   if (FORCE_DEMO) return fallback();
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   const isForm = typeof FormData !== "undefined" && init?.body instanceof FormData;
   let res: Response;
   try {
@@ -123,8 +131,11 @@ export const getAnalytics = (businessId: string) =>
 const NEG_KEY = "botir.neg.";
 
 export async function agentRequest(text: string): Promise<AgentRequestResult> {
-  const r = await request<AgentRequestResult>("/agent/request", json("POST", { userId: getUserId(), text }), () =>
-    delay(500, mock.mockAgentRequest(text)),
+  const r = await request<AgentRequestResult>(
+    "/agent/request",
+    json("POST", { userId: getUserId(), text }),
+    () => delay(500, mock.mockAgentRequest(text)),
+    AGENT_TIMEOUT_MS,
   );
   try {
     // /live ekrani uchun so'rov matnlarini eslab qolamiz (mock skripti ishlatadi)
@@ -165,7 +176,7 @@ export function streamNegotiation(
     startMock();
   } else {
     es = new EventSource(`${API_URL}/negotiations/${encodeURIComponent(id)}/stream`);
-    // Kontrakt: har SSE data = JSON.stringify(NegotiationEvent). Event nomi ixtiyoriy, shuning uchun ikkala yo'l.
+    // Kontrakt: har SSE data = JSON.stringify(NegotiationEvent). Nomsiz event ham "message" listeneriga keladi — onmessage qo'shilmaydi, aks holda har xabar 2 marta chiqadi.
     const handle = (ev: MessageEvent<string>) => {
       received = true;
       try {
@@ -174,7 +185,6 @@ export function streamNegotiation(
         onFail?.("Oqimdan noto'g'ri ma'lumot keldi");
       }
     };
-    es.onmessage = handle;
     (["message", "best_offer", "status", "error"] as const).forEach((t) => es!.addEventListener(t, handle as EventListener));
     es.onerror = () => {
       es?.close();
@@ -190,8 +200,11 @@ export function streamNegotiation(
 }
 
 export const confirmNegotiation = (id: string, businessId: string) =>
-  request<ConfirmResult>(`/negotiations/${id}/confirm`, json("POST", { businessId }), () =>
-    delay(600, mock.mockConfirm()),
+  request<ConfirmResult>(
+    `/negotiations/${id}/confirm`,
+    json("POST", { businessId }),
+    () => delay(600, mock.mockConfirm()),
+    AGENT_TIMEOUT_MS,
   );
 
 /* ---- Telegram ulash ---- */
@@ -234,8 +247,11 @@ export const setChatMode = (chatId: string, mode: ChatMode) =>
 
 /* ---- Loop / yaxshilash ---- */
 export async function runLoop(businessId: string): Promise<LoopProposal[]> {
-  const r = await request<LoopProposal[] | { proposals: LoopProposal[] }>("/loop/run", json("POST", { businessId }), () =>
-    delay(1400, mock.mockLoop(businessId)),
+  const r = await request<LoopProposal[] | { proposals: LoopProposal[] }>(
+    "/loop/run",
+    json("POST", { businessId }),
+    () => delay(1400, mock.mockLoop(businessId)),
+    LOOP_TIMEOUT_MS,
   );
   return Array.isArray(r) ? r : r.proposals;
 }

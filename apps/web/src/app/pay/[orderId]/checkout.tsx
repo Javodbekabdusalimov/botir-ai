@@ -3,9 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { BadgeCheck, Check, CircleCheck, Clock, Loader2, Lock, ShieldCheck, Zap } from "lucide-react";
+import { BadgeCheck, Check, CircleCheck, Clock, Home, Loader2, Lock, SearchX, ShieldCheck, Zap } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logos";
-import { getPaymentStatus } from "@/lib/api";
+import { NotFoundError, getPaymentStatus } from "@/lib/api";
 import { bizPhoto } from "@/lib/photos";
 import { formatSom, formatWhen, shortId } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -60,6 +60,7 @@ export function Checkout({ orderId }: { orderId: string }) {
   const [phase, setPhase] = useState<"idle" | "paying" | "paid" | "failed">("idle");
   const [amount, setAmount] = useState<number | null>(null);
   const [paidAt, setPaidAt] = useState<string>("");
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     getPaymentStatus(orderId)
@@ -71,7 +72,9 @@ export function Checkout({ orderId }: { orderId: string }) {
           setPaidAt((r as { paidAt?: string }).paidAt ?? new Date().toISOString());
         }
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (e instanceof NotFoundError) setNotFound(true);
+      });
   }, [orderId]);
 
   useEffect(() => {
@@ -110,6 +113,30 @@ export function Checkout({ orderId }: { orderId: string }) {
         await fetch(`${base}/pay/test/${encodeURIComponent(orderId)}`, { method: "POST", mode: "no-cors" });
       } catch {}
     }
+  }
+
+  if (notFound) {
+    return (
+      <div className="min-h-[calc(100dvh-4rem)] bg-gradient-to-b from-tint-1 via-background to-tint-1/60">
+        <section role="alert" className="slide-up mx-4 mt-16 max-w-md sm:mx-auto rounded-3xl border border-border bg-card p-8 text-center shadow-lift sm:mt-24">
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
+            <SearchX className="size-7" aria-hidden="true" />
+          </span>
+          <h1 className="mt-4 font-display text-2xl font-extrabold">Buyurtma topilmadi</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            #{shortId(orderId)} raqamli buyurtma yo&apos;q yoki muddati o&apos;tgan. Hech qanday to&apos;lov olinmaydi.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <Link href="/" className="inline-flex h-11 items-center gap-2 rounded-xl bg-green-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-200">
+              <Home className="size-4" aria-hidden="true" /> Bosh sahifa
+            </Link>
+            <Link href="/assistant" className="inline-flex h-11 items-center rounded-xl border border-border bg-card px-5 text-sm font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-200">
+              Yangi so&apos;rov
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   const total = sum?.total ?? amount ?? 0;
@@ -216,7 +243,7 @@ export function Checkout({ orderId }: { orderId: string }) {
 
             <aside aria-label="Buyurtma xulosasi" className="h-fit overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
               <div className="relative h-32">
-                <Image src={bizPhoto(sum?.businessId ?? "")} alt="" fill sizes="384px" className="object-cover" />
+                <Image src={bizPhoto(sum?.businessId ?? "")} alt="" fill priority sizes="384px" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-green-950/80 to-transparent" aria-hidden="true" />
                 <p className="absolute bottom-3 left-4 right-4 truncate font-display text-lg font-extrabold text-white">{sum?.businessName ?? "Buyurtma"}</p>
               </div>

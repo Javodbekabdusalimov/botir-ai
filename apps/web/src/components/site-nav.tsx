@@ -44,11 +44,12 @@ function AuthArea() {
   if (!user)
     return (
       <div className="flex items-center gap-1.5">
-        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "h-10 px-3 text-sm")}>
+        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "h-10 px-2.5 text-sm sm:px-3")}>
           Kirish
         </Link>
-        <Link href="/register" className={cn(buttonVariants(), "h-10 px-3 text-xs font-semibold shadow-sm sm:px-4 sm:text-sm")}>
-          Ro&apos;yxatdan o&apos;tish
+        <Link href="/register" className={cn(buttonVariants(), "h-10 px-3 text-sm font-semibold shadow-sm sm:px-4")}>
+          <span className="sm:hidden">Boshlash</span>
+          <span className="hidden sm:inline">Ro&apos;yxatdan o&apos;tish</span>
         </Link>
       </div>
     );

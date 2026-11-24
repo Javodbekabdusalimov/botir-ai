@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { AlertTriangle, RotateCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, MessageSquareText, RotateCw } from "lucide-react";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { NegotiationStage, OfferCard } from "@/components/negotiation";
 import { useNegotiation } from "@/hooks/use-negotiation";
-import { confirmNegotiation, getBusinesses } from "@/lib/api";
+import { agentRequest, confirmNegotiation, getBusinesses, recallRequestText } from "@/lib/api";
 import { ALL_MOCK_BUSINESSES } from "@/lib/mock";
 import type { ConfirmResult } from "@/lib/types";
 
@@ -23,6 +25,22 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   const [result, setResult] = useState<ConfirmResult | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const router = useRouter();
+  const [retrying, setRetrying] = useState(false);
+
+  // Kelishilmadi: o'sha so'rovni qaytadan yuboramiz (yangi muzokara)
+  async function retryRequest() {
+    const text = recallRequestText(id);
+    if (!text) return router.push("/assistant");
+    setRetrying(true);
+    try {
+      const r = await agentRequest(text);
+      router.push(`/live/${r.negotiationId}`);
+    } catch {
+      setRetrying(false);
+      router.push("/assistant");
+    }
+  }
 
   useEffect(() => {
     let live = true;
@@ -56,9 +74,13 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col px-4 py-5 lg:h-[calc(100dvh-2.9rem)] lg:py-6">
       <header className="mb-4 shrink-0">
-        <p className="text-sm font-medium text-agent">Jonli muzokara</p>
+        <p className="text-sm font-medium text-agent">Agentlar muzokarasi</p>
         <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
-          {state.order.length > 1 ? `${state.order.length} ta biznes bilan parallel muzokara` : "Agentlar kelishmoqda"}
+          {state.status === "rejected" || state.status === "failed"
+            ? "Muzokara yakunlandi"
+            : state.order.length > 1
+              ? `${state.order.length} ta biznes bilan parallel muzokara`
+              : "Agentlar kelishmoqda"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Shaxsiy agentingiz sizning nomingizdan gaplashadi. Yakuniy qaror sizda.</p>
       </header>
@@ -83,9 +105,23 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
 
         <div className="min-h-0 lg:overflow-y-auto lg:pb-2">
           {state.status === "rejected" || state.status === "failed" ? (
-            <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-              Agentlar kelisha olmadi. Boshqa biznes bilan urinib ko&apos;ring yoki so&apos;rovni o&apos;zgartiring.
-            </p>
+            <div role="status" className="rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm">
+              <p className="font-display text-base font-bold text-amber-900">Bu safar kelishuv bo&apos;lmadi</p>
+              <p className="mt-1.5 text-amber-900/80">
+                {state.status === "failed"
+                  ? "Agent javobi kechikdi yoki uzildi. Hech qanday pul yechilmadi — so'rovni qayta yuborsangiz, agentlar yangidan boshlaydi."
+                  : "Biznes narx yoki vaqt bo'yicha shartlaringizga rozi bo'lmadi. Hech qanday pul yechilmadi — qayta urinib ko'ring yoki so'rovni biroz o'zgartiring."}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button className="h-11 px-4" onClick={retryRequest} disabled={retrying}>
+                  <RotateCw className={retrying ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} aria-hidden="true" />
+                  {retrying ? "Yuborilmoqda…" : "Qayta urinish"}
+                </Button>
+                <Link href="/assistant" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-4")}>
+                  <MessageSquareText className="size-4" aria-hidden="true" /> So&apos;rovni o&apos;zgartirish
+                </Link>
+              </div>
+            </div>
           ) : current ? (
             <OfferCard
               key={ready ? "final" : "live"}

@@ -46,7 +46,7 @@ export class LlmClient {
     this.logger = opts.logger ?? silentLogger;
     this.mode = opts.mode ?? 'sdk';
     this.claudePath = opts.claudePath ?? process.env.CLAUDE_PATH ?? 'claude';
-    this.timeoutMs = opts.timeoutMs ?? 90_000;
+    this.timeoutMs = opts.timeoutMs ?? Number(process.env.LLM_TIMEOUT_MS ?? 180_000);
   }
 
   async complete(input: CompleteInput): Promise<CompleteOutput> {

@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/http';
+import { startKeepWarm } from './keep-warm';
 
 // apps/api/.env (secrets live only there). Already-exported variables win.
 if (existsSync('.env')) process.loadEnvFile('.env');
@@ -17,6 +18,7 @@ async function bootstrap(): Promise<void> {
   const port = Number(process.env.PORT ?? 4000);
   await app.listen(port);
   new Logger('Bootstrap').log(`Botir API on http://localhost:${port}`);
+  startKeepWarm();
 }
 
 void bootstrap();

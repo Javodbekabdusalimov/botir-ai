@@ -167,7 +167,7 @@ export function runMockStream(negId: string, needs: Record<string, string> | und
 }
 
 export function mockConfirm(): ConfirmResult {
-  const orderId = `ord-${rid()}`;
+  const orderId = `demo-ord-${rid()}`;
   return { orderId, paymentLink: `/pay/${orderId}` };
 }
 

@@ -173,7 +173,7 @@ export default function Home() {
             return (
               <article key={b.title} className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift">
                 <div className="relative aspect-[16/10] overflow-hidden">
-                  <Image src={b.photo} alt={b.alt} fill sizes="(min-width: 768px) 380px, 100vw" loading="lazy" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <Image src={b.photo} alt={b.alt} fill sizes="(min-width: 768px) 380px, 100vw" priority={b.photo === "/photos/plov.jpg"} className="object-cover transition-transform duration-500 group-hover:scale-105" />
                   <span className={cn("absolute bottom-3 left-3 grid size-11 place-items-center rounded-2xl shadow-soft ring-1 ring-white/70", b.tone)}>
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
@@ -318,7 +318,7 @@ export default function Home() {
               {[
                 ["/assistant", "Yordamchi"],
                 ["/register", "Biznesni ulash"],
-                ["/live/demo-chorsu", "Jonli muzokara"],
+                ["/live/demo-chorsu", "Muzokara namunasi"],
                 ["/#how", "Qanday ishlaydi"],
                 ["/#pricing", "Narxlar"],
               ].map(([h, l]) => (

@@ -37,7 +37,7 @@ export function LandingPreview() {
             {live && <span className="absolute inline-flex size-full animate-ping rounded-full bg-agent opacity-60 motion-reduce:animate-none" />}
             <span className={live ? "relative inline-flex size-2.5 rounded-full bg-agent" : "relative inline-flex size-2.5 rounded-full bg-green-500"} />
           </span>
-          {live ? "Jonli muzokara" : "Kelishildi"}
+          {live ? "Muzokara ketmoqda" : "Kelishildi"}
         </span>
         <span className="truncate text-xs text-muted-foreground">Chilonzor Osh Markazi</span>
       </div>

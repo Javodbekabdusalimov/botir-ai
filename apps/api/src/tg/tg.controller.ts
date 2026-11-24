@@ -1,8 +1,8 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import type { User as DbUser } from '@prisma/client';
 import type { ChatMode, SendMessageDto, SetModeDto, TgConnectCodeDto, TgConnectStartDto } from '@botir/shared';
 import { Auth, CurrentUser } from '../auth/auth.guard';
-import { assertBusinessOwner } from '../auth/ownership';
+import { assertBusinessOwner, ownsBusiness } from '../auth/ownership';
 import { ok } from '../common/http';
 import { PrismaService } from '../db/prisma.service';
 import { TgService } from './tg.service';
@@ -24,11 +24,15 @@ export class TgController {
     return ok(await this.tg.start({ type: 'business', id: dto.businessId }, dto.phone));
   }
 
+  /** Only the owner of the business the login was started for; anyone else sees 404 (no loginId probing). */
   @Post('tg-connect/code')
   @Auth()
-  async code(@Body() dto: TgConnectCodeDto) {
+  async code(@Body() dto: TgConnectCodeDto, @CurrentUser() user: DbUser) {
     if (!dto?.loginId || !dto.code) throw new BadRequestException('loginId and code are required');
-    return ok(await this.tg.code(dto.loginId, dto.code, dto.password));
+    const businessId = this.tg.loginBusinessId(dto.loginId);
+    const b = businessId ? await this.db.business.findFirst({ where: { id: businessId, deletedAt: null } }) : null;
+    if (!b || !ownsBusiness(b, user)) throw new NotFoundException('login not found');
+    return ok(await this.tg.code(dto.loginId, dto.code, dto.password, { type: 'business', id: b.id }));
   }
 
   @Delete('tg-connect')

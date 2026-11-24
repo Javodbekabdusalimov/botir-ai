@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { BusinessAgent, Lang } from './business-agent';
+import type { BusinessAgent, BusinessTurnResult, Lang } from './business-agent';
 import type { PersonalAgent } from './personal-agent';
 import type { AgentMessage, AgentRole, NegotiationEvent, NegotiationStatus, Offer } from './shared';
 import type { AgentStore } from './store/agent-store';
@@ -17,6 +17,8 @@ export interface NegotiationInput {
   lang: Lang;
   sessionId?: string; // pass your own (e.g. Prisma id) to stream SSE before start resolves
   onEvent?: NegotiationEventHandler;
+  /** Every business-agent turn (metrics, unknown questions). Must not throw. */
+  onTurn?: (turn: BusinessTurnResult) => void;
 }
 
 export interface NegotiationResult {
@@ -67,6 +69,7 @@ export class Negotiator {
         const turn = await businessAgent.respond({
           sessionId, business: input.business, products, history: transcript, round, lang: input.lang,
         });
+        input.onTurn?.(turn);
         await say('biz_agent', turn.reply);
         for (const v of turn.violations) await say('system', `PolicyGuard: ${v}`);
         if (turn.offer) {

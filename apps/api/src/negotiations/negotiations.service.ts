@@ -7,6 +7,7 @@ import { detectLang, type AgentBusiness, type NegotiationResult, type Product, t
 import { errMsg, parseJson } from '../common/http';
 import { PrismaAgentStore, sessionIdOf } from '../db/prisma-agent-store';
 import { PrismaService } from '../db/prisma.service';
+import { TurnRecorder } from '../knowledge/turn-recorder.service';
 import { PAYMENT_LINK, type PaymentLinkProvider } from '../payments/payment-link';
 import { AGENTS, type Agents } from './agents.provider';
 import { LaneMapper, toOfferPayload } from './event-mapper';
@@ -28,6 +29,7 @@ export class NegotiationsService {
     @Inject(AGENTS) private readonly agents: Agents,
     @Inject(PAYMENT_LINK) private readonly payments: PaymentLinkProvider,
     @Inject(PrismaAgentStore) private readonly store: PrismaAgentStore,
+    @Inject(TurnRecorder) private readonly turns: TurnRecorder,
   ) {}
 
   /** Returns immediately; parsing + negotiations run in the background and stream over SSE. */
@@ -138,6 +140,7 @@ export class NegotiationsService {
       const result = await this.agents.negotiator.run({
         sessionId: sessionIdOf(negId, business.id), userId, business, task, lang,
         onEvent: (_sid, e) => mapper.handle(e),
+        onTurn: this.turns.session(business.id, 'negotiation'),
       });
       mapper.finish(result.status);
       if (result.status === 'agreed' && result.offer) {

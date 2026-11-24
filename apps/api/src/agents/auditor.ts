@@ -20,6 +20,7 @@ export class Auditor {
   ) {}
 
   async review(input: { sessionId: string; businessId?: string; transcript: AgentMessage[]; products: Product[]; maxDiscountPct: number }): Promise<AuditFinding[]> {
+    const knowledge = input.businessId ? await this.store.getKnowledge(input.businessId) : '';
     const catalog = input.products.map((p) => `${p.name}: ${p.price} so'm`).join('; ');
     const { data } = await this.llm.completeJson<{ findings?: RawFinding[] }>({
       model: 'haiku',
@@ -27,6 +28,7 @@ export class Auditor {
       system: [
         'Sen sifat auditorisan. Biznes agenti suhbatini tekshir.',
         `Katalog narxlari: ${catalog}. Maks chegirma: ${input.maxDiscountPct}%.`,
+        ...(knowledge ? [`Egasi tasdiqlagan faktlar (bularni aytish to'qish emas):\n${knowledge}`] : []),
         "Topiladigan muammolar: fabricated_price (katalogda yo'q narx/mahsulot aytilgan), policy (qoida buzilgan, masalan chegirma limitdan oshgan),",
         "unanswered (mijoz savoliga javob berilmagan), not_found (mijoz so'ragan narsa katalogda yo'q).",
         "Muammo bo'lmasa bo'sh ro'yxat qaytar. Taxmin qilma — faqat matnda ko'ringanini yoz.",

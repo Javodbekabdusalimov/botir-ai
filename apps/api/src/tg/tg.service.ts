@@ -189,6 +189,14 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     return draft;
   }
 
+  /** Business that owns the chat's Telegram account (404 if the chat or a business owner is missing). */
+  async chatBusinessId(chatId: string): Promise<string> {
+    const chat = await this.chat(chatId);
+    const account = await this.db.tgAccount.findFirst({ where: { id: chat.accountId, deletedAt: null } });
+    if (!account?.businessId) throw new NotFoundException('chat not found');
+    return account.businessId;
+  }
+
   private async chat(chatId: string): Promise<Chat> {
     const chat = await this.store.getChat(chatId);
     if (!chat) throw new NotFoundException('chat not found');

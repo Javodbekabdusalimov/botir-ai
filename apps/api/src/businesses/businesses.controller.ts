@@ -6,6 +6,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Business as DbBusiness, User as DbUser } from '@prisma/client';
 import type { CatalogImportResult, CatalogItemDto, CreateBusinessDto, MemoryFact } from '@botir/shared';
 import { Auth, CurrentUser } from '../auth/auth.guard';
+import { ownsBusiness } from '../auth/ownership';
 import { ok } from '../common/http';
 import { toBusiness, toCatalogItem, toOrder } from '../db/mappers';
 import { PrismaService } from '../db/prisma.service';
@@ -13,6 +14,8 @@ import { AnalyticsService } from './analytics.service';
 import { normalizeRows, readSheet } from './catalog-import';
 
 type CatalogPatch = Partial<CatalogItemDto> & { id?: string };
+
+const validPrice = (v: unknown): boolean => Number.isFinite(Number(v)) && Number(v) >= 0;
 
 @Controller('businesses')
 export class BusinessesController {
@@ -72,7 +75,7 @@ export class BusinessesController {
   @Auth()
   async addItem(@Param('id') id: string, @Body() dto: CatalogItemDto, @CurrentUser() user: DbUser) {
     this.assertOwner(await this.business(id), user);
-    if (!dto?.name || !Number.isFinite(Number(dto.price))) throw new BadRequestException('name and price are required');
+    if (!dto?.name || !validPrice(dto.price)) throw new BadRequestException('name and price (>= 0) are required');
     const row = await this.db.catalogItem.create({ data: { businessId: id, ...this.itemData(dto), name: dto.name, price: Math.round(Number(dto.price)) } });
     return ok(toCatalogItem(row));
   }
@@ -89,6 +92,7 @@ export class BusinessesController {
   @Auth()
   async patchItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: CatalogPatch, @CurrentUser() user: DbUser) {
     this.assertOwner(await this.business(id), user);
+    if (dto?.price !== undefined && !validPrice(dto.price)) throw new BadRequestException('price must be a number >= 0');
     const item = await this.db.catalogItem.findFirst({ where: { id: itemId, businessId: id, deletedAt: null } });
     if (!item) throw new NotFoundException('catalog item not found');
     const row = await this.db.catalogItem.update({ where: { id: itemId }, data: this.itemData(dto) });
@@ -124,20 +128,25 @@ export class BusinessesController {
   }
 
   @Get(':id/orders')
-  async orders(@Param('id') id: string) {
+  @Auth()
+  async orders(@Param('id') id: string, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     const rows = await this.db.order.findMany({ where: { businessId: id, deletedAt: null }, orderBy: { createdAt: 'desc' } });
     return ok(rows.map(toOrder));
   }
 
   @Get(':id/analytics')
-  async analyticsOf(@Param('id') id: string) {
-    await this.business(id);
+  @Auth()
+  async analyticsOf(@Param('id') id: string, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     return ok(await this.analytics.forBusiness(id));
   }
 
   /** Customer memory facts learned in this business's negotiations. */
   @Get(':id/memory')
-  async memory(@Param('id') id: string) {
+  @Auth()
+  async memory(@Param('id') id: string, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     const rows = await this.db.memoryFact.findMany({ where: { businessId: id, deletedAt: null }, orderBy: { at: 'desc' }, take: 100 });
     return ok<MemoryFact[]>(
       rows.map((r) => ({
@@ -154,7 +163,7 @@ export class BusinessesController {
   }
 
   private assertOwner(b: DbBusiness, user: DbUser): void {
-    if (b.ownerUserId !== user.id && user.businessId !== b.id) throw new ForbiddenException('Bu biznesni o‘zgartirishga ruxsat yo‘q');
+    if (!ownsBusiness(b, user)) throw new ForbiddenException('Bu biznesni o‘zgartirishga ruxsat yo‘q');
   }
 
   private businessData(dto: Partial<CreateBusinessDto>) {

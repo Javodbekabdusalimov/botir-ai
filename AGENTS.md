@@ -51,8 +51,11 @@ render.yaml                    Render blueprint: ai-assistant (web) + ai-assista
    There is no refund / payout / withdraw / cancel code, by design. Only `paid && livemode` counts as paid.
 4. **Nothing is booked or paid before the human confirms.** `negotiator.confirm()` only marks the offer accepted;
    the Order + payment link are created by `POST /negotiations/:id/confirm`.
-5. **Catalog writes require the owner.** `POST|PATCH|DELETE /businesses/:id/catalog*` and `/catalog/import` use
-   `@Auth()` + owner check (401 without token, 403 for another user). Reads are public (agents read catalogs).
+5. **Owner-only business data.** Catalog writes (`POST|PATCH|DELETE /businesses/:id/catalog*`, `/catalog/import`),
+   `/businesses/:id/orders|analytics|memory`, `/inbox*`, `/tg-connect*` and `/loop/*` use `@Auth()` + owner check
+   (`auth/ownership.ts`): 401 without token (before any lookup), 403 for another business. Catalog reads stay public
+   (agents read catalogs). Prices must be ≥ 0. `/agent/request` takes the user from the Bearer token when present;
+   a guest may not act under a registered user's id.
 6. **Response envelope** is always `{ ok: true, data } | { ok: false, error }`.
 7. **Web mode badge is honest.** `lib/api.ts` shows "Demo" only when the backend is unreachable (network error / 5xx /
    unparsable body). A 404 means the backend is alive: it never flips the badge, and endpoints that must not fake data

@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError, isAiUnavailable } from "@/lib/friendly-error";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Check, MessageSquareText, RotateCw, ShieldCheck } from "lucide-react";
@@ -126,7 +127,12 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
       {state.error && (
         <div role="alert" className="mb-4 flex shrink-0 flex-wrap items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
           <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
-          <span className="flex-1">{state.error}</span>
+          <span className="flex-1">{friendlyError(state.error)}</span>
+          {isAiUnavailable(state.error) && id !== "demo-chorsu" && (
+            <Link href="/live/demo-chorsu" className="inline-flex h-11 items-center rounded-lg bg-primary px-4 font-semibold text-green-950 hover:opacity-90">
+              Namunani ko&apos;rish
+            </Link>
+          )}
           <Button variant="outline" className="h-11 px-4" onClick={onRetry}>
             <RotateCw className="size-4" aria-hidden="true" /> Qayta ulanish
           </Button>

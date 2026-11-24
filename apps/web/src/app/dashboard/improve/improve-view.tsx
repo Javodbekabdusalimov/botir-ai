@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError } from "@/lib/friendly-error";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Brain, Check, History, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export function ImproveView() {
       const [res] = await Promise.all([runLoop(id), demo ? sleep(TESTS * stepMs) : Promise.resolve()]);
       setProposals(res);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Tahlilni ishga tushirib bo'lmadi");
+      setErr(e instanceof Error ? friendlyError(e.message) : "Tahlilni ishga tushirib bo'lmadi");
     } finally {
       setRunning(false);
     }

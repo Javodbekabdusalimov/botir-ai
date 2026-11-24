@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { useNegotiation } from "@/hooks/use-negotiation";
 import { NegotiationStage, OfferCard } from "@/components/negotiation";
 
-const NAMES = { chorsu: "Chorsu Osh Markazi" };
+const NAMES = { chorsu: "Chilonzor Osh Markazi" };
 
 /** Landing'dagi jonli muzokara ko'rinishi: har doim skriptli demo (bitta biznes). Balandligi qat'iy: layout sakramaydi. */
 export function LandingPreview() {
@@ -27,11 +27,11 @@ export function LandingPreview() {
         <span className="flex items-center gap-2 text-sm font-semibold">
           <span className="relative flex size-2.5">
             {live && <span className="absolute inline-flex size-full animate-ping rounded-full bg-agent opacity-60 motion-reduce:animate-none" />}
-            <span className={live ? "relative inline-flex size-2.5 rounded-full bg-agent" : "relative inline-flex size-2.5 rounded-full bg-emerald-400"} />
+            <span className={live ? "relative inline-flex size-2.5 rounded-full bg-agent" : "relative inline-flex size-2.5 rounded-full bg-green-500"} />
           </span>
           {live ? "Jonli muzokara" : "Kelishildi"}
         </span>
-        <span className="truncate text-xs text-muted-foreground">Chorsu Osh Markazi</span>
+        <span className="truncate text-xs text-muted-foreground">Chilonzor Osh Markazi</span>
       </div>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 [scrollbar-width:none]">
         <NegotiationStage state={state} names={NAMES} autoScroll={false} />

@@ -12,8 +12,8 @@ export const MAX_ROUNDS = 3;
 const PAYLOAD: Record<A2AType, { label: string; cls: string }> = {
   REQUEST: { label: "So'rov", cls: "bg-agent/20 text-agent" },
   OFFER: { label: "Taklif", cls: "bg-biz/20 text-biz" },
-  COUNTER: { label: "Qarshi taklif", cls: "bg-fuchsia-400/20 text-fuchsia-300" },
-  ACCEPT: { label: "Qabul", cls: "bg-emerald-400/20 text-emerald-300" },
+  COUNTER: { label: "Qarshi taklif", cls: "bg-violet-500/15 text-violet-700" },
+  ACCEPT: { label: "Qabul", cls: "bg-green-500/20 text-green-700" },
   REJECT: { label: "Rad", cls: "bg-destructive/20 text-destructive" },
 };
 
@@ -58,7 +58,7 @@ function RoundProgress({ round, done }: { round: number; done: boolean }) {
         {Array.from({ length: MAX_ROUNDS }, (_, i) => (
           <span key={i} className="h-1.5 w-8 overflow-hidden rounded-full bg-muted sm:w-10">
             <span
-              className={cn("block h-full origin-left rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none", done ? "bg-emerald-400" : "bg-agent")}
+              className={cn("block h-full origin-left rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none", done ? "bg-green-500" : "bg-agent")}
               style={{ transform: `scaleX(${i < round ? 1 : 0})` }}
             />
           </span>
@@ -252,14 +252,14 @@ function PaymentBlock({ result }: { result: ConfirmResult }) {
   };
   return (
     <div className="mt-4 space-y-3" role="status">
-      <div className="pop-in flex items-center gap-3 rounded-xl border border-emerald-400/40 bg-emerald-400/10 p-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-emerald-400 text-emerald-950">
+      <div className="pop-in flex items-center gap-3 rounded-xl border border-green-500/40 bg-green-500/10 p-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-green-500 text-green-950">
           <svg viewBox="0 0 24 24" className="check-draw size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
         <div>
-          <p className="font-semibold text-emerald-300">Buyurtma tasdiqlandi</p>
+          <p className="font-semibold text-green-700">Buyurtma tasdiqlandi</p>
           <p className="text-xs text-muted-foreground">To'lov havolasi tayyor</p>
         </div>
       </div>

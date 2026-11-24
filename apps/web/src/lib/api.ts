@@ -16,6 +16,10 @@ import type {
   Order,
   TgConnectCodeResult,
   TgConnectStartResult,
+  AuthResult,
+  AuthUser,
+  PaymentStatus,
+  RegisterDto,
 } from "./types";
 import type { ApiResponse } from "@botir/shared";
 import * as mock from "./mock";
@@ -46,6 +50,26 @@ export const modeStore = {
 
 export class ApiError extends Error {}
 
+/* ---- Token (localStorage 'botir_token') ---- */
+export const TOKEN_KEY = "botir_token";
+export function getToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+export function setToken(t: string | null) {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+}
+function authHeader(): Record<string, string> {
+  const t = typeof window === "undefined" ? null : getToken();
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
 /** Tarmoq xatosi, timeout, 404 yoki 5xx = "API yo'q" (mock'ga o'tamiz). 4xx / {ok:false} = haqiqiy xato. */
 async function request<T>(
   path: string,
@@ -62,7 +86,11 @@ async function request<T>(
     res = await fetch(`${API_URL}${path}`, {
       ...init,
       signal: ctrl.signal,
-      headers: { ...(isForm ? {} : { "Content-Type": "application/json" }), ...(init?.headers ?? {}) },
+      headers: {
+        ...(isForm ? {} : { "Content-Type": "application/json" }),
+        ...authHeader(),
+        ...(init?.headers ?? {}),
+      },
     });
   } catch {
     setDemo(true);
@@ -259,3 +287,31 @@ export const decideProposal = (id: string, decision: "approve" | "reject") =>
   request<{ ok: true }>(`/loop/proposals/${id}/${decision}`, json("POST"), () => ({ ok: true as const }));
 export const getFacts = (businessId: string) =>
   request<MemoryFact[]>(`/businesses/${businessId}/memory`, undefined, () => mock.mockFacts(businessId));
+
+/* ---- Auth: backend (POST /auth/register, /auth/login, GET /auth/me) yoki demo ---- */
+export const login = (phone: string, password: string) =>
+  request<AuthResult>("/auth/login", json("POST", { phone, password }), () => {
+    const r = mock.mockLogin(phone, password);
+    if (!r) throw new ApiError("Telefon yoki parol noto'g'ri");
+    return delay(500, r);
+  });
+export const register = (dto: RegisterDto) =>
+  request<AuthResult>("/auth/register", json("POST", dto), () => {
+    const r = mock.mockRegister(dto);
+    if (r === "exists") throw new ApiError("Bu telefon raqami allaqachon ro'yxatdan o'tgan");
+    return delay(500, r);
+  });
+export const getMe = (token: string) =>
+  request<{ user: AuthUser; businessId?: string }>("/auth/me", { headers: { Authorization: `Bearer ${token}` } }, () => {
+    const user = mock.mockMe(token);
+    if (!user) throw new ApiError("Sessiya tugagan");
+    return { user, businessId: user.businessId };
+  });
+
+/* ---- To'lov holati (3s polling) ---- */
+export const getPaymentStatus = (orderId: string) =>
+  request<PaymentStatus>(`/payments/${encodeURIComponent(orderId)}/status`, undefined, () => mock.mockPaymentStatus(orderId));
+
+/* ---- Rollback ---- */
+export const rollbackLoop = (businessId: string) =>
+  request<{ ok: true }>("/loop/rollback", json("POST", { businessId }), () => delay(500, { ok: true as const }));

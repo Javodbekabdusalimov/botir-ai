@@ -14,7 +14,7 @@ const STATUS: Record<OrderStatus, { label: string; cls: string }> = {
   draft: { label: "Qoralama", cls: "bg-muted text-muted-foreground" },
   pending_confirm: { label: "Tasdiq kutilmoqda", cls: "bg-biz/15 text-biz" },
   confirmed: { label: "Tasdiqlangan", cls: "bg-agent/15 text-agent" },
-  paid: { label: "To'langan", cls: "bg-emerald-400/15 text-emerald-300" },
+  paid: { label: "To'langan", cls: "bg-green-500/15 text-green-700" },
   cancelled: { label: "Bekor qilingan", cls: "bg-destructive/15 text-destructive" },
 };
 

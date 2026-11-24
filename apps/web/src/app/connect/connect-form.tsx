@@ -101,7 +101,7 @@ export function ConnectForm() {
       <fieldset className="space-y-4 rounded-2xl border border-border bg-card/60 p-4 sm:p-6">
         <legend className="px-2 font-display text-lg font-bold">1. Biznes haqida</legend>
         <Field id="name" label="Biznes nomi" error={errors.name}>
-          <Input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" aria-invalid={!!errors.name} aria-describedby={errors.name ? "name-err" : undefined} placeholder="Masalan: Chorsu Osh Markazi" />
+          <Input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" aria-invalid={!!errors.name} aria-describedby={errors.name ? "name-err" : undefined} placeholder="Masalan: Chilonzor Osh Markazi" />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="category" label="Kategoriya">

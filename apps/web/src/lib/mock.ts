@@ -19,6 +19,10 @@ import type {
   NegotiationTask,
   Order,
   OrderItem,
+  AuthResult,
+  AuthUser,
+  PaymentStatus,
+  RegisterDto,
 } from "./types";
 import { formatSom } from "./format";
 
@@ -32,7 +36,7 @@ function biz(id: string, name: string, category: BusinessCategory, district: str
 
 /** Panelda tanlanadigan 3 ta demo biznes */
 export const DEMO_BUSINESSES: Business[] = [
-  biz("chorsu", "Chorsu Osh Markazi", "restaurant", "Shayxontohur", "Chorsu bozori yonida", 10),
+  biz("chorsu", "Chilonzor Osh Markazi", "restaurant", "Chilonzor", "Chilonzor, 9-kvartal", 10),
   biz("chilonzor", "Chilonzor AutoServis", "autoservice", "Chilonzor", "9-kvartal", 12),
   biz("malika", "Malika Do'kon", "shop", "Yunusobod", "4-kvartal", 7),
 ];
@@ -155,7 +159,7 @@ export function runMockStream(negId: string, needs: Record<string, string> | und
 
 export function mockConfirm(): ConfirmResult {
   const orderId = `ord-${rid()}`;
-  return { orderId, paymentLink: `https://pay.tezcheck.uz/demo/${orderId}` };
+  return { orderId, paymentLink: `/pay/${orderId}` };
 }
 
 /* ---------- Shaxsiy agent rejasi ---------- */
@@ -349,4 +353,58 @@ export function mockFacts(businessId: string): MemoryFact[] {
     confidence: confidence as number,
     createdAt: iso(60 * (i + 1) * 5),
   }));
+}
+
+/* ---------- Auth (demo): test akkauntlar + brauzerda saqlanadigan ro'yxatdan o'tganlar ---------- */
+// Faqat demo rejim uchun: parol brauzer localStorage'ida ochiq turadi. Haqiqiy backend ulanganda ishlatilmaydi.
+
+export const TEST_ACCOUNTS = {
+  business: { phone: "+998900000001", password: "botir123" },
+  user: { phone: "+998900000002", password: "botir123" },
+} as const;
+
+const SEED: (AuthUser & { password: string })[] = [
+  { id: "u-biz", name: "Chilonzor Osh Markazi", phone: TEST_ACCOUNTS.business.phone, password: TEST_ACCOUNTS.business.password, role: "business", businessId: "chorsu" },
+  { id: "u-client", name: "Test Mijoz", phone: TEST_ACCOUNTS.user.phone, password: TEST_ACCOUNTS.user.password, role: "user" },
+];
+const USERS_KEY = "botir.mockUsers";
+
+function loadUsers(): (AuthUser & { password: string })[] {
+  try {
+    const extra = JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]") as (AuthUser & { password: string })[];
+    return [...SEED, ...extra];
+  } catch {
+    return SEED;
+  }
+}
+const strip = ({ password: _p, ...u }: AuthUser & { password: string }): AuthUser => u;
+
+export function mockLogin(phone: string, password: string): AuthResult | null {
+  const u = loadUsers().find((x) => x.phone === phone && x.password === password);
+  return u ? { token: `mock.${u.id}`, user: strip(u) } : null;
+}
+export function mockRegister(dto: RegisterDto): AuthResult | "exists" {
+  if (loadUsers().some((x) => x.phone === dto.phone)) return "exists";
+  const u = { id: `u-${rid()}`, name: dto.name, phone: dto.phone, password: dto.password, role: dto.role };
+  try {
+    const extra = JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]");
+    localStorage.setItem(USERS_KEY, JSON.stringify([...extra, u]));
+  } catch {}
+  return { token: `mock.${u.id}`, user: strip(u) };
+}
+export function mockMe(token: string): AuthUser | null {
+  const u = loadUsers().find((x) => `mock.${x.id}` === token);
+  return u ? strip(u) : null;
+}
+
+/** To'lov holati: tasdiqdan ~5s keyin "paid". */
+export function mockPaymentStatus(orderId: string): PaymentStatus {
+  const key = `botir.pay.${orderId}`;
+  let started = Date.now();
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (saved) started = Number(saved);
+    else sessionStorage.setItem(key, String(started));
+  } catch {}
+  return { status: Date.now() - started >= 5000 ? "paid" : "pending" };
 }

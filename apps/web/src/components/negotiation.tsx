@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Building2, Check, CheckCircle2, Copy, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
+import { Bot, Building2, Check, Copy, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -26,10 +26,13 @@ function Bubble({ biz, type, text, typing }: { biz: boolean; type?: A2AType; tex
       )}
     >
       {typing ? (
-        <span className="flex h-5 items-center gap-1" role="status" aria-label="Yozmoqda">
-          {[0, 1, 2].map((i) => (
-            <span key={i} className={cn("typing-dot size-2 rounded-full", biz ? "bg-biz" : "bg-agent")} />
-          ))}
+        <span className="flex h-5 items-center gap-2" role="status" aria-label="Yozmoqda">
+          <span className="flex items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className={cn("typing-dot size-2 rounded-full", biz ? "bg-biz" : "bg-agent")} />
+            ))}
+          </span>
+          <span className="text-xs text-muted-foreground">yozmoqda…</span>
         </span>
       ) : (
         <>
@@ -41,6 +44,26 @@ function Bubble({ biz, type, text, typing }: { biz: boolean; type?: A2AType; tex
           <p>{text}</p>
         </>
       )}
+    </div>
+  );
+}
+
+function RoundProgress({ round, done }: { round: number; done: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5" role="progressbar" aria-label="Raund" aria-valuemin={0} aria-valuemax={MAX_ROUNDS} aria-valuenow={round}>
+      <span className="font-medium tabular-nums text-foreground">
+        Raund {round}/{MAX_ROUNDS}
+      </span>
+      <span className="flex gap-1">
+        {Array.from({ length: MAX_ROUNDS }, (_, i) => (
+          <span key={i} className="h-1.5 w-8 overflow-hidden rounded-full bg-muted sm:w-10">
+            <span
+              className={cn("block h-full origin-left rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none", done ? "bg-emerald-400" : "bg-agent")}
+              style={{ transform: `scaleX(${i < round ? 1 : 0})` }}
+            />
+          </span>
+        ))}
+      </span>
     </div>
   );
 }
@@ -111,10 +134,8 @@ export function NegotiationStage({
         <ColumnHeader biz={false} />
         <ColumnHeader biz name={active ? nameOf(active) : undefined} />
       </div>
-      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          Raund {Math.min(lane?.round ?? 0, MAX_ROUNDS)}/{MAX_ROUNDS}
-        </span>
+      <div className="mb-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+        <RoundProgress round={Math.min(lane?.round ?? 0, MAX_ROUNDS)} done={state.status === "agreed" || state.status === "confirmed"} />
         <span aria-live="polite">
           {state.status === "running" && "Muzokara ketmoqda"}
           {state.status === "agreed" && "Kelishildi"}
@@ -160,13 +181,13 @@ export function OfferCard({
   const { offer } = best;
   const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
-    <div className="rise-in rounded-2xl border border-primary/40 bg-card p-4 shadow-[0_0_40px_-10px_var(--agent)] sm:p-5">
+    <div className="slide-up rounded-2xl border border-primary/40 bg-card p-4 shadow-[0_0_40px_-10px_var(--agent)] sm:p-5">
       <div className="mb-1 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">
           <Trophy className="size-4 text-biz" aria-hidden="true" />
           {ready ? "Eng yaxshi taklif" : "Joriy eng yaxshi taklif"}
         </h2>
-        {offer.discountPct > 0 && <span className="shrink-0 rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold text-agent">-{offer.discountPct}%</span>}
+        {offer.discountPct > 0 && <span key={offer.discountPct} className="pop-in shrink-0 rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold tabular-nums text-agent">-{offer.discountPct}%</span>}
       </div>
       <p className="mb-3 text-sm text-muted-foreground">{best.businessName}</p>
       <ul className="divide-y divide-border text-sm">
@@ -231,11 +252,18 @@ function PaymentBlock({ result }: { result: ConfirmResult }) {
   };
   return (
     <div className="mt-4 space-y-3" role="status">
-      <p className="flex items-center gap-2 font-semibold text-agent">
-        <CheckCircle2 className="size-5" aria-hidden="true" />
-        Buyurtma tasdiqlandi
-      </p>
-      <div className="rounded-xl border border-border bg-background/60 p-3">
+      <div className="pop-in flex items-center gap-3 rounded-xl border border-emerald-400/40 bg-emerald-400/10 p-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-emerald-400 text-emerald-950">
+          <svg viewBox="0 0 24 24" className="check-draw size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        </span>
+        <div>
+          <p className="font-semibold text-emerald-300">Buyurtma tasdiqlandi</p>
+          <p className="text-xs text-muted-foreground">To'lov havolasi tayyor</p>
+        </div>
+      </div>
+      <div className="slide-up rounded-xl border border-border bg-background/60 p-3" style={{ animationDelay: "120ms" }}>
         <p className="text-sm font-medium">TezCheck orqali to'lov</p>
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
           {["Payme", "Click", "Uzum"].map((n) => (

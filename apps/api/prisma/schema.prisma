@@ -1,0 +1,270 @@
+// SQLite for the hackathon demo (zero setup). JSON fields are stored as String (JSON.stringify).
+// Every table has soft delete (deletedAt).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id             String    @id @default(uuid())
+  name           String
+  category       String
+  address        String    @default("")
+  district       String    @default("")
+  geoLat         Float?
+  geoLng         Float?
+  workHours      String // JSON WorkHours
+  maxDiscountPct Int       @default(0)
+  lang           String    @default("uz")
+  ownerUserId    String    @default("demo-owner")
+  isDemo         Boolean   @default(false)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+}
+
+model CatalogItem {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  price       Int
+  unit        String    @default("dona")
+  durationMin Int?
+  inStock     Boolean   @default(true)
+  tags        String    @default("[]")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([businessId])
+}
+
+model Order {
+  id            String    @id @default(uuid())
+  businessId    String
+  userId        String
+  negotiationId String?
+  offerId       String?   @unique
+  items         String // JSON OrderItem[]
+  total         Int
+  discountPct   Int       @default(0)
+  status        String    @default("draft")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([businessId])
+}
+
+model Booking {
+  id         String    @id @default(uuid())
+  businessId String
+  userId     String
+  orderId    String?
+  start      DateTime
+  end        DateTime
+  people     Int?
+  status     String    @default("pending_confirm")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+}
+
+/// Incoming payments only (TezCheck create-bill + webhook). No refund/payout.
+model Payment {
+  id        String    @id @default(uuid())
+  orderId   String
+  provider  String    @default("tezcheck")
+  billId    String    @unique
+  link      String
+  amount    Int
+  status    String    @default("pending")
+  isTest    Boolean   @default(false)
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Negotiation {
+  id        String    @id @default(uuid())
+  userId    String
+  text      String
+  tasks     String // JSON NegotiationTask[]
+  status    String    @default("running")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+/// Shared-contract NegotiationEvent log (SSE replay). Messages also land in NegotiationMessage.
+model NegotiationEventLog {
+  id            String   @id @default(uuid())
+  negotiationId String
+  seq           Int
+  event         String // JSON NegotiationEvent
+  createdAt     DateTime @default(now())
+
+  @@index([negotiationId, seq])
+}
+
+model NegotiationMessage {
+  id            String    @id
+  negotiationId String
+  businessId    String
+  fromAgent     String
+  round         Int
+  text          String
+  payload       String // JSON A2APayload
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  @@index([negotiationId])
+}
+
+/// Agent-layer offer (sessionId = `${negotiationId}:${businessId}`).
+model AgentOffer {
+  id            String    @id
+  sessionId     String
+  negotiationId String
+  businessId    String
+  items         String // JSON {productId,qty}[]
+  total         Int
+  discountPct   Int
+  status        String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([negotiationId, businessId])
+}
+
+model TgAccount {
+  id                   String    @id
+  businessId           String?
+  kind                 String
+  tgUserId             String
+  username             String?
+  sessionEnc           String?
+  businessConnectionId String?
+  connectedAt          DateTime
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+}
+
+model Chat {
+  id            String    @id
+  accountId     String
+  peerId        String
+  title         String
+  username      String?
+  mode          String    @default("copilot")
+  needsHuman    Boolean   @default(false)
+  draft         String? // JSON Draft
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([accountId])
+}
+
+model InboxMessage {
+  id        String    @id
+  chatId    String
+  tgMsgId   Int
+  direction String
+  author    String
+  text      String
+  sentAt    DateTime
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([chatId])
+}
+
+model MemoryFact {
+  id         String    @id @default(uuid())
+  userId     String
+  fact       String
+  weight     Float
+  sessionId  String?
+  businessId String?
+  at         DateTime
+  deletedAt  DateTime?
+
+  @@index([userId])
+}
+
+model AuditFinding {
+  id         String    @id @default(uuid())
+  sessionId  String
+  businessId String?
+  type       String
+  detail     String
+  at         DateTime
+  deletedAt  DateTime?
+}
+
+model LoopProposal {
+  id         String    @id @default(uuid())
+  businessId String
+  kind       String
+  title      String
+  diff       String
+  reason     String
+  evalBefore Float     @default(0)
+  evalAfter  Float     @default(0)
+  status     String    @default("pending")
+  payload    String? // JSON, engine-specific
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+}
+
+model PromptVersion {
+  id         String    @id @default(uuid())
+  businessId String?
+  name       String
+  content    String
+  isActive   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
+}
+
+model GoldenCase {
+  id         String    @id @default(uuid())
+  businessId String?
+  input      String
+  expected   String
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
+}
+
+model PolicyViolation {
+  id         String    @id @default(uuid())
+  scope      String
+  reason     String
+  sessionId  String?
+  businessId String?
+  repaired   Boolean
+  at         DateTime
+  deletedAt  DateTime?
+}
+
+model LlmCall {
+  id      String   @id @default(uuid())
+  model   String
+  ms      Int
+  chars   Int
+  purpose String
+  ok      Boolean
+  at      DateTime
+}

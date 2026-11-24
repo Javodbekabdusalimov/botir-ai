@@ -48,7 +48,7 @@ export function UserMenu() {
         className="flex h-10 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-2.5 shadow-sm transition-colors hover:bg-tint-1 focus-visible:outline-2 focus-visible:outline-ring"
       >
         <span className="grid size-8 place-items-center rounded-full bg-green-600 text-xs font-bold text-white">{initials(user.name)}</span>
-        <span className="hidden min-w-0 max-w-[9.5rem] truncate text-sm font-semibold lg:block">{user.name}</span>
+        <span className="hidden min-w-0 max-w-[10rem] truncate text-sm font-semibold lg:block xl:max-w-[15rem]">{user.name}</span>
         <span className="hidden rounded-full bg-tint-2 px-2 py-0.5 text-[11px] font-semibold text-green-900 sm:block">{biz ? "Biznes" : "Mijoz"}</span>
         <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden="true" />
       </button>

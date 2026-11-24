@@ -118,7 +118,7 @@ export function Checkout({ orderId }: { orderId: string }) {
   const step = phase === "paid" ? 2 : 1;
 
   return (
-    <div className="bg-gradient-to-b from-tint-1 via-background to-background">
+    <div className="min-h-[calc(100dvh-4rem)] bg-gradient-to-b from-tint-1 via-background to-tint-1/60">
       <div className="mx-auto max-w-[1100px] px-4 py-8 sm:py-12">
         <nav aria-label="Yo'l" className="mb-3 text-xs font-medium text-muted-foreground">
           <Link href="/" className="hover:text-foreground">Bosh</Link> / <Link href="/assistant" className="hover:text-foreground">Yordamchi</Link> / <span className="text-foreground">To&apos;lov</span>
@@ -175,8 +175,9 @@ export function Checkout({ orderId }: { orderId: string }) {
                       className={cn("flex min-h-16 items-center gap-4 rounded-2xl border-2 px-4 py-3 text-left transition-all focus-visible:outline-2 focus-visible:outline-ring", on ? "border-green-600 bg-tint-1 shadow-soft" : "border-border hover:border-tint-3")}
                     >
                       <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2", on ? "border-green-600 bg-green-600" : "border-input")}>{on && <span className="size-2 rounded-full bg-white" />}</span>
-                      <span className="grid h-10 w-24 shrink-0 place-items-center rounded-xl border border-border bg-white px-2">
+                      <span className="flex h-10 w-28 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-2">
                         <BrandLogo brand={m.key} height={m.key === "payme" ? 18 : 22} />
+                        {m.key !== "payme" && <span className="text-sm font-extrabold capitalize text-foreground">{m.key}</span>}
                       </span>
                       <span className="min-w-0 text-sm text-muted-foreground">{m.hint}</span>
                     </button>
@@ -225,7 +226,7 @@ export function Checkout({ orderId }: { orderId: string }) {
                     {sum.items.map((i) => (
                       <li key={i.name} className="flex justify-between gap-3 py-2">
                         <span>{i.name} <span className="text-muted-foreground">x {i.qty}</span></span>
-                        <span className="tabular-nums">{formatSom(i.price * i.qty)}</span>
+                        <span className="tabular-nums">{i.price * i.qty === 0 ? "Bepul" : formatSom(i.price * i.qty)}</span>
                       </li>
                     ))}
                   </ul>

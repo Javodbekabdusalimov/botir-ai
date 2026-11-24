@@ -216,7 +216,7 @@ export function OfferCard({
               {i.name}
               <span className="text-muted-foreground"> x {i.qty}</span>
             </span>
-            <span className="shrink-0 tabular-nums">{formatSom(i.price * i.qty)}</span>
+            <span className="shrink-0 tabular-nums">{i.price * i.qty === 0 ? "Bepul" : formatSom(i.price * i.qty)}</span>
           </li>
         ))}
       </ul>

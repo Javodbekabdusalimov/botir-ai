@@ -199,6 +199,7 @@ export function streamNegotiation(
   let stopMock: (() => void) | null = null;
   let es: EventSource | null = null;
   let received = false;
+  let finished = false;
   const startMock = () => {
     setDemo(true);
     stopMock = mock.runMockStream(id, recallNeeds(id), onEvent);
@@ -210,9 +211,12 @@ export function streamNegotiation(
     es = new EventSource(`${API_URL}/negotiations/${encodeURIComponent(id)}/stream`);
     // Kontrakt: har SSE data = JSON.stringify(NegotiationEvent). Nomsiz event ham "message" listeneriga keladi — onmessage qo'shilmaydi, aks holda har xabar 2 marta chiqadi.
     const handle = (ev: MessageEvent<string>) => {
+      if (typeof ev.data !== "string") return; // EventSource ulanish "error" hodisasi (ma'lumotsiz) onerror'da hal qilinadi
       received = true;
       try {
-        onEvent(JSON.parse(ev.data) as NegotiationEvent);
+        const parsed = JSON.parse(ev.data) as NegotiationEvent;
+        if (parsed.type === "status" && parsed.status !== "running") finished = true;
+        onEvent(parsed);
       } catch {
         onFail?.("Oqimdan noto'g'ri ma'lumot keldi");
       }
@@ -221,6 +225,7 @@ export function streamNegotiation(
     es.onerror = () => {
       es?.close();
       es = null;
+      if (finished) return; // server tugaganda oqimni yopadi: bu xato emas
       if (!received) startMock();
       else onFail?.("Ulanish uzildi");
     };

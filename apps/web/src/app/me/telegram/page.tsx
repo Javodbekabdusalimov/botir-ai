@@ -1,6 +1,7 @@
 import { MeTelegram } from "./me-telegram";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Telegram ulash | Botir AI" };
+export const metadata = pageMeta({ title: "Telegram ulash", description: "Shaxsiy Telegramni ulash.", path: "/me/telegram", noindex: true });
 
 export default function MeTelegramPage() {
   return (

@@ -4,15 +4,22 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ChatLauncher } from "@/components/chat-launcher";
 import { BottomNav, SiteHeader } from "@/components/site-nav";
+import { Analytics } from "@/components/analytics";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 // Shriftlar lokal (public emas, src/app/fonts): Manrope (UI) va Unbounded (sarlavhalar), Google Fonts SIL OFL. Offline build ishlaydi.
 const sans = localFont({ src: "./fonts/Manrope-latin.woff2", variable: "--font-sans-ui", weight: "200 800", display: "swap" });
 const display = localFont({ src: "./fonts/Unbounded-latin.woff2", variable: "--font-display-ui", weight: "300 900", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Botir AI: agent agent bilan gaplashadi",
-  description:
-    "Har bir biznesga o'zbekcha gaplashadigan AI sotuvchi, har bir odamga o'zi muzokara qiladigan shaxsiy agent.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME}: agent agent bilan gaplashadi`, template: `%s — ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION },
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
         </Suspense>
         <main className="flex-1">{children}</main>
+        <Analytics />
         <Suspense fallback={null}>
           <BottomNav />
           <ChatLauncher />

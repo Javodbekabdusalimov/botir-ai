@@ -1,6 +1,7 @@
 import { MeActions } from "./me-actions";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Amallar | Botir AI" };
+export const metadata = pageMeta({ title: "Amallar", description: "Ruxsat kutayotgan amallar.", path: "/me/actions", noindex: true });
 
 export default function MeActionsPage() {
   return (

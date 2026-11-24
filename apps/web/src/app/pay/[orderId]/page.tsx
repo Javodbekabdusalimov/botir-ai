@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { Checkout } from "./checkout";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "TezCheck to'lov | Botir AI" };
+export const metadata = pageMeta({ title: "TezCheck to'lov", description: "TezCheck orqali xavfsiz to'lov: Payme, Click yoki Uzum.", path: "/pay", noindex: true });
 
 async function Body({ params }: PageProps<"/pay/[orderId]">) {
   const { orderId } = await params;

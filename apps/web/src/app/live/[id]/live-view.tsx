@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, MessageSquareText, RotateCw } from "lucide-react";
+import { AlertTriangle, Check, MessageSquareText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,41 @@ import { useNegotiation } from "@/hooks/use-negotiation";
 import { agentRequest, confirmNegotiation, getBusinesses, recallRequestText } from "@/lib/api";
 import { ALL_MOCK_BUSINESSES } from "@/lib/mock";
 import type { ConfirmResult } from "@/lib/types";
+
+/** Jarayon bosqichlari (so'rov, muzokara, taklif, to'lov): holatdan hosil qilinadi, alohida state yo'q. */
+const STEPS = ["So'rov", "Muzokara", "Taklif", "To'lov"] as const;
+
+function Stepper({ active }: { active: number }) {
+  return (
+    <ol className="mt-4 flex items-center gap-1.5 sm:gap-2" aria-label="Jarayon">
+      {STEPS.map((label, i) => {
+        const done = i < active;
+        const current = i === active;
+        return (
+          <li key={label} className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2" aria-current={current ? "step" : undefined}>
+            <span
+              className={cn(
+                "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors duration-300",
+                done ? "bg-green-600 text-white" : current ? "bg-primary text-green-950 ring-4 ring-green-200" : "bg-muted text-muted-foreground",
+              )}
+            >
+              {done ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
+            </span>
+            <span className={cn("truncate text-xs font-semibold sm:text-sm", current || done ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+            {i < STEPS.length - 1 && <span className={cn("h-px min-w-3 flex-1 transition-colors duration-300", done ? "bg-green-500" : "bg-border")} aria-hidden="true" />}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Joriy bosqich indeksi: 0 so'rov yuborildi, 1 muzokara, 2 taklif tayyor, 3 to'lov. */
+function stepIndex(status: string, hasResult: boolean): number {
+  if (hasResult) return 3;
+  if (status === "agreed" || status === "confirmed") return 2;
+  return 1;
+}
 
 export function LiveView({ id }: { id: string }) {
   const [attempt, setAttempt] = useState(0);
@@ -74,8 +109,10 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col px-4 py-5 lg:h-[calc(100dvh-2.9rem)] lg:py-6">
       <header className="mb-4 shrink-0">
-        <p className="text-sm font-medium text-agent">Agentlar muzokarasi</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
+        <p className="inline-flex items-center gap-2 rounded-full border border-tint-3 bg-white/70 px-3 py-1 text-xs font-semibold text-green-900 backdrop-blur">
+          <span className="size-1.5 rounded-full bg-green-500" aria-hidden="true" /> Agentlar muzokarasi
+        </p>
+        <h1 className="mt-3 text-balance text-2xl font-bold sm:text-4xl">
           {state.status === "rejected" || state.status === "failed"
             ? "Muzokara yakunlandi"
             : state.order.length > 1
@@ -83,6 +120,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
               : "Agentlar kelishmoqda"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Shaxsiy agentingiz sizning nomingizdan gaplashadi. Yakuniy qaror sizda.</p>
+        <Stepper active={stepIndex(state.status, !!result)} />
       </header>
 
       {state.error && (
@@ -98,8 +136,8 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
       <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_25rem]">
         <div className="min-h-0 lg:overflow-y-auto lg:pr-2">
           <NegotiationStage state={state} names={names} initialLane={confirmFor ?? undefined} />
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            🛡 Narx katalogdan, chegirma ≤ limit · PolicyGuard · Pul faqat tasdiqdan keyin
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 shrink-0 text-green-700" aria-hidden="true" /> Narx katalogdan, chegirma limitdan oshmaydi (PolicyGuard). Pul faqat tasdiqdan keyin.
           </p>
         </div>
 
@@ -109,8 +147,8 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
               <p className="font-display text-base font-bold text-amber-900">Bu safar kelishuv bo&apos;lmadi</p>
               <p className="mt-1.5 text-amber-900/80">
                 {state.status === "failed"
-                  ? "Agent javobi kechikdi yoki uzildi. Hech qanday pul yechilmadi — so'rovni qayta yuborsangiz, agentlar yangidan boshlaydi."
-                  : "Biznes narx yoki vaqt bo'yicha shartlaringizga rozi bo'lmadi. Hech qanday pul yechilmadi — qayta urinib ko'ring yoki so'rovni biroz o'zgartiring."}
+                  ? "Agent javobi kechikdi yoki uzildi. Hech qanday pul yechilmadi. So'rovni qayta yuborsangiz, agentlar yangidan boshlaydi."
+                  : "Biznes narx yoki vaqt bo'yicha shartlaringizga rozi bo'lmadi. Hech qanday pul yechilmadi. Qayta urinib ko'ring yoki so'rovni biroz o'zgartiring."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button className="h-11 px-4" onClick={retryRequest} disabled={retrying}>

@@ -4,6 +4,7 @@ import { ArrowRight, Bot, Building2, Check, ChevronDown, Handshake, MessageSquar
 import type { Metadata } from "next";
 import { BrandLogo, TezCheckMark, type BrandKey } from "@/components/brand-logos";
 import { buttonVariants } from "@/components/ui/button";
+import { Reveal } from "@/components/reveal";
 import { LandingPreview } from "@/components/landing-preview";
 import { LogoMark } from "@/components/logo";
 import { NetworkDiagram } from "@/components/network-diagram";
@@ -97,7 +98,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="reveal mx-auto max-w-[1200px] px-4 pt-14" aria-label="Raqamlar">
+      <Reveal as="section" className="mx-auto max-w-[1200px] px-4 pt-14">
         <dl className="stage-deep grid grid-cols-2 gap-px overflow-hidden rounded-3xl lg:grid-cols-4">
           {FACTS.map((x) => (
             <div key={x.label} className="bg-white/[0.04] p-6 sm:p-8">
@@ -109,11 +110,11 @@ export default function Home() {
             </div>
           ))}
         </dl>
-      </section>
+      </Reveal>
 
       <section className="mx-auto max-w-[1200px] px-4 py-14" aria-labelledby="who-h">
         <h2 id="who-h" className="max-w-2xl text-balance text-3xl font-bold sm:text-4xl">Biznes ham, mijoz ham yutadi</h2>
-        <div className="reveal mt-8 grid gap-4 md:grid-cols-6">
+        <Reveal className="mt-8 grid gap-4 md:grid-cols-6">
           <article className="group relative isolate flex min-h-[26rem] flex-col justify-end overflow-hidden rounded-3xl md:col-span-4 md:row-span-2">
             <Image src="/photos/plov.jpg" alt="Osh markazida oshpaz katta qozonda osh tayyorlamoqda" fill priority sizes="(min-width: 768px) 780px, 100vw" className="-z-10 object-cover transition-transform duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/90 via-green-950/40 to-transparent" aria-hidden="true" />
@@ -143,13 +144,13 @@ export default function Home() {
             <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">So&apos;rov, taklif, qarshi taklif, bitim. Narx katalogdan, chegirma biznes limitidan oshmaydi.</p>
             <Link href="/live/demo-chorsu" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-700 hover:underline">Jonli ko&apos;rish <ArrowRight className="size-4" aria-hidden="true" /></Link>
           </article>
-        </div>
+        </Reveal>
       </section>
 
       <section id="how" className="scroll-mt-16 bg-tint-1/70 py-14" aria-labelledby="how-h">
         <div className="mx-auto max-w-[1200px] px-4">
           <h2 id="how-h" className="text-3xl font-extrabold sm:text-4xl">Qanday ishlaydi</h2>
-          <ol className="reveal relative mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
+          <Reveal as="ol" className="relative mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
             <span className="absolute left-[16.6%] right-[16.6%] top-6 hidden h-px bg-gradient-to-r from-transparent via-green-400 to-transparent md:block" aria-hidden="true" />
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -166,7 +167,7 @@ export default function Home() {
                 </li>
               );
             })}
-          </ol>
+          </Reveal>
         </div>
       </section>
 
@@ -175,9 +176,9 @@ export default function Home() {
           <h2 id="net-h" className="text-balance text-3xl font-extrabold sm:text-4xl">Tarmoq har kuni boyiydi</h2>
           <p className="mt-3 max-w-md text-muted-foreground">Har yangi biznes va har yangi mijoz tarmoqni boyitadi: agentlar ko&apos;proq variantni solishtiradi, narx tushadi, buyurtma ko&apos;payadi.</p>
         </div>
-        <div className="reveal rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
+        <Reveal className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
           <NetworkDiagram />
-        </div>
+        </Reveal>
       </section>
 
       <section id="pricing" className="scroll-mt-16 mx-auto max-w-4xl px-4 pb-14" aria-labelledby="price-h">

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellRing, Building2, Home, Inbox, LayoutDashboard, LogOut, Send, Sparkles } from "lucide-react";
+import { BellRing, Building2, Home, Inbox, LayoutDashboard, Send, Sparkles } from "lucide-react";
 import { usePendingActions } from "@/hooks/use-pending-actions";
 import { Logo } from "./logo";
+import { UserMenu } from "./user-menu";
 import { ModeBadge } from "./mode-badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { logoutUser, useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { buttonVariants } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 type NavLink = { href: string; label: string; icon: typeof Home; badge?: boolean };
@@ -38,43 +38,21 @@ function isActive(path: string, href: string) {
   return ["/", "/dashboard", "/connect"].includes(href) ? path === href : path.startsWith(href);
 }
 
-const ROLE_LABEL = { business: "Biznes", user: "Mijoz" } as const;
-
 function AuthArea() {
   const { status, user } = useAuth();
-  const router = useRouter();
-  if (status === "loading") return <div className="h-11 w-24" aria-hidden="true" />;
+  if (status === "loading") return <div className="h-10 w-24" aria-hidden="true" />;
   if (!user)
     return (
       <div className="flex items-center gap-1.5">
-        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "h-11 px-3 text-sm")}>
+        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "h-10 px-3 text-sm")}>
           Kirish
         </Link>
-        <Link href="/register" className={cn(buttonVariants(), "h-11 px-3 text-xs font-semibold shadow-sm sm:px-4 sm:text-sm")}>
+        <Link href="/register" className={cn(buttonVariants(), "h-10 px-3 text-xs font-semibold shadow-sm sm:px-4 sm:text-sm")}>
           Ro&apos;yxatdan o&apos;tish
         </Link>
       </div>
     );
-  return (
-    <div className="flex items-center gap-2">
-      <span className="hidden max-w-40 truncate text-sm font-medium sm:block" title={user.name}>
-        {user.name}
-      </span>
-      <span className="rounded-full bg-tint-2 px-2.5 py-1 text-xs font-semibold text-green-900">{ROLE_LABEL[user.role]}</span>
-      <Button
-        variant="outline"
-        className="h-11 px-3 text-sm"
-        onClick={() => {
-          logoutUser();
-          router.push("/");
-        }}
-      >
-        <LogOut className="size-4" aria-hidden="true" />
-        <span className="hidden sm:inline">Chiqish</span>
-        <span className="sr-only sm:hidden">Chiqish</span>
-      </Button>
-    </div>
-  );
+  return <UserMenu />;
 }
 
 function PendingDot({ n }: { n: number }) {
@@ -92,7 +70,7 @@ export function SiteHeader() {
   const pending = usePendingActions(user?.role === "user", path);
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-2 px-4">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4">
         <Logo />
         <nav aria-label="Asosiy" className="hidden items-center gap-1 sm:flex">
           {links.map((l) => (
@@ -101,7 +79,7 @@ export function SiteHeader() {
               href={l.href}
               aria-current={isActive(path, l.href) ? "page" : undefined}
               className={cn(
-                "flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground",
+                "flex h-10 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground",
                 isActive(path, l.href) && "bg-tint-1 text-green-800",
               )}
             >

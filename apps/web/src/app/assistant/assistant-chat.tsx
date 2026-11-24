@@ -51,8 +51,8 @@ export function AssistantChat() {
       const { tasks, negotiationId } = await agentRequest(t);
       setMsgs((m) => [
         ...m,
-        tasks.length
-          ? { id: m.length, from: "agent", text: tasks.length === 1 ? "Tushundim. Bitta vazifa:" : `Tushundim. ${tasks.length} ta vazifaga ajratdim:`, tasks, negotiationId }
+        negotiationId
+          ? { id: m.length, from: "agent", text: tasks.length === 0 ? "Tushundim. So'rovni bo'laklarga ajratib, bizneslar bilan gaplashishni boshladim." : tasks.length === 1 ? "Tushundim. Bitta vazifa:" : `Tushundim. ${tasks.length} ta vazifaga ajratdim:`, tasks, negotiationId }
           : { id: m.length, from: "agent", text: "Tushunmadim. Nima kerakligini aniqroq ayting: masalan, \"Ertaga 6 kishilik osh joy band qil\"." },
       ]);
     } catch (e) {

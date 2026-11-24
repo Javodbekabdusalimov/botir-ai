@@ -288,9 +288,14 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
     if (OPENED.has(result.orderId)) return; // StrictMode / qayta render: faqat bir marta ochamiz
     OPENED.add(result.orderId);
     try {
-      window.open(result.paymentLink, "_blank", "noopener");
+      // Loyihaning o'z checkout sahifasi: buyurtma xulosasi sessionStorage orqali uzatiladi
+      localStorage.setItem(
+        `botir.checkout.${result.orderId}`,
+        JSON.stringify({ businessId: best.businessId, businessName: best.businessName, items: offer.items, total: offer.price, discountPct: offer.discountPct, link: result.paymentLink }),
+      );
+      window.open(`/pay/${encodeURIComponent(result.orderId)}`, "_blank", "noopener");
     } catch {}
-  }, [result.orderId, result.paymentLink]);
+  }, [result.orderId, result.paymentLink, best.businessId, best.businessName, offer.items, offer.price, offer.discountPct]);
 
   useEffect(() => {
     if (status !== "pending") return;
@@ -386,7 +391,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
         <p className="text-sm font-medium">TezCheck orqali to&apos;lov</p>
         <PayLogos className="mt-2" height={16} />
         <div className="mt-3 flex items-center gap-2">
-          <a href={result.paymentLink} target="_blank" rel="noopener" className={cn(buttonVariants({ variant: "outline" }), "h-11 flex-1 px-3")}>
+          <a href={`/pay/${result.orderId}`} target="_blank" rel="noopener" className={cn(buttonVariants({ variant: "outline" }), "h-11 flex-1 px-3")}>
             <ExternalLink className="size-4" aria-hidden="true" /> To&apos;lov sahifasini ochish
           </a>
           <Button variant="outline" size="icon" className="size-11" onClick={copy} aria-label="Havolani nusxalash">

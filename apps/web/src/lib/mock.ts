@@ -221,9 +221,14 @@ export function mockCreateBusiness(dto: CreateBusinessDto): Business {
   return { ...dto, id: `demo-${rid()}`, ownerUserId: "demo-owner", isDemo: true, createdAt: now, updatedAt: now };
 }
 
+/** Jonli API id'lari -> mock id'lari (demo rejimda ham biz-osh ishlasin) */
+export const ALIAS: Record<string, string> = { "biz-osh": "chorsu", "biz-auto": "chilonzor", "biz-shop": "malika" };
+const canon = (id: string) => ALIAS[id] ?? id;
+
 export const mockImport = (rows: CatalogRowInput[]): CatalogImportResult => ({ imported: rows.length, skipped: 0, errors: [] });
 
-export function mockOrders(businessId: string): Order[] {
+export function mockOrders(rawId: string): Order[] {
+  const businessId = canon(rawId);
   const it = (name: string, qty: number, price: number): OrderItem => ({ catalogItemId: `${businessId}-${name}`, name, qty, price });
   const sets: Record<string, [OrderItem[], number, number, Order["status"], number][]> = {
     chorsu: [
@@ -257,7 +262,8 @@ export function mockOrders(businessId: string): Order[] {
   }));
 }
 
-export function mockAnalytics(businessId: string): Analytics {
+export function mockAnalytics(rawId: string): Analytics {
+  const businessId = canon(rawId);
   const sets: Record<string, Analytics> = {
     chorsu: {
       topRequests: [{ query: "Stol band qilish (guruh)", count: 42 }, { query: "Osh narxi", count: 31 }, { query: "Olib ketish", count: 19 }],
@@ -285,7 +291,8 @@ export function mockAnalytics(businessId: string): Analytics {
 
 const chatMode = new Map<string, ChatMode>();
 
-export function mockChats(businessId: string): Chat[] {
+export function mockChats(rawId: string): Chat[] {
+  const businessId = canon(rawId);
   const rows: [string, string, ChatMode, boolean, number, number][] = [
     ["Aziz R.", "Ertaga 6 kishilik stol bormi?", "copilot", false, 6, 2],
     ["Nodira S.", "Chegirma qilsangiz 10 kishi kelamiz", "copilot", false, 21, 1],
@@ -338,7 +345,8 @@ export function mockMessages(chatId: string): InboxMessage[] {
 
 /* ---------- Loop (o'z-o'zini yaxshilash) ---------- */
 
-export function mockLoop(businessId: string): LoopProposal[] {
+export function mockLoop(rawId: string): LoopProposal[] {
+  const businessId = canon(rawId);
   const base = { businessId, status: "pending" as const, createdAt: new Date().toISOString() };
   return [
     { ...base, id: `p1-${rid()}`, kind: "catalog_item", title: "Katalogga \"Bolalar menyusi\" qo'shish", diff: "+ Bolalar menyusi: sho'rva, kotlet, kompot (35 000 so'm)\n+ tags: [bolalar, menyu]", reason: "So'nggi 7 kunda 5 marta so'ralgan, katalogda topilmagan", evalBefore: 72, evalAfter: 81 },
@@ -347,7 +355,8 @@ export function mockLoop(businessId: string): LoopProposal[] {
   ];
 }
 
-export function mockFacts(businessId: string): MemoryFact[] {
+export function mockFacts(rawId: string): MemoryFact[] {
+  const businessId = canon(rawId);
   return [
     ["Mijozlar ko'pincha 19:00 dan keyin stol so'raydi", "Suhbatlar tahlili", 0.86],
     ["Juma kuni guruh buyurtmalari 2 barobar ko'p", "Buyurtmalar tarixi", 0.9],

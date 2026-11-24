@@ -23,14 +23,22 @@ function set(next: AuthState) {
   listeners.forEach((l) => l());
 }
 
+function rememberUser(id: string) {
+  try {
+    localStorage.setItem("botir.userId", id);
+  } catch {}
+}
+
 function applyMe(me: MeResponse) {
   const u = { ...me.user, businessId: me.user.businessId ?? me.businessId };
   if (u.businessId) setBusinessId(u.businessId);
+  rememberUser(u.id);
   set({ status: "in", user: u, business: me.business });
 }
 
 async function applySession(r: AuthResult) {
   setToken(r.token);
+  rememberUser(r.user.id);
   if (r.user.businessId) setBusinessId(r.user.businessId);
   set({ status: "in", user: r.user });
   try {

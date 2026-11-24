@@ -69,8 +69,9 @@ export class BusinessesController {
   }
 
   @Post(':id/catalog')
-  async addItem(@Param('id') id: string, @Body() dto: CatalogItemDto) {
-    await this.business(id);
+  @Auth()
+  async addItem(@Param('id') id: string, @Body() dto: CatalogItemDto, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     if (!dto?.name || !Number.isFinite(Number(dto.price))) throw new BadRequestException('name and price are required');
     const row = await this.db.catalogItem.create({ data: { businessId: id, ...this.itemData(dto), name: dto.name, price: Math.round(Number(dto.price)) } });
     return ok(toCatalogItem(row));
@@ -78,13 +79,16 @@ export class BusinessesController {
 
   /** PATCH /businesses/:id/catalog {id, ...fields} (contract) or PATCH /businesses/:id/catalog/:itemId. */
   @Patch(':id/catalog')
-  async patchItemBody(@Param('id') id: string, @Body() dto: CatalogPatch) {
+  @Auth()
+  async patchItemBody(@Param('id') id: string, @Body() dto: CatalogPatch, @CurrentUser() user: DbUser) {
     if (!dto?.id) throw new BadRequestException('id is required');
-    return this.patchItem(id, dto.id, dto);
+    return this.patchItem(id, dto.id, dto, user);
   }
 
   @Patch(':id/catalog/:itemId')
-  async patchItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: CatalogPatch) {
+  @Auth()
+  async patchItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: CatalogPatch, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     const item = await this.db.catalogItem.findFirst({ where: { id: itemId, businessId: id, deletedAt: null } });
     if (!item) throw new NotFoundException('catalog item not found');
     const row = await this.db.catalogItem.update({ where: { id: itemId }, data: this.itemData(dto) });
@@ -92,16 +96,24 @@ export class BusinessesController {
   }
 
   @Delete(':id/catalog/:itemId')
-  async removeItem(@Param('id') id: string, @Param('itemId') itemId: string) {
+  @Auth()
+  async removeItem(@Param('id') id: string, @Param('itemId') itemId: string, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     await this.db.catalogItem.updateMany({ where: { id: itemId, businessId: id }, data: { deletedAt: new Date() } });
     return ok({ id: itemId });
   }
 
   /** multipart `file` (CSV/XLSX) or JSON `{ rows: [{name, price, unit}] }`. */
   @Post(':id/catalog/import')
+  @Auth()
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
-  async import(@Param('id') id: string, @UploadedFile() file: { buffer: Buffer } | undefined, @Body() body: { rows?: Record<string, unknown>[] }) {
-    await this.business(id);
+  async import(
+    @Param('id') id: string,
+    @UploadedFile() file: { buffer: Buffer } | undefined,
+    @Body() body: { rows?: Record<string, unknown>[] },
+    @CurrentUser() user: DbUser,
+  ) {
+    this.assertOwner(await this.business(id), user);
     const raw = file ? readSheet(file.buffer) : Array.isArray(body?.rows) ? body.rows : null;
     if (!raw) throw new BadRequestException('send multipart "file" (csv/xlsx) or JSON {rows}');
     const { rows, result } = normalizeRows(raw);

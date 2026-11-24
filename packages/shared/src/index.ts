@@ -13,6 +13,40 @@ interface Base {
   updatedAt: ISODate;
 }
 
+// ---------- Auth (telefon + parol, JWT Bearer) ----------
+export type UserRole = 'business' | 'user';
+
+export interface AuthUser {
+  id: UUID;
+  name: string;
+  phone: string; // +998XXXXXXXXX
+  role: UserRole;
+  businessId?: UUID;
+}
+
+export interface RegisterDto {
+  name: string;
+  phone: string;
+  password: string;
+  role: UserRole;
+}
+export interface LoginDto {
+  phone: string;
+  password: string;
+}
+/** POST /auth/register, POST /auth/login */
+export interface AuthResponse {
+  token: string; // Authorization: Bearer <token>
+  user: AuthUser;
+}
+/** GET /auth/me */
+export interface MeResponse {
+  user: AuthUser;
+  businessId?: UUID;
+  /** Owner's business subscription state (business role only). */
+  business?: Pick<Business, 'id' | 'name' | 'plan' | 'planUntil' | 'aiCredits'>;
+}
+
 // ---------- Biznes va katalog ----------
 export type BusinessCategory = 'restaurant' | 'shop' | 'autoservice' | 'clinic' | 'beauty' | 'other';
 
@@ -30,6 +64,38 @@ export interface Business extends Base {
   lang: Lang;
   ownerUserId: UUID;
   isDemo: boolean;
+  plan?: PlanId; // default 'start'
+  planUntil?: ISODate | null; // pro active until
+  aiCredits?: number; // AI dialog quota left
+}
+
+// ---------- Obuna (Botir daromadi: oylik obuna, TezCheck orqali, faqat KIRIM) ----------
+export type PlanId = 'start' | 'pro';
+/** GET /plans */
+export interface Plan {
+  id: PlanId;
+  name: string;
+  price: number; // so'm / oy
+  aiCredits: number; // oylik AI dialog kvotasi
+  periodDays: number;
+}
+/** POST /businesses/:id/subscription {plan:'pro'} (owner, Bearer) */
+export interface SubscribeDto {
+  plan: 'pro';
+}
+export interface SubscriptionResult {
+  paymentRef: string; // GET /payments/:paymentRef/status
+  payUrl: string;
+  amount: number;
+}
+/** GET /payments/:orderId/status (orderId yoki obuna paymentRef). Holat polling orqali yangilanadi. */
+export interface PaymentStatusResult {
+  orderId: string;
+  kind: 'order' | 'subscription';
+  status: Payment['status'];
+  amount: number;
+  payUrl: string;
+  paidAt?: ISODate;
 }
 
 export type CreateBusinessDto = Pick<Business, 'name' | 'category' | 'address' | 'district' | 'workHours' | 'maxDiscountPct' | 'lang'> &
@@ -218,6 +284,31 @@ export interface SetModeDto {
   mode: ChatMode;
 }
 
+// ---------- Shaxsiy Telegram (B2C, /me/*, Bearer token) ----------
+/** POST /me/tg-connect/start; keyin POST /me/tg-connect/code — TgConnectCodeDto */
+export interface MeTgConnectStartDto {
+  phone: string;
+}
+/** GET /me/tg-connect */
+export interface MeTgStatus {
+  /** false = serverda TG_API_ID/TG_API_HASH yo'q (start/code → 503) */
+  available: boolean;
+  connected: boolean;
+  username?: string;
+  connectedAt?: ISODate;
+}
+export type UserActionStatus = 'pending' | 'sending' | 'sent' | 'rejected' | 'failed';
+/** GET /me/actions — AI foydalanuvchi Telegramidan yubormoqchi bo'lgan xabar; faqat approve'dan keyin yuboriladi */
+export interface UserAction {
+  id: UUID;
+  chatId: string;
+  peerTitle: string;
+  text: string;
+  status: UserActionStatus;
+  reason?: string;
+  createdAt: ISODate;
+}
+
 // ---------- Loop / o'z-o'zini yaxshilash (§3.6) ----------
 export type ProposalKind = 'prompt_fix' | 'catalog_item' | 'faq';
 
@@ -247,6 +338,9 @@ export interface MemoryFact {
 // ---------- Endpointlar ro'yxati (§6) ----------
 export const API = {
   authTelegram: 'POST /auth/telegram',
+  authRegister: 'POST /auth/register',
+  authLogin: 'POST /auth/login',
+  authMe: 'GET /auth/me',
   businesses: 'GET /businesses',
   createBusiness: 'POST /businesses',
   catalogImport: 'POST /businesses/:id/catalog/import',
@@ -262,7 +356,9 @@ export const API = {
   agentRequest: 'POST /agent/request',
   negotiationStream: 'GET /negotiations/:id/stream',
   negotiationConfirm: 'POST /negotiations/:id/confirm',
-  tezcheckWebhook: 'POST /payments/webhook/tezcheck',
+  paymentStatus: 'GET /payments/:orderId/status',
+  plans: 'GET /plans',
+  subscribe: 'POST /businesses/:id/subscription',
   loopRun: 'POST /loop/run',
   loopApprove: 'POST /loop/proposals/:id/approve',
   loopReject: 'POST /loop/proposals/:id/reject',

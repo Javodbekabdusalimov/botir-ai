@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Inject, Post } from '@nestjs/common';
 import type { User as DbUser } from '@prisma/client';
-import type { AuthResponse, LoginDto, MeResponse, RegisterDto } from '@botir/shared';
+import type { AuthResponse, LoginDto, MeResponse, PlanId, RegisterDto } from '@botir/shared';
 import { ok } from '../common/http';
 import { PrismaService } from '../db/prisma.service';
 import { Auth, CurrentUser } from './auth.guard';
@@ -41,8 +41,13 @@ export class AuthController {
 
   @Get('me')
   @Auth()
-  me(@CurrentUser() user: DbUser) {
-    return ok<MeResponse>({ user: toAuthUser(user), ...(user.businessId ? { businessId: user.businessId } : {}) });
+  async me(@CurrentUser() user: DbUser) {
+    const b = user.businessId ? await this.db.business.findFirst({ where: { id: user.businessId, deletedAt: null } }) : null;
+    return ok<MeResponse>({
+      user: toAuthUser(user),
+      ...(user.businessId ? { businessId: user.businessId } : {}),
+      ...(b ? { business: { id: b.id, name: b.name, plan: b.plan as PlanId, planUntil: b.planUntil?.toISOString() ?? null, aiCredits: b.aiCredits } } : {}),
+    });
   }
 
   private session(user: DbUser): AuthResponse {

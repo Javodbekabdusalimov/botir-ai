@@ -22,6 +22,8 @@ pnpm dev:api                                   # prisma db push + seed + tsx wat
 | `TELEGRAM_BOT_TOKEN` | grammY bot | bot o'chiq (warn log) |
 | `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_KEY` | userbot login / inbox | `/tg-connect/*` → 503 |
 | `PUBLIC_API_URL` | TEST to'lov havolasi bazasi | `http://localhost:4000` |
+| `TEZCHECK_API_KEY`, `TEZCHECK_CASH_DESK_CODE`, `TEZCHECK_API_URL` | haqiqiy TezCheck hisob (bill) | TEST havola (`/pay/test`) |
+| `PLAN_PRO_PRICE`, `PLAN_PRO_CREDITS` | Pro obuna narxi (so'm/oy) va AI kvota | 1000, 1000 |
 | `AUTH_SECRET` | `/auth` JWT (HS256) imzosi | har boot'da random (warn log), tokenlar restartda o'ladi |
 
 ## Demo / test account
@@ -67,9 +69,17 @@ curl -X POST localhost:4000/negotiations/<id>/confirm -H 'Content-Type: applicat
   `POST /loop/proposals/:id/approve|reject`, `POST /loop/rollback {businessId}`
 
 ## To'lov (faqat KIRIM)
-`confirm` faqat `PaymentLinkProvider.createPaymentLink(order)` ni chaqiradi (`src/payments/payment-link.ts`, token `PAYMENT_LINK`).
-Hozir `TestPaymentLinkProvider` (TEST havola). Haqiqiy TezCheck moduli (Ibrat, `api/tezcheck`) `app.module.ts` da
-`{ provide: PAYMENT_LINK, useExisting: <TezcheckProvider> }` bilan almashtiradi. Refund/payout/withdraw kodi yo'q.
+`confirm` va obuna faqat `PaymentLinkProvider.createPaymentLink()` ni chaqiradi (`src/payments/payment-link.ts`, token `PAYMENT_LINK`).
+`TEZCHECK_API_KEY` bor → `TezcheckPaymentLinkProvider` (`POST /bills`, `external_reference` = order id / `sub-…`, `Idempotency-Key: botir-<id>`),
+yo'q → `TestPaymentLinkProvider`. Webhook YO'Q: holat **polling** bilan (`POST /bills/{bill}` o'qish) — `GET /payments/:orderId/status`
+(3 s kesh) + fon tsikli har 5 s, 30 daqiqa. Faqat `paid && livemode` hisoblanadi. Paid → Order `paid` yoki biznes `plan=pro`,
+`planUntil=+30 kun`, `aiCredits += PLAN_PRO_CREDITS`; egasiga Telegram bot xabari (bog'langan bo'lsa) + log.
+TezCheck client faqat 2 chaqiruv: hisob yaratish va o'qish. Refund/payout/withdraw/cancel kodi yo'q.
+
+- `GET /plans` → `[{id:'start',price:0,...},{id:'pro',price:PLAN_PRO_PRICE,...}]`
+- `POST /businesses/:id/subscription {plan:'pro'}` (Bearer, faqat egasi) → `{paymentRef, payUrl, amount}` (30 daq ichida qayta bosish → o'sha hisob)
+- `GET /payments/:orderId/status` → `{orderId, kind, status, amount, payUrl, paidAt?}`
+- `GET /businesses/:id` va `GET /auth/me` (`business`) → `plan`, `planUntil`, `aiCredits`
 
 ## Tuzilma
 `auth/` register/login/me, `AuthGuard` + `@Auth()`/`@CurrentUser()` · `db/` Prisma + `PrismaAgentStore` (agents `AgentStore`) + `PrismaTgStore` (tg-connect `TgStore`) ·

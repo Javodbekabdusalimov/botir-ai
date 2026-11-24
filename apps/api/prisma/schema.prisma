@@ -36,9 +36,13 @@ model Business {
   ownerUserId    String    @default("demo-owner")
   isDemo         Boolean   @default(false)
   notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
+  plan           String    @default("start") // start | pro (subscription, paid via TezCheck)
+  planUntil      DateTime?
+  aiCredits      Int       @default(100) // monthly AI dialog quota
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model CatalogItem {
@@ -89,20 +93,23 @@ model Booking {
   deletedAt  DateTime?
 }
 
-/// Incoming payments only (TezCheck create-bill + webhook). No refund/payout.
+/// Incoming payments only (TezCheck create-bill + status polling). No refund/payout.
+/// kind=order → orderId is Order.id; kind=subscription → orderId is a `sub-…` reference, businessId pays.
 model Payment {
-  id        String    @id @default(uuid())
-  orderId   String
-  provider  String    @default("tezcheck")
-  billId    String    @unique
-  link      String
-  amount    Int
-  status    String    @default("pending")
-  isTest    Boolean   @default(false)
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id         String    @id @default(uuid())
+  orderId    String
+  kind       String    @default("order")
+  businessId String?
+  provider   String    @default("tezcheck")
+  billId     String    @unique
+  link       String
+  amount     Int
+  status     String    @default("pending")
+  isTest     Boolean   @default(false)
+  paidAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 }
 
 model Negotiation {

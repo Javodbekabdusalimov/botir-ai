@@ -43,6 +43,8 @@ export interface AuthResponse {
 export interface MeResponse {
   user: AuthUser;
   businessId?: UUID;
+  /** Owner's business subscription state (business role only). */
+  business?: Pick<Business, 'id' | 'name' | 'plan' | 'planUntil' | 'aiCredits'>;
 }
 
 // ---------- Biznes va katalog ----------
@@ -62,6 +64,38 @@ export interface Business extends Base {
   lang: Lang;
   ownerUserId: UUID;
   isDemo: boolean;
+  plan?: PlanId; // default 'start'
+  planUntil?: ISODate | null; // pro active until
+  aiCredits?: number; // AI dialog quota left
+}
+
+// ---------- Obuna (Botir daromadi: oylik obuna, TezCheck orqali, faqat KIRIM) ----------
+export type PlanId = 'start' | 'pro';
+/** GET /plans */
+export interface Plan {
+  id: PlanId;
+  name: string;
+  price: number; // so'm / oy
+  aiCredits: number; // oylik AI dialog kvotasi
+  periodDays: number;
+}
+/** POST /businesses/:id/subscription {plan:'pro'} (owner, Bearer) */
+export interface SubscribeDto {
+  plan: 'pro';
+}
+export interface SubscriptionResult {
+  paymentRef: string; // GET /payments/:paymentRef/status
+  payUrl: string;
+  amount: number;
+}
+/** GET /payments/:orderId/status (orderId yoki obuna paymentRef). Holat polling orqali yangilanadi. */
+export interface PaymentStatusResult {
+  orderId: string;
+  kind: 'order' | 'subscription';
+  status: Payment['status'];
+  amount: number;
+  payUrl: string;
+  paidAt?: ISODate;
 }
 
 export type CreateBusinessDto = Pick<Business, 'name' | 'category' | 'address' | 'district' | 'workHours' | 'maxDiscountPct' | 'lang'> &
@@ -297,7 +331,9 @@ export const API = {
   agentRequest: 'POST /agent/request',
   negotiationStream: 'GET /negotiations/:id/stream',
   negotiationConfirm: 'POST /negotiations/:id/confirm',
-  tezcheckWebhook: 'POST /payments/webhook/tezcheck',
+  paymentStatus: 'GET /payments/:orderId/status',
+  plans: 'GET /plans',
+  subscribe: 'POST /businesses/:id/subscription',
   loopRun: 'POST /loop/run',
   loopApprove: 'POST /loop/proposals/:id/approve',
   loopReject: 'POST /loop/proposals/:id/reject',

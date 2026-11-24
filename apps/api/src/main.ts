@@ -1,8 +1,12 @@
 import 'reflect-metadata';
+import { existsSync } from 'node:fs';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/http';
+
+// apps/api/.env (secrets live only there). Already-exported variables win.
+if (existsSync('.env')) process.loadEnvFile('.env');
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { rawBody: true }); // rawBody: webhook signature checks

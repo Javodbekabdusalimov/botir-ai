@@ -1,9 +1,13 @@
-// Payment-link port. confirm → Order calls ONLY this. The real TezCheck module (Ibrat, branch api/tezcheck)
-// replaces the implementation by binding PAYMENT_LINK to its own class in app.module.ts. Incoming payments only.
+// Payment-link port. confirm → Order and business subscriptions call ONLY this. Incoming payments only.
+// Bound in app.module.ts: TezCheck when TEZCHECK_API_KEY is set, else the TEST provider.
+export type PaymentKind = 'order' | 'subscription';
+
 export interface PayableOrder {
-  id: string;
+  id: string; // Order.id, or a `sub-…` reference for subscriptions (TezCheck external_reference)
   businessId: string;
   total: number; // so'm
+  kind?: PaymentKind; // default 'order'
+  title?: string;
 }
 
 export interface PaymentLink {

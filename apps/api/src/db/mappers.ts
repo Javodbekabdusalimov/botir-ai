@@ -1,5 +1,5 @@
 import type { Business as DbBusiness, CatalogItem as DbCatalogItem, Order as DbOrder } from '@prisma/client';
-import type { Business, BusinessCategory, CatalogItem, Lang, Order, OrderItem, OrderStatus, WorkHours } from '@botir/shared';
+import type { Business, BusinessCategory, CatalogItem, Lang, Order, OrderItem, OrderStatus, PlanId, WorkHours } from '@botir/shared';
 import type { AgentBusiness, Product } from '../agents';
 import { parseJson } from '../common/http';
 
@@ -23,6 +23,9 @@ export function toBusiness(b: DbBusiness): Business {
     lang: b.lang as Lang,
     ownerUserId: b.ownerUserId,
     isDemo: b.isDemo,
+    plan: b.plan as PlanId,
+    planUntil: b.planUntil?.toISOString() ?? null,
+    aiCredits: b.aiCredits,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
   };

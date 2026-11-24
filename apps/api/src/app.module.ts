@@ -13,8 +13,12 @@ import { agentsProvider } from './negotiations/agents.provider';
 import { NegotiationsController } from './negotiations/negotiations.controller';
 import { NegotiationsService } from './negotiations/negotiations.service';
 import { PAYMENT_LINK } from './payments/payment-link';
+import { PaymentPoller } from './payments/payment-poller.service';
+import { PaymentSettlement } from './payments/payment-settlement.service';
+import { PaymentsController } from './payments/payments.controller';
 import { TestPayController } from './payments/test-pay.controller';
 import { TestPaymentLinkProvider } from './payments/test-payment.provider';
+import { TezcheckPaymentLinkProvider } from './payments/tezcheck-payment.provider';
 import { TgController } from './tg/tg.controller';
 import { TgService } from './tg/tg.service';
 
@@ -29,7 +33,7 @@ class HealthController {
       status: 'ok',
       db: 'sqlite',
       businesses,
-      payments: 'test-link', // replaced when the TezCheck module binds PAYMENT_LINK
+      payments: process.env.TEZCHECK_API_KEY ? 'tezcheck' : 'test-link',
       telegramBot: Boolean(process.env.TELEGRAM_BOT_TOKEN),
       userbot: Boolean(process.env.TG_API_ID && process.env.TG_API_HASH && process.env.TG_SESSION_KEY),
     });
@@ -37,12 +41,16 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, TestPayController, TgController, LoopController],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, LoopController],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
-    TestPaymentLinkProvider,
-    // Swap point for the real TezCheck module: { provide: PAYMENT_LINK, useExisting: TezcheckPaymentLinkProvider }
-    { provide: PAYMENT_LINK, useExisting: TestPaymentLinkProvider },
+    TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller,
+    // Real TezCheck bills when the key is configured; otherwise clearly-labeled TEST links.
+    {
+      provide: PAYMENT_LINK,
+      useFactory: (tez: TezcheckPaymentLinkProvider, test: TestPaymentLinkProvider) => (process.env.TEZCHECK_API_KEY ? tez : test),
+      inject: [TezcheckPaymentLinkProvider, TestPaymentLinkProvider],
+    },
   ],
 })
 export class AppModule {}

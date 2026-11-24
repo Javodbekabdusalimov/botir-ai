@@ -1,5 +1,6 @@
-import { Controller, Get, Inject, Param, Post, Res } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException, Param, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { PaymentSettlement } from './payment-settlement.service';
 import { TestPaymentLinkProvider } from './test-payment.provider';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -7,7 +8,10 @@ const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeA
 /** TEST payment page behind the test link. Not a real payment. */
 @Controller('pay/test')
 export class TestPayController {
-  constructor(@Inject(TestPaymentLinkProvider) private readonly payments: TestPaymentLinkProvider) {}
+  constructor(
+    @Inject(TestPaymentLinkProvider) private readonly payments: TestPaymentLinkProvider,
+    @Inject(PaymentSettlement) private readonly settlement: PaymentSettlement,
+  ) {}
 
   @Get(':orderId')
   async page(@Param('orderId') orderId: string, @Res() res: Response): Promise<void> {
@@ -24,7 +28,9 @@ export class TestPayController {
 
   @Post(':orderId')
   async pay(@Param('orderId') orderId: string, @Res() res: Response): Promise<void> {
-    await this.payments.simulatePaid(orderId);
+    const p = await this.payments.findByOrder(orderId);
+    if (!p?.isTest) throw new NotFoundException('test payment not found'); // never touches real TezCheck payments
+    await this.settlement.markPaid(p);
     res.redirect(303, `/pay/test/${orderId}`);
   }
 }

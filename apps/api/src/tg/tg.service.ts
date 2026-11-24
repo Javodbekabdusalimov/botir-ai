@@ -57,6 +57,21 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     this.startBot(onIncoming);
   }
 
+  /** Bot DM to the business owner's linked Telegram account(s). false if the bot is off or nobody is linked. */
+  async notifyBusinessOwner(businessId: string, text: string): Promise<boolean> {
+    const bot = this.bot;
+    if (!bot) return false;
+    const accounts = await this.db.tgAccount.findMany({ where: { businessId, deletedAt: null } });
+    let sent = false;
+    for (const tgUserId of new Set(accounts.map((a) => a.tgUserId))) {
+      await bot.api.sendMessage(Number(tgUserId), text).then(
+        () => { sent = true; },
+        (e: unknown) => this.logger.warn(`notify ${businessId}: ${errMsg(e)}`),
+      );
+    }
+    return sent;
+  }
+
   onModuleDestroy(): void {
     this.login?.dispose();
     void this.bot?.stop();

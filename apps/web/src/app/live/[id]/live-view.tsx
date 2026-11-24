@@ -26,7 +26,7 @@ function Stepper({ active }: { active: number }) {
             <span
               className={cn(
                 "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors duration-300",
-                done ? "bg-green-600 text-white" : current ? "bg-primary text-green-950 ring-4 ring-green-200" : "bg-muted text-muted-foreground",
+                done ? "bg-green-600 text-white" : current ? "bg-primary text-green-950 ring-4 ring-green-200" : "border border-border bg-white text-muted-foreground",
               )}
             >
               {done ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}

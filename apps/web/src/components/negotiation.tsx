@@ -87,11 +87,11 @@ function AgentChip({ photo, title, subtitle, tone, align }: { photo: string; tit
   return (
     <div className={cn("flex min-w-0 items-center gap-2.5", align === "right" && "flex-row-reverse text-right")}>
       <span className={cn("rounded-full p-0.5", tone === "agent" ? "bg-gradient-to-br from-green-400 to-green-700" : "bg-gradient-to-br from-amber-300 to-amber-600")}>
-        <Avatar src={photo} alt="" size={44} />
+        <Avatar src={photo} alt="" size={40} />
       </span>
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold leading-tight">{title}</span>
-        <span className={cn("block truncate text-xs", tone === "agent" ? "text-agent" : "text-biz")}>{subtitle}</span>
+        <span className={cn("hidden truncate text-xs sm:block", tone === "agent" ? "text-agent" : "text-biz")}>{subtitle}</span>
       </span>
     </div>
   );
@@ -100,7 +100,7 @@ function AgentChip({ photo, title, subtitle, tone, align }: { photo: string; tit
 /** Ikki agent va ular orasidagi jonli oqim: muzokara ketayotganda nuqtalar chapdan o'ngga siljiydi. */
 function Arena({ bizName, bizPhotoSrc, running }: { bizName?: string; bizPhotoSrc: string; running: boolean }) {
   return (
-    <div className="glass mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-2xl p-3 sm:gap-4 sm:p-4">
+    <div className="glass mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-hidden rounded-2xl p-3 sm:gap-4 sm:p-4">
       <AgentChip photo={CUSTOMER_PHOTO} title="Mijoz agenti" subtitle="Shaxsiy yordamchi" tone="agent" align="left" />
       <div className="relative h-6 w-14 overflow-hidden [container-type:inline-size] sm:w-28" aria-hidden="true">
         <span className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-green-400 via-tint-3 to-amber-400" />

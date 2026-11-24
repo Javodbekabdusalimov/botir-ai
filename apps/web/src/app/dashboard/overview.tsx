@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, Bot, Inbox, Receipt, Send, Sparkles, TrendingUp, Wallet, Wand2 } from "lucide-react";
+import { AlertCircle, Bot, Inbox, MessagesSquare, Receipt, SearchX, Send, Sparkles, Wand2 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logos";
 import { useCountUp } from "@/hooks/use-count-up";
 import { Empty, ErrorBox, Loading, Panel } from "@/components/states";
@@ -29,9 +29,9 @@ export function Overview() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Receipt} tone="green" label="Buyurtmalar" value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid").length} ta to'langan` : undefined} spark={sparkOf(orders.data?.map((o) => o.total))} />
-        <Stat icon={Wallet} tone="amber" label="Tushum (30 kun)" value={stats.data?.revenue.month} money hint={stats.data ? `Hafta: ${formatSom(stats.data.revenue.week)}` : undefined} spark={sparkOf(orders.data?.map((o) => o.total))} />
-        <Stat icon={TrendingUp} tone="blue" label="O'rtacha chek" value={orders.data?.length ? Math.round(orders.data.reduce((s, o) => s + o.total, 0) / orders.data.length) : orders.data ? 0 : undefined} money hint={stats.data ? `Bugun: ${formatSom(stats.data.revenue.today)}` : undefined} />
+        <Stat icon={Receipt} tone="green" label="Botir orqali buyurtmalar" value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid" || o.status === "confirmed").length} ta tasdiqlangan` : undefined} />
+        <Stat icon={MessagesSquare} tone="amber" label="AI muzokaralar" value={stats.data ? stats.data.topRequests.reduce((s, r) => s + r.count, 0) : undefined} hint={stats.data ? `${stats.data.topRequests.length} xil so'rov` : undefined} />
+        <Stat icon={SearchX} tone="blue" label="Topilmagan so'rovlar" value={stats.data?.notFound.length} hint={stats.data ? (stats.data.notFound.length ? "Katalogga qo'shish mumkin" : "Hammasi katalogda bor") : undefined} />
         <Stat icon={Bot} tone="violet" label="AI javob bergan" value={chats.data?.length ? Math.round((chats.data.filter((c) => !c.needsHuman).length / chats.data.length) * 100) : chats.data ? 0 : undefined} suffix="%" hint={chats.data ? `${chats.data.length} ta suhbat` : undefined} />
       </div>
 
@@ -165,7 +165,6 @@ const AV = ["bg-green-100 text-green-800", "bg-amber-100 text-amber-800", "bg-sk
 const hash = (t: string) => [...t].reduce((a, c) => a + c.charCodeAt(0), 0);
 const TONES = { green: "bg-green-100 text-green-700", amber: "bg-amber-100 text-amber-700", blue: "bg-sky-100 text-sky-700", violet: "bg-violet-100 text-violet-700" } as const;
 const STROKE = { green: "#16a34a", amber: "#d97706", blue: "#0284c7", violet: "#7c3aed" } as const;
-const sparkOf = (v?: number[]) => (v && v.length > 1 && Math.max(...v) !== Math.min(...v) ? v : undefined);
 
 function Spark({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data), min = Math.min(...data), r = max - min || 1;

@@ -1,6 +1,6 @@
 # botir-ai
 
-Mars IT Hackathon monorepo — qarz va pul oqimi AI-yordamchisi.
+Mars IT Hackathon monorepo — O'zbekistonning AI agentlar tarmog'i: biznes agenti + shaxsiy agent, agent↔agent muzokara.
 
 - `apps/web` — Next.js (frontend)
 - `apps/api` — NestJS (backend + Telegram bot)

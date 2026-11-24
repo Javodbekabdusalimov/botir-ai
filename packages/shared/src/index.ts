@@ -1,16 +1,46 @@
-// Umumiy tiplar va API kontrakti (web + api)
+// Umumiy tiplar va API kontrakti (web + api). To'liq ro'yxat: docs/ARCHITECTURE.md
 export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
-export type DebtKind = 'bank' | 'micro' | 'card' | 'nasiya' | 'personal_given' | 'personal_taken';
+export type BusinessCategory = 'restaurant' | 'shop' | 'autoservice' | 'clinic';
 
-export interface Debt {
+export interface Business {
   id: string;
-  kind: DebtKind;
-  title: string;
-  balance: number; // so'm
-  rate: number; // yillik %
-  monthly: number; // oylik to'lov, so'm
-  dueDay: number; // oyning kuni (1-31)
+  name: string;
+  category: BusinessCategory;
+  area: string;
+  maxDiscountPct: number;
 }
 
-export type PlanStrategy = 'avalanche' | 'snowball';
+export interface Product {
+  id: string;
+  businessId: string;
+  name: string;
+  price: number; // so'm
+  unit: string;
+}
+
+export type AgentRole = 'user' | 'biz_agent' | 'personal_agent' | 'system';
+
+export interface AgentMessage {
+  id: string;
+  role: AgentRole;
+  text: string;
+  at: string; // ISO
+}
+
+export type NegotiationStatus = 'running' | 'agreed' | 'rejected' | 'timeout';
+
+export interface Offer {
+  id: string;
+  sessionId: string;
+  items: { productId: string; qty: number }[];
+  total: number;
+  discountPct: number;
+  status: 'proposed' | 'accepted' | 'declined';
+}
+
+// SSE: GET /negotiations/:id/stream
+export type NegotiationEvent =
+  | { type: 'message'; message: AgentMessage }
+  | { type: 'offer'; offer: Offer }
+  | { type: 'status'; status: NegotiationStatus };

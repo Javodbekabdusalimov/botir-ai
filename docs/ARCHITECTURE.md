@@ -1,110 +1,114 @@
 # Botir AI — Arxitektura (MVP, Mars IT Hackathon 24–25.11.2026)
 
-Mahsulot: qarz va pul oqimi AI-yordamchisi (Fintech + B2B). Bitta "miya", ikki yo'nalish:
-- **B2C — Shaxs**: qarzlar, maosh taqsimlagich, qarzdan chiqish rejasi + "qarzsiz sana", xarajat (matn/ovoz), eslatmalar.
-- **B2B — Biznes**: nasiya xarid/sotuv, debitorka/kreditorka, kassa uzilishi prognozi, undiruv havolasi.
+**Bir gap bilan**: har bir biznesga o'zbekcha gaplashadigan AI sotuvchi-operator (biznes agenti), har bir odamga shu bizneslar bilan o'zi gaplashadigan shaxsiy AI yordamchi (shaxsiy agent).
+**Wow-moment**: agent agent bilan jonli muzokara qiladi (so'rov → taklif → chegirma → kelishuv), odam faqat "Tasdiqlayman" bosadi. Hakamlar buni ekranda real vaqtda ko'radi.
+
+Rollar: Javod — frontend/UI (apps/web), Ibrat — backend/DB (apps/api), Habibulloh — arxitektura va agentlar (apps/api/src/agents + docs).
 
 ## 1. Tizim xaritasi
 
 ```
- Foydalanuvchi
-   ├── Telegram bot (grammY)  ──┐
-   └── Web panel (Next.js)    ──┤ HTTPS (REST, JSON)
-                                ▼
-                       apps/api (NestJS)
-             ┌──────────┬───────────┬────────────┬──────────────┐
-             │ auth     │ debts     │ planner    │ payments     │
-             │ users    │ expenses  │ ai (LLM)   │ (TezCheck)   │
-             │ business │ forecast  │ reminders  │ webhook      │
-             └────┬─────┴─────┬─────┴──────┬─────┴──────┬───────┘
-                  ▼           ▼            ▼            ▼
-          Postgres (Supabase)  LLM API   Cron/queue   TezCheck API
+  Mijoz                      Biznes egasi
+   │ Telegram bot / Web chat   │ Web panel (katalog, buyurtmalar, CRM)
+   ▼                           ▼
+ apps/web (Next.js) ──REST + SSE──► apps/api (NestJS)
+                                    ├── businesses   (profil, katalog, ish vaqti)
+                                    ├── catalog-import (Excel/TG kanal/sayt → AI → mahsulotlar)
+                                    ├── agents       (biznes agenti, shaxsiy agent, LLM tool-calling)
+                                    ├── negotiation  (agent↔agent sessiya, raundlar, kelishuv)
+                                    ├── orders       (buyurtma/band qilish, holatlar)
+                                    ├── payments     (Payme/Click havola + webhook, faqat KIRIM)
+                                    ├── channels     (Telegram bot; keyin Instagram, ovoz)
+                                    └── analytics    (nima so'raldi, nima yo'q, qaytmagan mijoz)
+                                         │
+                       Postgres (Supabase) · LLM API · Telegram Bot API · Payme/Click
 ```
 
 ## 2. Monorepo
 
 ```
-apps/web          Next.js (App Router, TS, Tailwind + shadcn/ui) — Javod
-apps/api          NestJS (TS, REST, Prisma) + bot moduli — Ibrat
-packages/shared   umumiy tiplar, DTO, API kontrakti (zod sxemalar) — hamma
-docs/             arxitektura, qarorlar — Habibulloh
+apps/web          Next.js 16 (App Router, TS) + Tailwind 4 + shadcn/ui — Javod
+apps/api          NestJS + Prisma + Postgres — Ibrat; agents/ — Habibulloh
+packages/shared   umumiy tiplar, DTO, API kontrakti (zod) — hamma
+docs/             arxitektura, qarorlar
 ```
+Qoida: web ↔ api faqat `@botir/shared` kontrakti orqali; agent logikasi faqat api ichida (brauzerda LLM kaliti yo'q).
 
-Qoida: web va api bir-birining ichiga import qilmaydi; faqat `@botir/shared` orqali.
+## 3. Agentlar
 
-## 3. Backend modullari (apps/api)
+**Biznes agenti** (har biznesga bitta): tizim prompti = biznes profili + katalog + qoidalar (min narx, maks chegirma %, ish vaqti).
+Tools: `search_catalog`, `check_availability`, `make_offer(items, price, discount)`, `create_order`, `create_payment_link`.
+Qoida: chegirma `maxDiscountPct` dan oshmaydi — bu kodda tekshiriladi, LLM'ga ishonilmaydi.
 
-- **auth** — Telegram login (bot `initData` / Login Widget) → JWT. Parol yo'q.
-- **users** — profil: maosh sanalari (masalan 5 va 20), oylik daromad, oila soni.
-- **debts** — qarz: turi (bank, mikroqarz, karta, nasiya, shaxsiy berdim/oldim), qoldiq, stavka, oylik to'lov, sana, jarima.
-- **planner** — maosh taqsimlagich (qarz → uy/kommunal → oziq-ovqat → zaxira → qarzni ortiqcha yopish → erkin); avalanche/snowball reja; qarzsiz sana; qarz yuki % (DSTI, >50% qizil); yangi qarz simulyatori. **Sof funksiya, LLM'siz** — hisob deterministik, testlanadi.
-- **expenses** — xarajat kiritish; matn/ovoz → `ai` kategoriya beradi.
-- **ai** — LLM o'rami: kategoriya, matndan qarz/xarajat ajratish, maslahat matni. Raqamlarni LLM hisoblamaydi, faqat `planner` natijasini tushuntiradi.
-- **business** — kontragent, nasiya xarid/sotuv, debitorka/kreditorka.
-- **forecast** — kassa prognozi: kelgusi 30 kun kirim/chiqim → "N kunda X so'm kamomad → kimdan undirish".
-- **reminders** — to'lovdan 3 va 1 kun oldin bot xabari (cron).
-- **payments** — TezCheck: hisob (bill) yaratish + webhook → `paid`. Premium obuna uchun.
-- **bot** — grammY, webhook rejimi, faqat api servislarini chaqiradi (biznes logika botda emas).
+**Shaxsiy agent** (har foydalanuvchiga): foydalanuvchi gapini rejaga ajratadi ("osh joy band qil + servisga yozdir" → 2 vazifa).
+Tools: `find_businesses(category, area, time)`, `start_negotiation(businessId, request)`, `compare_offers`, `ask_user_confirm(offer)`.
+Qoida: to'lov va yakuniy band qilish faqat foydalanuvchi "Tasdiqlayman" bosgandan keyin.
 
-## 4. Ma'lumotlar modeli (asosiy)
+**Muzokara (negotiation)**: `NegotiationSession` — ikkala agent navbatma-navbat `Message` yozadi (maks 6 raund). Har xabar SSE orqali web'ga oqadi (jonli ko'rinish). Tugash holatlari: `agreed` (Offer bilan) / `rejected` / `timeout`.
+
+## 4. Ma'lumotlar modeli
 
 ```
-User(id, tgId, name, salaryDays[], income, createdAt)
-Debt(id, userId, kind, title, balance, rate, monthly, dueDay, penalty, status)
-Payment(id, debtId, amount, paidAt)
-Expense(id, userId, amount, category, note, source[text|voice], at)
-Plan(id, userId, strategy[avalanche|snowball], debtFreeDate, snapshot JSON)
-Business(id, ownerId, name)
-Counterparty(id, businessId, name, phone, kind[client|supplier])
-Credit(id, businessId, counterpartyId, direction[receivable|payable], amount, dueAt, status)
-Bill(id, userId, provider, externalId, amount, status, createdAt)  -- faqat KIRIM
+User(id, tgId, name, phone?, createdAt)
+Business(id, ownerId, name, category[restaurant|shop|autoservice|clinic], area, hours JSON, maxDiscountPct, createdAt)
+Product(id, businessId, name, price, unit, stock?, meta JSON)
+Conversation(id, businessId, userId?, channel[telegram|web], createdAt)
+Message(id, conversationId?, sessionId?, role[user|biz_agent|personal_agent|system], text, toolCall JSON?, at)
+NegotiationSession(id, userId, businessId, request, status[running|agreed|rejected|timeout], round, createdAt)
+Offer(id, sessionId, items JSON, total, discountPct, expiresAt, status[proposed|accepted|declined])
+Order(id, businessId, userId, offerId?, items JSON, total, status[new|confirmed|paid|done|cancelled], slotAt?)
+Payment(id, orderId, provider[payme|click], externalId, amount, status[pending|paid|failed])   -- faqat KIRIM
 ```
 
-## 5. API kontrakti (namuna)
+## 5. API kontrakti (MVP)
 
 ```
-POST /auth/telegram            → { token }
-GET  /me                       → User
-CRUD /debts
-POST /plan/split   {salary}    → konvertlar
-GET  /plan                     → { strategy, debtFreeDate, months[] }
-POST /expenses     {text|audio}→ Expense (AI kategoriya)
-CRUD /business/credits
-GET  /business/forecast        → { gapDay, gapAmount, collectFrom[] }
-POST /payments/bill            → { payUrl }
-POST /payments/webhook         (TezCheck, imzo tekshiriladi)
+POST /auth/telegram                     → { token }
+POST /businesses                        → Business         (ulanish)
+POST /businesses/:id/catalog/import     (file | tgChannel | url) → { imported }
+GET  /businesses/:id/products
+POST /chat/:businessId     {text}       → { reply }        (mijoz ↔ biznes agenti)
+POST /assistant            {text}       → { tasks[] }      (shaxsiy agent rejasi)
+POST /negotiations         {businessId, request} → NegotiationSession
+GET  /negotiations/:id/stream           SSE: message | offer | status
+POST /offers/:id/accept                 → Order + { payUrl }
+GET  /businesses/:id/orders
+GET  /businesses/:id/analytics          → { topAsked[], missing[], lostClients[] }
+POST /payments/webhook/:provider        (imzo tekshiriladi, idempotent)
 ```
-Javob formati: `{ ok: true, data } | { ok: false, error }` (`@botir/shared`).
+Javob formati: `{ ok: true, data } | { ok: false, error }`.
 
-## 6. Pul qoidasi (QAT'IY)
+## 6. Web ekranlar (apps/web)
 
-- Faqat **KIRIM**: TezCheck orqali hisob yaratish + webhook. Yechish, o'tkazish, refund, payout — kodda ham, API'da ham **yo'q**.
-- Webhook imzosi tekshiriladi, `externalId` bo'yicha idempotent.
-- Biznes mijozlarining to'lovi biznesning o'z kassasiga; bizning kassaga faqat obuna/premium.
+1. `/` — landing (bir gap + "Biznesni ulash" / "Yordamchini sinash")
+2. `/connect` — biznes ulash: ma'lumot + katalog yuklash (Excel) → agent tayyor
+3. `/dashboard` — biznes: buyurtmalar, suhbatlar, analitika
+4. `/assistant` — shaxsiy agent chati
+5. `/live/:sessionId` — **jonli muzokara**: chapda mijoz agenti, o'ngda biznes agenti, pastda taklif kartasi + "Tasdiqlayman"
 
-## 7. Xavfsizlik
+## 7. Pul va xavfsizlik
 
-- Sirlar faqat `.env` (repoda `.env.example`); `.env` `.gitignore`da.
-- Har endpointda `userId` JWT'dan, body'dan emas (boshqaning qarzini ko'rish mumkin emas).
-- Validatsiya: zod/class-validator; rate-limit auth va AI endpointlarda.
-- LLM'ga faqat kerakli maydonlar yuboriladi (telefon/karta raqami yo'q).
+- To'lov faqat **KIRIM** (havola + webhook). Refund/payout/o'tkazma kodda yo'q.
+- Sirlar faqat `.env`; LLM kaliti faqat api'da.
+- `userId`/`businessId` egaligi JWT'dan tekshiriladi.
+- Agent tool'lari server tomonda validatsiya qilinadi (narx, chegirma, stock).
+- Rate-limit: `/chat`, `/assistant`, `/negotiations`.
 
 ## 8. Deploy
 
-- web → Vercel; api + bot → Railway (yoki Render); DB → Supabase Postgres.
-- Env: `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `JWT_SECRET`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TEZCHECK_*`.
+web → Vercel · api → Railway/Render · DB → Supabase Postgres.
+Env: `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `JWT_SECRET`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`, `PAYME_*`, `CLICK_*`.
 
 ## 9. Git qoidasi
 
-- Default branch `main`. Har kim o'z branchida (`web/...`, `api/...`, `docs/...`) → PR → `main`.
-- `main`ga to'g'ridan push yo'q (hackathon tezligi uchun 1 review yetarli).
+Default branch `main`. Har kim o'z branchida (`web/...`, `api/...`, `agents/...`, `docs/...`) → PR → `main`.
 
 ## 10. MVP tartibi (17:00 gacha)
 
-1. shared tiplar + api skeleti + DB sxema
-2. debts CRUD + planner (taqsimlash, reja, qarzsiz sana) — wow qism
-3. web: qarzlar ro'yxati, taqsimlagich, reja ekrani
-4. bot: qarz qo'shish, eslatma, xarajat matn
-5. TezCheck premium to'lov
-6. B2B minimal: nasiya, debitorka/kreditorka, kassa prognozi
-7. Deploy 16:00, tekshiruv 16:30
+1. shared kontrakt + Prisma sxema + api skelet (Ibrat) / web skelet + landing (Javod)
+2. Business + Product + Excel import (seed: 3 demo biznes — osh markazi, avtoservis, do'kon)
+3. Biznes agenti chat (`/chat`) — LLM + tools
+4. Muzokara + SSE + `/live` ekran — wow qism
+5. Offer accept → Order → to'lov havolasi
+6. Telegram bot kanali (biznes agenti bilan gaplashish)
+7. Deploy 16:00, tekshiruv 16:30, topshirish 17:00

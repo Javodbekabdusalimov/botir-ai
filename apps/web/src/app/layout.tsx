@@ -18,7 +18,12 @@ export const metadata: Metadata = {
   applicationName: SITE_NAME,
   openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION, images: ["/opengraph-image"] },
   twitter: { card: "summary_large_image", title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION, images: ["/opengraph-image"] },
+  // Search Console: asosiy tasdiq public/google84cc5b4f86d33aff.html fayli; env bo'lsa meta-teg ham qo'shiladi.
   ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
+  manifest: "/manifest.webmanifest",
+  keywords: ["Botir AI", "AI sotuvchi", "Telegram AI bot", "AI agent O'zbekiston", "o'zbekcha AI yordamchi", "avtomatik savdo", "agent muzokara"],
+  category: "business",
+  formatDetection: { telephone: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

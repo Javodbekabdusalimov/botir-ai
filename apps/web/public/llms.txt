@@ -14,6 +14,11 @@
 
 ## Sahifalar
 - [Bosh sahifa](/): mahsulot haqida, savol-javob
+- [Qanday ishlaydi](/qanday-ishlaydi): 4 qadam, muzokara qoidalari
+- [Telegram uchun AI sotuvchi](/telegram-ai-sotuvchi): kimga mos, ulash, to'lov
+- [Narxlar](/narxlar): Start bepul, Pro 1 000 so'm/oy
+- [Savol-javob](/savol-javob): barcha savollar
+- [To'liq matn](/llms-full.txt): barcha ommaviy sahifalar bitta faylda
 - [Shaxsiy yordamchi](/assistant)
 - [Jonli muzokara namunasi](/live/demo-chorsu)
 - [Biznesni ulash](/connect)

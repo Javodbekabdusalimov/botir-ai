@@ -46,8 +46,10 @@ export function SiteFooter() {
               ["/assistant", "Yordamchi"],
               ["/register", "Biznesni ulash"],
               ["/live/demo-chorsu", "Muzokara namunasi"],
-              ["/#how", "Qanday ishlaydi"],
-              ["/#pricing", "Narxlar"],
+              ["/qanday-ishlaydi", "Qanday ishlaydi"],
+              ["/telegram-ai-sotuvchi", "Telegram AI sotuvchi"],
+              ["/narxlar", "Narxlar"],
+              ["/savol-javob", "Savol-javob"],
             ].map(([h, l]) => (
               <li key={h}>
                 <Link href={h} className="inline-flex min-h-9 items-center hover:text-green-800 hover:underline">

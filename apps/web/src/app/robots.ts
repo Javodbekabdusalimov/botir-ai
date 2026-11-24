@@ -3,7 +3,7 @@ import { SITE_URL } from "@/lib/seo";
 
 /** Shaxsiy yo'llar qidiruvdan yopiladi; AI crawlerlarga ommaviy sahifalar ochiq. */
 const PRIVATE_PATHS = ["/dashboard", "/me/", "/pay/", "/connect/telegram", "/api/"];
-const AI_CRAWLERS = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-Web", "PerplexityBot", "Google-Extended"];
+const AI_CRAWLERS = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-Web", "PerplexityBot", "Perplexity-User", "Google-Extended", "Applebot-Extended"];
 
 export default function robots(): MetadataRoute.Robots {
   return {

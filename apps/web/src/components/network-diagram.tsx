@@ -8,7 +8,7 @@ export function NetworkDiagram() {
         <title id="net-t">Tarmoq effekti sxemasi</title>
         <desc id="net-d">Chapda mijozlar va ularning shaxsiy agentlari, o&apos;ngda bizneslar va ularning agentlari, o&apos;rtada Botir tarmog&apos;i. Ko&apos;proq biznes mijozlarga ko&apos;proq tanlov beradi, ko&apos;proq mijoz bizneslarga ko&apos;proq buyurtma beradi.</desc>
         {clients.map((y) =>
-          biz.map((y2) => <line key={`${y}-${y2}`} x1="170" y1={y} x2="470" y2={y2} stroke="#bbf7d0" strokeWidth="1.5" />),
+          biz.map((y2) => <line key={`${y}-${y2}`} x1="170" y1={y} x2="470" y2={y2} stroke="#86efac" strokeWidth="1.5" className="flow-line" />),
         )}
         {clients.map((y) => (
           <g key={`c${y}`}>
@@ -26,7 +26,8 @@ export function NetworkDiagram() {
             <text x="590" y={y + 5} textAnchor="middle" fontSize="15">🏪</text>
           </g>
         ))}
-        <circle cx="320" cy="150" r="56" fill="#dcfce7" stroke="#16a34a" strokeWidth="2" />
+        <circle cx="320" cy="150" r="70" fill="#f0fdf4" />
+        <circle cx="320" cy="150" r="56" fill="#dcfce7" stroke="#16a34a" strokeWidth="2" className="node-pulse" />
         <text x="320" y="146" textAnchor="middle" fontSize="15" fontWeight="700" fill="#14532d">Botir</text>
         <text x="320" y="166" textAnchor="middle" fontSize="12" fill="#15803d">tarmog&apos;i</text>
         <text x="50" y="288" textAnchor="middle" fontSize="12" fill="#404040">Mijozlar</text>

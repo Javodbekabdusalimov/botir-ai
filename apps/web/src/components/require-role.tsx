@@ -18,7 +18,7 @@ export function RequireBusiness({ children }: { children: React.ReactNode }) {
 
   if (status === "loading" || status === "out")
     return (
-      <div role="status" aria-label="Tekshirilmoqda" className="mx-auto max-w-6xl animate-pulse space-y-4 px-4 py-10">
+      <div role="status" aria-label="Tekshirilmoqda" className="mx-auto max-w-[1200px] animate-pulse space-y-4 px-4 py-10">
         <div className="h-8 w-1/3 rounded-lg bg-muted" />
         <div className="h-40 rounded-2xl bg-muted" />
         <div className="h-40 rounded-2xl bg-muted" />

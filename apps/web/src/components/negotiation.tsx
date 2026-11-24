@@ -147,7 +147,7 @@ export function NegotiationStage({
           {state.status === "failed" && "Xatolik"}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-3" aria-live="polite">
+      <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3" aria-live="polite">
         {!lane && !state.error && <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">Agentlar ulanmoqda...</p>}
         {lane?.messages.map((m) => (
           <Bubble key={m.id} biz={m.fromAgent === "business"} type={m.payload.type} text={m.text.slice(0, m.shown)} />

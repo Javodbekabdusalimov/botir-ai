@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import { BadgeCheck, CheckCircle2, Loader2, Unplug } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Loader2, LockKeyhole, Unplug } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logos";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, inputClass } from "@/components/field";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 type Method = "business" | "account";
 type Step = "choose" | "phone" | "code" | "password" | "connected";
 const FLOW: { id: Step; label: string }[] = [
+  { id: "choose", label: "Usul" },
   { id: "phone", label: "Raqam" },
   { id: "code", label: "SMS kod" },
   { id: "password", label: "2FA" },
@@ -122,14 +124,19 @@ export function TelegramConnect() {
   return (
     <div className="mt-8">
       {demo && !isConnected && (
-        <p className="mb-4 rounded-xl border border-biz/30 bg-biz/10 p-3 text-xs text-biz">
+        <p className="mb-4 rounded-xl border border-amber-200 bg-biz-soft p-3 text-xs text-biz">
           Demo rejim: haqiqiy SMS yuborilmaydi, istalgan 5 xonali kod qabul qilinadi (keyin 2FA so'raladi).
         </p>
       )}
 
+      <p className="mb-4 flex items-start gap-2 rounded-xl border border-tint-3 bg-tint-1 p-3 text-xs text-green-900">
+        <LockKeyhole className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>Sessiya shifrlangan holda saqlanadi, parolingiz saqlanmaydi. Istalgan payt [Uzish] tugmasi bilan ulanishni to&apos;xtatasiz.</span>
+      </p>
+
       {isConnected ? (
-        <div className="space-y-4 rounded-2xl border border-agent/40 bg-agent/10 p-5" role="status">
-          <p className="flex items-center gap-2 font-display text-xl font-bold text-agent">
+        <div className="space-y-4 rounded-2xl border border-green-500/40 bg-tint-1 p-5" role="status">
+          <p className="flex items-center gap-2 font-display text-xl font-bold text-green-800">
             <CheckCircle2 className="size-6" aria-hidden="true" /> Telegram ulangan
           </p>
           <p className="text-sm text-muted-foreground">
@@ -160,52 +167,64 @@ export function TelegramConnect() {
         </div>
       ) : (
         <>
-          {step === "choose" && (
-            <fieldset className="space-y-3">
-              <legend className="mb-3 font-display text-lg font-bold">Ulash usulini tanlang</legend>
-              {(
-                [
-                  { id: "business", title: "A. Telegram Business (Premium)", desc: "Telegram Premium kerak. Sozlamalar, Telegram Business, Chatbotlar bo'limida Botir AI botini tanlaysiz." },
-                  { id: "account", title: "B. Akkaunt orqali", desc: "Telefon raqam, SMS kod va (bo'lsa) 2FA paroli. Premium shart emas." },
-                ] as const
-              ).map((o) => (
-                <label key={o.id} className="flex min-h-14 cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[:checked]:border-agent has-[:checked]:bg-agent/10 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
-                  <input type="radio" name="method" value={o.id} checked={method === o.id} onChange={() => setMethod(o.id)} className="mt-1 size-4 accent-[var(--agent)]" />
-                  <span>
-                    <span className="block font-medium">{o.title}</span>
-                    <span className="block text-sm text-muted-foreground">{o.desc}</span>
-                  </span>
-                </label>
-              ))}
-              {method === "business" ? (
-                <div className="rounded-xl border border-border bg-card/60 p-4 text-sm">
-                  <p className="flex items-center gap-2 font-medium">
-                    <BadgeCheck className="size-4 text-agent" aria-hidden="true" /> Bot ulanganda chatlar avtomatik Inbox'ga tushadi
-                  </p>
-                  <p className="mt-2 text-muted-foreground">Ulagach, bu sahifani yangilang. Agar ulanmasa, B usulidan foydalaning.</p>
-                  <Button className="mt-3 h-11 px-4" variant="outline" onClick={() => setMethod("account")}>
-                    B usuliga o'tish
-                  </Button>
-                </div>
-              ) : (
-                <Button size="lg" className="h-12 w-full text-base" onClick={() => setStep("phone")}>
-                  Davom etish
-                </Button>
-              )}
-            </fieldset>
-          )}
-
-          {step !== "choose" && (
-            <>
-              <ol className="mb-6 flex items-center gap-2" aria-label="Qadamlar">
+          <ol className="mb-6 flex items-center gap-2" aria-label="Qadamlar">
                 {FLOW.map((s, i) => (
                   <li key={s.id} aria-current={i === idx ? "step" : undefined} className="flex flex-1 flex-col gap-1">
-                    <span className={cn("h-1 rounded-full", i <= idx ? "bg-agent" : "bg-muted")} />
+                    <span className={cn("h-1 rounded-full", i <= idx ? "bg-primary" : "bg-muted")} />
                     <span className={cn("text-xs", i === idx ? "text-foreground" : "text-muted-foreground")}>{s.label}</span>
                   </li>
                 ))}
               </ol>
-              <div className="rounded-2xl border border-border bg-card/60 p-4 sm:p-6">
+          {step === "choose" && (
+            <div className="space-y-4">
+              <h2 className="font-display text-lg font-bold">Ulash usulini tanlang</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    { id: "business", title: "Telegram Business", tag: "Premium, rasmiy", desc: "Sozlamalar, Telegram Business, Chatbotlar bo'limida Botir AI botini tanlaysiz." },
+                    { id: "account", title: "Akkaunt ulash", tag: "Premium shart emas", desc: "Telefon raqam, SMS kod va (bo'lsa) 2FA paroli orqali." },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={method === o.id}
+                    onClick={() => setMethod(o.id)}
+                    className={cn(
+                      "flex h-full flex-col rounded-2xl border-2 p-4 text-left transition-all hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-ring",
+                      method === o.id ? "border-primary bg-tint-1 shadow-lift" : "border-border bg-card shadow-soft",
+                    )}
+                  >
+                    <span className="grid size-11 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-border">
+                      <BrandLogo brand="telegram" height={24} />
+                    </span>
+                    <span className="mt-3 font-display text-base font-bold">{o.title}</span>
+                    <span className="mt-1 w-fit rounded-full bg-tint-2 px-2 py-0.5 text-xs font-semibold text-green-900">{o.tag}</span>
+                    <span className="mt-2 text-sm text-muted-foreground">{o.desc}</span>
+                  </button>
+                ))}
+              </div>
+              {method === "business" ? (
+                <div className="rounded-xl border border-border bg-card p-4 text-sm shadow-sm">
+                  <p className="flex items-center gap-2 font-medium">
+                    <BadgeCheck className="size-4 text-green-700" aria-hidden="true" /> Bot ulanganda chatlar avtomatik Inbox&apos;ga tushadi
+                  </p>
+                  <p className="mt-2 text-muted-foreground">Ulagach, bu sahifani yangilang. Agar ulanmasa, akkaunt orqali ulang.</p>
+                  <Button className="mt-3 h-11 px-4" variant="outline" onClick={() => setMethod("account")}>
+                    Akkaunt orqali ulash
+                  </Button>
+                </div>
+              ) : (
+                <Button size="lg" className="h-12 w-full text-base font-semibold" onClick={() => setStep("phone")}>
+                  Davom etish
+                </Button>
+              )}
+            </div>
+          )}
+
+          {step !== "choose" && (
+            <>
+              <div className="rounded-2xl border border-border bg-card shadow-soft p-4 sm:p-6">
                 {step === "phone" && (
                   <form onSubmit={onPhone} className="space-y-4" noValidate>
                     <Field id="phone" label="Telegram raqami" error={error ?? undefined}>

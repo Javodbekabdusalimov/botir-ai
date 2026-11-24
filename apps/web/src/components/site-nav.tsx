@@ -66,7 +66,7 @@ export function SiteHeader() {
   const links = LINKS.slice(1).filter((l) => !(user?.role === "user" && l.href !== "/assistant"));
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4">
+      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-2 px-4">
         <Logo />
         <nav aria-label="Asosiy" className="hidden items-center gap-1 sm:flex">
           {links.map((l) => (

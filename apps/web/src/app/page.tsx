@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   title: { absolute: `${SITE_NAME}: agent agent bilan gaplashadi, siz tasdiqlaysiz` },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
-  openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME}: AI agentlar tarmog'i`, description: SITE_DESCRIPTION },
+  openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME}: AI agentlar tarmog'i`, description: SITE_DESCRIPTION, images: ["/opengraph-image"] },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME}: AI agentlar tarmog'i`, description: SITE_DESCRIPTION, images: ["/opengraph-image"] },
 };
 
 /** Ishonch qatori: haqiqiy integratsiyalar (uydirma mijoz logotiplari yo'q). */
@@ -57,7 +58,7 @@ export default function Home() {
               <LogoMark className="size-4" /> O&apos;zbekiston uchun AI agentlar tarmog&apos;i
             </p>
             <h1 className="text-balance font-display text-[2.1rem] font-bold leading-[1.08] sm:text-5xl lg:text-[3.1rem]">
-              Agent agent bilan <span className="text-grad">gaplashadi</span>, siz faqat <span className="whitespace-nowrap rounded-xl bg-tint-2 px-2">tasdiqlaysiz</span>.
+              Agent agent bilan <span className="text-grad">gaplashadi</span>, siz faqat <span className="whitespace-nowrap rounded-xl bg-tint-2 px-2">tasdiqlaysiz.</span>
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
               Biznesga o&apos;zbekcha gaplashadigan AI sotuvchi, mijozga o&apos;zi muzokara qiladigan shaxsiy yordamchi.

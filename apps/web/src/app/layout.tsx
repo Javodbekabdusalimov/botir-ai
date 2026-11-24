@@ -16,9 +16,8 @@ export const metadata: Metadata = {
   title: { default: `${SITE_NAME}: agent agent bilan gaplashadi`, template: `%s — ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  alternates: { canonical: "/" },
-  openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION },
-  twitter: { card: "summary_large_image", title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION },
+  openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION, images: ["/opengraph-image"] },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME}: agent agent bilan gaplashadi`, description: SITE_DESCRIPTION, images: ["/opengraph-image"] },
   ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
 };
 

@@ -8,6 +8,9 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://ai-assista
 export const SITE_DESCRIPTION = "Botir AI: biznesga o'zbekcha gaplashadigan AI sotuvchi, mijozga o'zi muzokara qiladigan agent. Agent agent bilan gaplashadi, siz tasdiqlaysiz.";
 
 /** Indekslanmaydigan shaxsiy sahifalar uchun robots. */
+/** Dinamik OG rasm (app/opengraph-image.tsx): child metadata openGraph'ni almashtirgani uchun har sahifada aniq beriladi. */
+const OG_IMAGE = "/opengraph-image";
+
 export const NOINDEX: Metadata["robots"] = { index: false, follow: false, nocache: true };
 
 interface PageMetaInput {
@@ -29,7 +32,7 @@ export function pageMeta({ title, description, path, noindex }: PageMetaInput): 
     title,
     description,
     ...(noindex ? { robots: NOINDEX } : { alternates: { canonical: path } }),
-    openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url, title: full, description },
-    twitter: { card: "summary_large_image", title: full, description },
+    openGraph: { type: "website", locale: "uz_UZ", siteName: SITE_NAME, url, title: full, description, images: [OG_IMAGE] },
+    twitter: { card: "summary_large_image", title: full, description, images: [OG_IMAGE] },
   };
 }

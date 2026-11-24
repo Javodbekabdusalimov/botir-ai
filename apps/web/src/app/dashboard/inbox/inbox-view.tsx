@@ -28,6 +28,8 @@ export function InboxView() {
   if (!list.length) return <Empty>Hozircha chatlar yo'q. Telegramni ulang, yozishmalar shu yerda ko'rinadi.</Empty>;
 
   const urgent = list.filter((c) => c.needsHuman).length;
+  // Egasi javobi kerak bo'lganlar tepada; qolgani oxirgi xabar bo'yicha
+  const sorted = [...list].sort((a, b) => Number(b.needsHuman) - Number(a.needsHuman) || +new Date(b.lastMessageAt) - +new Date(a.lastMessageAt));
 
   return (
     <div className="grid gap-4 md:grid-cols-[20rem_1fr]">
@@ -38,17 +40,17 @@ export function InboxView() {
           </p>
         )}
         <ul className="space-y-2" aria-label="Chatlar">
-          {list.map((c) => {
+          {sorted.map((c) => {
             const mode = modes[c.id] ?? c.mode;
             return (
               <li key={c.id}>
                 <button
                   onClick={() => setSelected(c.id)}
                   aria-current={c.id === selected ? "true" : undefined}
-                  className={cn("w-full rounded-xl border p-3 text-left", c.needsHuman ? "border-biz/60 bg-biz/5" : "border-border bg-card/60", c.id === selected && "ring-2 ring-agent")}
+                  className={cn("w-full rounded-xl border p-3 text-left transition-colors duration-150 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]", c.needsHuman ? "border-biz/60 border-l-4 bg-biz/5" : "border-border bg-card/60", c.id === selected && "ring-2 ring-agent")}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-1.5 font-medium">
+                    <span className={cn("flex min-w-0 items-center gap-1.5", c.unread ? "font-semibold" : "font-medium")}>
                       {c.needsHuman && <AlertCircle className="size-4 shrink-0 text-biz" aria-label="Egasi javobi kerak" />}
                       <span className="truncate">{c.title}</span>
                     </span>
@@ -162,7 +164,7 @@ function Message({ m, chatId, onSent }: { m: InboxMessage; chatId: string; onSen
   if (m.isDraft) {
     if (done) return null;
     return (
-      <div className="rounded-xl border border-dashed border-agent/60 bg-agent/5 p-3">
+      <div className="rise-in rounded-xl border border-dashed border-agent/60 bg-agent/5 p-3">
         <label htmlFor={`d-${m.id}`} className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-agent">
           <Bot className="size-3.5" aria-hidden="true" /> AI qoralama javob (siz tasdiqlamaguncha yuborilmaydi)
         </label>
@@ -181,7 +183,7 @@ function Message({ m, chatId, onSent }: { m: InboxMessage; chatId: string; onSen
   }
 
   return (
-    <div className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
+    <div className={cn("rise-in flex flex-col", mine ? "items-end" : "items-start")}>
       <div className={cn("max-w-[88%] rounded-2xl px-3 py-2 text-sm", mine ? "bg-agent/15" : "bg-muted/70")}>
         {m.voiceUrl && (
           <p className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">

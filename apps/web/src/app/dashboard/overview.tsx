@@ -123,7 +123,7 @@ export function Overview() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card/60 p-3 sm:p-4">
+    <div className="min-w-0 rounded-2xl border border-border bg-card/60 p-3 sm:p-4">
       <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
       <p className="mt-1 break-words font-display text-lg font-bold tabular-nums sm:text-2xl">{value}</p>
     </div>

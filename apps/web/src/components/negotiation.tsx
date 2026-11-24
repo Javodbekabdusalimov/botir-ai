@@ -190,7 +190,7 @@ export function OfferCard({
         {offer.discountPct > 0 && <span key={offer.discountPct} className="pop-in shrink-0 rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold tabular-nums text-agent">-{offer.discountPct}%</span>}
       </div>
       <p className="mb-3 text-sm text-muted-foreground">{best.businessName}</p>
-      <ul className="divide-y divide-border text-sm">
+      <ul className={cn("divide-y divide-border text-sm", compact && "hidden")}>
         {offer.items.map((i) => (
           <li key={i.catalogItemId} className="flex items-start justify-between gap-3 py-2">
             <span>
@@ -201,7 +201,7 @@ export function OfferCard({
           </li>
         ))}
       </ul>
-      <dl className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
+      <dl className={cn("space-y-1 text-sm", compact ? "mt-1" : "mt-3 border-t border-border pt-3")}>
         {offer.discountPct > 0 && (
           <div className="flex justify-between text-muted-foreground">
             <dt>Chegirmagacha</dt>

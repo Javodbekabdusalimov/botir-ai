@@ -32,7 +32,7 @@ export function Empty({ children }: { children: React.ReactNode }) {
 
 export function Panel({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={cn("rounded-2xl border border-border bg-card/60 p-4 sm:p-5", className)}>
+    <section className={cn("min-w-0 rounded-2xl border border-border bg-card/60 p-4 sm:p-5", className)}>
       <h2 className="mb-3 font-display text-lg font-bold">{title}</h2>
       {children}
     </section>

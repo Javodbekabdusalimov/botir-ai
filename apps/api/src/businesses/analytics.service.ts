@@ -33,9 +33,15 @@ export class AnalyticsService {
     });
 
     const orders = await this.db.order.findMany({ where: { businessId, deletedAt: null } });
+    // Revenue = real money only: orders settled through a test payment (/pay/test) are excluded.
+    const testPaid = new Set(
+      (await this.db.payment.findMany({ where: { orderId: { in: orders.map((o) => o.id) }, isTest: true }, select: { orderId: true } })).map((p) => p.orderId),
+    );
     const now = Date.now();
     const sum = (sinceMs: number) =>
-      orders.filter((o) => o.status === 'paid' && now - o.updatedAt.getTime() < sinceMs).reduce((s, o) => s + o.total, 0);
+      orders
+        .filter((o) => o.status === 'paid' && !testPaid.has(o.id) && now - o.updatedAt.getTime() < sinceMs)
+        .reduce((s, o) => s + o.total, 0);
 
     const lastByUser = new Map<string, Date>();
     for (const o of orders) {

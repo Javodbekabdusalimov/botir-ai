@@ -1,397 +1,352 @@
 // Demo rejim: backend yo'q bo'lganda yoki NEXT_PUBLIC_DEMO=1 da ishlaydigan realistik stsenariylar.
 import type {
-  AcceptResult,
-  AgentMessage,
+  A2APayload,
+  AgentRequestResult,
   Analytics,
-  AssistantTask,
   Business,
-  BusinessInput,
-  ChatReply,
-  ConversationItem,
+  BusinessCategory,
+  CatalogImportResult,
+  CatalogRowInput,
+  Chat,
+  ChatMode,
+  ConfirmResult,
+  CreateBusinessDto,
+  InboxMessage,
+  LoopProposal,
+  MemoryFact,
   NegotiationEvent,
-  NegotiationSession,
-  Offer,
+  NegotiationMessage,
+  NegotiationTask,
   Order,
-  Product,
+  OrderItem,
 } from "./types";
+import { formatSom } from "./format";
 
+const iso = (minAgo: number) => new Date(Date.now() - minAgo * 60_000).toISOString();
+const rid = () => Math.random().toString(36).slice(2, 8);
+const ALL_DAYS = { mon: ["09:00", "22:00"], tue: ["09:00", "22:00"], wed: ["09:00", "22:00"], thu: ["09:00", "22:00"], fri: ["09:00", "22:00"], sat: ["09:00", "22:00"], sun: ["09:00", "22:00"] } as Business["workHours"];
+
+function biz(id: string, name: string, category: BusinessCategory, district: string, address: string, maxDiscountPct: number): Business {
+  return { id, name, category, district, address, maxDiscountPct, workHours: ALL_DAYS, lang: "uz", ownerUserId: "demo-owner", isDemo: true, createdAt: "2026-11-20T09:00:00Z", updatedAt: "2026-11-20T09:00:00Z" };
+}
+
+/** Panelda tanlanadigan 3 ta demo biznes */
 export const DEMO_BUSINESSES: Business[] = [
-  { id: "chorsu", name: "Chorsu Osh Markazi", category: "restaurant", area: "Chorsu, Shayxontohur", maxDiscountPct: 10 },
-  { id: "chilonzor", name: "Chilonzor AutoServis", category: "autoservice", area: "Chilonzor, 9-kvartal", maxDiscountPct: 12 },
-  { id: "malika", name: "Malika Do'kon", category: "shop", area: "Yunusobod, 4-kvartal", maxDiscountPct: 7 },
+  biz("chorsu", "Chorsu Osh Markazi", "restaurant", "Shayxontohur", "Chorsu bozori yonida", 10),
+  biz("chilonzor", "Chilonzor AutoServis", "autoservice", "Chilonzor", "9-kvartal", 12),
+  biz("malika", "Malika Do'kon", "shop", "Yunusobod", "4-kvartal", 7),
+];
+/** Parallel muzokarada raqobatchi sifatida ishtirok etadi */
+const COMPETITORS: Business[] = [
+  biz("besh", "Besh Qozon Osh Markazi", "restaurant", "Yunusobod", "Amir Temur shoh ko'chasi", 8),
+  biz("samarqand", "Samarqand Oshxonasi", "restaurant", "Mirzo Ulug'bek", "Mustaqillik ko'chasi", 12),
+];
+export const ALL_MOCK_BUSINESSES = [...DEMO_BUSINESSES, ...COMPETITORS];
+
+export const SAMPLE_CATALOG: CatalogRowInput[] = [
+  { name: "To'y oshi", price: 45000, unit: "porsiya" },
+  { name: "Tandir non", price: 4000, unit: "dona" },
+  { name: "Ko'k choy (choynak)", price: 15000, unit: "dona" },
+  { name: "Achchiq-chuchuk salat", price: 12000, unit: "porsiya" },
+  { name: "Qo'y go'shti kabobi", price: 18000, unit: "shish" },
 ];
 
-const p = (businessId: string, id: string, name: string, price: number, unit: string): Product => ({
-  id: `${businessId}-${id}`,
-  businessId,
-  name,
-  price,
-  unit,
-});
+/* ---------- A2A muzokara (maks 3 raund) ---------- */
 
-export const DEMO_PRODUCTS: Record<string, Product[]> = {
-  chorsu: [
-    p("chorsu", "osh", "To'y oshi", 45000, "porsiya"),
-    p("chorsu", "non", "Tandir non", 4000, "dona"),
-    p("chorsu", "choy", "Ko'k choy (choynak)", 15000, "dona"),
-    p("chorsu", "salat", "Achchiq-chuchuk salat", 12000, "porsiya"),
-    p("chorsu", "kabob", "Qo'y go'shti kabobi", 18000, "shish"),
-  ],
-  chilonzor: [
-    p("chilonzor", "moy", "Dvigatel moyini almashtirish (ish haqi)", 120000, "xizmat"),
-    p("chilonzor", "filtr", "Moy filtri", 45000, "dona"),
-    p("chilonzor", "diag", "Kompyuter diagnostikasi", 80000, "xizmat"),
-    p("chilonzor", "balans", "G'ildirak balansirovkasi (4 ta)", 100000, "xizmat"),
-    p("chilonzor", "kolodka", "Tormoz kolodkasini almashtirish", 180000, "xizmat"),
-  ],
-  malika: [
-    p("malika", "guruch", "Lazer guruch 5 kg", 85000, "qop"),
-    p("malika", "yog", "Kungaboqar yog'i 5 l", 78000, "dona"),
-    p("malika", "shakar", "Shakar 2 kg", 28000, "paket"),
-    p("malika", "un", "Un oliy navli 10 kg", 65000, "qop"),
-    p("malika", "choy", "Ahmad choy 100 g", 22000, "quti"),
-  ],
-};
-
-interface Scenario {
-  defaultRequest: string;
-  qty: Record<string, number>; // product suffix -> qty
-  discountPct: number;
-  script: { role: "personal_agent" | "biz_agent"; text: (req: string) => string }[];
+interface Plan {
+  items: { name: string; price: number; qty: number }[];
+  offers: [number, number, number]; // har raunddagi taklif chegirmasi
+  asks: [number, number]; // 2- va 3-raund COUNTER so'ragan chegirma
+  need: string;
 }
 
-export const SCENARIOS: Record<string, Scenario> = {
-  chorsu: {
-    defaultRequest: "Ertaga kechqurun soat 19:00 ga 6 kishilik osh joy kerak, byudjet 300 ming atrofida.",
-    qty: { osh: 6, non: 6, choy: 2, salat: 2 },
-    discountPct: 8,
-    script: [
-      { role: "personal_agent", text: (r) => `Assalomu alaykum! Men mijozning shaxsiy agentiman. So'rov: "${r}" Stol bo'shmi?` },
-      { role: "biz_agent", text: () => "Vaalaykum assalom! Ertaga 19:00 ga 6 kishilik stol bor, yopiq zal. To'y oshi, non, choy va salat bilan jami 348 000 so'm bo'ladi." },
-      { role: "personal_agent", text: () => "Mijoz byudjeti 300 000 so'm atrofida. Guruh 6 kishi, shuning uchun chegirma bera olasizmi?" },
-      { role: "biz_agent", text: () => "6 kishilik guruhga 5% chegirma beraman: 330 600 so'm." },
-      { role: "personal_agent", text: () => "Chilonzordagi oshxona 10% ga rozi bo'lgan. 10% qila olsangiz, mijoz aynan sizni tanlaydi." },
-      { role: "biz_agent", text: () => "10% ga ruxsatim yo'q. Maksimal 8%: 320 160 so'm, ustiga bepul choynak qo'shaman. Shu so'nggi taklif, taklif tayyor." },
-    ],
-  },
-  chilonzor: {
-    defaultRequest: "Cobalt mashinam uchun moy almashtirish va kompyuter diagnostikasi, shanba kuni ertalab.",
-    qty: { moy: 1, filtr: 1, diag: 1 },
-    discountPct: 10,
-    script: [
-      { role: "personal_agent", text: (r) => `Assalomu alaykum! Mijoz nomidan yozyapman. So'rov: "${r}" Shanba kuni joy bormi?` },
-      { role: "biz_agent", text: () => "Salom! Shanba 10:00 da bo'sh slot bor. Moy almashtirish, filtr va diagnostika jami 245 000 so'm." },
-      { role: "personal_agent", text: () => "Mijoz doimiy xizmatga keladi, shuning uchun qo'shimcha chegirma so'rayman. Diagnostika bepul bo'la oladimi?" },
-      { role: "biz_agent", text: () => "Diagnostikani bepul qilolmayman, lekin umumiy summaga 6% chegirma beraman: 230 300 so'm." },
-      { role: "personal_agent", text: () => "Raqobatchi servis 215 000 so'm aytdi. 10% chegirma bo'lsa shu yerda qoladi." },
-      { role: "biz_agent", text: () => "10% beraman: 220 500 so'm. Moy sifati va 1 oy kafolat o'sha narxga kiradi. Taklif tayyor." },
-    ],
-  },
-  malika: {
-    defaultRequest: "Oylik oziq-ovqat to'plami: guruch, yog', shakar, un va choy. Bugun yetkazib bering.",
-    qty: { guruch: 2, yog: 1, shakar: 2, un: 1, choy: 1 },
-    discountPct: 5,
-    script: [
-      { role: "personal_agent", text: (r) => `Assalomu alaykum! Mijozning shaxsiy agentiman. So'rov: "${r}" Hammasi omborda bormi?` },
-      { role: "biz_agent", text: () => "Vaalaykum assalom! Hammasi mavjud. Guruch 2 qop, yog', shakar 2 paket, un va choy: jami 391 000 so'm. Yetkazish bugun 18:00 gacha." },
-      { role: "personal_agent", text: () => "Mijoz har oy shu hajmda oladi. Doimiy xaridor chegirmasi bormi?" },
-      { role: "biz_agent", text: () => "Doimiy mijozga 3% beraman: 379 270 so'm." },
-      { role: "personal_agent", text: () => "Yetkazib berish bepul bo'lsa va 5% ga yetkazsangiz, har oy shu yerdan olamiz." },
-      { role: "biz_agent", text: () => "Maksimal chegirmam 7%, 5% ni tasdiqlayman: 371 450 so'm, yetkazish bepul. Taklif tayyor." },
-    ],
-  },
+const PLANS: Record<string, Plan> = {
+  chorsu: { items: [{ name: "To'y oshi", price: 45000, qty: 6 }, { name: "Tandir non", price: 4000, qty: 6 }, { name: "Ko'k choy", price: 15000, qty: 2 }, { name: "Salat", price: 12000, qty: 2 }], offers: [0, 5, 8], asks: [10, 10], need: "Ertaga 19:00 ga 6 kishilik osh joy kerak, byudjet 300 ming atrofida." },
+  besh: { items: [{ name: "To'y oshi", price: 42000, qty: 6 }, { name: "Tandir non", price: 3500, qty: 6 }, { name: "Ko'k choy", price: 12000, qty: 2 }, { name: "Salat", price: 10000, qty: 2 }], offers: [0, 3, 6], asks: [10, 8], need: "Ertaga 19:00 ga 6 kishilik osh joy kerak, byudjet 300 ming atrofida." },
+  samarqand: { items: [{ name: "To'y oshi", price: 48000, qty: 6 }, { name: "Tandir non", price: 4000, qty: 6 }, { name: "Ko'k choy", price: 15000, qty: 2 }, { name: "Salat", price: 12000, qty: 2 }], offers: [0, 5, 10], asks: [12, 12], need: "Ertaga 19:00 ga 6 kishilik osh joy kerak, byudjet 300 ming atrofida." },
+  chilonzor: { items: [{ name: "Moy almashtirish (ish haqi)", price: 120000, qty: 1 }, { name: "Moy filtri", price: 45000, qty: 1 }, { name: "Kompyuter diagnostikasi", price: 80000, qty: 1 }], offers: [0, 6, 10], asks: [12, 12], need: "Cobalt uchun moy almashtirish va diagnostika, shanba ertalab." },
+  malika: { items: [{ name: "Lazer guruch 5 kg", price: 85000, qty: 2 }, { name: "Kungaboqar yog'i 5 l", price: 78000, qty: 1 }, { name: "Shakar 2 kg", price: 28000, qty: 2 }, { name: "Un 10 kg", price: 65000, qty: 1 }, { name: "Ahmad choy", price: 22000, qty: 1 }], offers: [0, 3, 5], asks: [7, 7], need: "Oylik oziq-ovqat to'plami, bugun yetkazib bering." },
 };
 
-export function scenarioKey(id: string): string {
-  const m = /^demo-(chorsu|chilonzor|malika)/.exec(id);
-  return m ? m[1] : "chorsu";
+const MULTI = ["chorsu", "besh", "samarqand"];
+
+/** negotiationId ichidan biznes chiziqlari: "demo-chorsu+chilonzor-ab12" yoki "demo-multi-ab12" */
+export function laneKeys(id: string): string[] {
+  const seg = /^demo-([a-z+]+)/.exec(id)?.[1] ?? "multi";
+  if (seg === "multi") return MULTI;
+  const keys = seg.split("+").filter((k) => PLANS[k]).slice(0, 3);
+  return keys.length ? keys : ["chorsu"];
 }
 
-export function buildOffer(sessionId: string, key: string): Offer {
-  const sc = SCENARIOS[key];
-  const products = DEMO_PRODUCTS[key];
-  const items = Object.entries(sc.qty).map(([suffix, qty]) => ({ productId: `${key}-${suffix}`, qty }));
-  const subtotal = items.reduce((s, it) => s + (products.find((x) => x.id === it.productId)?.price ?? 0) * it.qty, 0);
-  return {
-    id: `offer-${sessionId}`,
-    sessionId,
-    items,
-    total: Math.round((subtotal * (100 - sc.discountPct)) / 100),
-    discountPct: sc.discountPct,
-    status: "proposed",
+export function negotiationIdFor(tasks: NegotiationTask[]): string {
+  const cats = tasks.map((t) => t.category);
+  const keyOf = (c: BusinessCategory) => (c === "autoservice" ? "chilonzor" : c === "shop" ? "malika" : "chorsu");
+  const uniq = [...new Set(cats.map(keyOf))];
+  const seg = uniq.length === 1 && uniq[0] === "chorsu" ? "multi" : uniq.join("+");
+  return `demo-${seg}-${rid()}`;
+}
+
+const subtotal = (p: Plan) => p.items.reduce((s, i) => s + i.price * i.qty, 0);
+const priceAt = (p: Plan, d: number) => Math.round((subtotal(p) * (100 - d)) / 100);
+
+function buildLane(negId: string, key: string, needs: Record<string, string> | undefined): { msgs: NegotiationMessage[]; offers: Extract<A2APayload, { type: "OFFER" }>[] } {
+  const p = PLANS[key];
+  const b = ALL_MOCK_BUSINESSES.find((x) => x.id === key)!;
+  const need = needs?.[key] ?? p.need;
+  const items: OrderItem[] = p.items.map((i, n) => ({ catalogItemId: `${key}-${n}`, name: i.name, qty: i.qty, price: i.price }));
+  const summary = p.items.map((i) => `${i.name} x${i.qty}`).join(", ");
+  const mk = (n: number, round: number, from: "personal" | "business", text: string, payload: A2APayload): NegotiationMessage => ({
+    id: `${negId}-${key}-${n}`,
+    negotiationId: negId,
+    fromAgent: from,
+    businessId: key,
+    round,
+    text,
+    payload,
+    createdAt: "",
+  });
+  const offer = (d: number, text: string, n: number, round: number) => {
+    const payload: Extract<A2APayload, { type: "OFFER" }> = { type: "OFFER", items, price: priceAt(p, d), discountPct: d, validUntil: "" };
+    return { m: mk(n, round, "business", text, payload), payload };
   };
+  const o1 = offer(p.offers[0], `Vaalaykum assalom! Mavjud: ${summary}. Jami ${formatSom(priceAt(p, p.offers[0]))}.`, 1, 1);
+  const o2 = offer(p.offers[1], `${p.offers[1]}% chegirma beraman: ${formatSom(priceAt(p, p.offers[1]))}.`, 3, 2);
+  const o3 = offer(p.offers[2], `Maksimal imkonim ${p.offers[2]}%: ${formatSom(priceAt(p, p.offers[2]))}. Bu ${b.name} uchun so'nggi taklif.`, 5, 3);
+  const msgs: NegotiationMessage[] = [
+    mk(0, 1, "personal", `Assalomu alaykum! Men mijozning shaxsiy agentiman. So'rov: ${need}`, { type: "REQUEST", taskId: "t1", need }),
+    o1.m,
+    mk(2, 2, "personal", `Mijoz byudjeti cheklangan. ${p.asks[0]}% chegirma bera olasizmi?`, { type: "COUNTER", askDiscountPct: p.asks[0], reason: "byudjet cheklangan" }),
+    o2.m,
+    mk(4, 3, "personal", `Boshqa takliflar yaxshiroq. ${p.asks[1]}% bo'lsa darhol kelishamiz.`, { type: "COUNTER", askDiscountPct: p.asks[1], reason: "raqobatchi narxi" }),
+    o3.m,
+    mk(6, 3, "personal", "Rozi, shu shartlarga kelishdik. Taklifni mijozga tasdiqlash uchun yuboraman.", { type: "ACCEPT" }),
+  ];
+  return { msgs, offers: [o1.payload, o2.payload, o3.payload] };
 }
 
-/** Skriptli muzokarani vaqt bo'yicha yuboradi; qaytargani: bekor qilish. */
-export function runMockStream(
-  sessionId: string,
-  request: string | undefined,
-  emit: (e: NegotiationEvent) => void,
-  gapMs = 350,
-): () => void {
-  const key = scenarioKey(sessionId);
-  const sc = SCENARIOS[key];
-  const req = request || sc.defaultRequest;
+/** Skriptli parallel muzokara. Qaytargani: bekor qilish. */
+export function runMockStream(negId: string, needs: Record<string, string> | undefined, emit: (e: NegotiationEvent) => void, gapMs = 330): () => void {
   const timers: ReturnType<typeof setTimeout>[] = [];
-  const events: NegotiationEvent[] = [{ type: "status", status: "running" }];
-  sc.script.forEach((step, i) => {
-    const message: AgentMessage = {
-      id: `${sessionId}-m${i}`,
-      role: step.role,
-      text: step.text(req),
-      at: "", // yuborish vaqtida to'ldiriladi
-    };
-    events.push({ type: "message", message });
+  const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+  const keys = laneKeys(negId);
+  at(100, () => emit({ type: "status", status: "running" }));
+  let last = 0;
+  keys.forEach((key, li) => {
+    const { msgs } = buildLane(negId, key, needs);
+    const b = ALL_MOCK_BUSINESSES.find((x) => x.id === key)!;
+    msgs.forEach((m, i) => {
+      const t = 250 + li * 140 + i * gapMs;
+      last = Math.max(last, t);
+      at(t, () => {
+        const now = new Date();
+        const msg = { ...m, createdAt: now.toISOString() };
+        if (msg.payload.type === "OFFER") msg.payload = { ...msg.payload, validUntil: new Date(now.getTime() + 3600_000).toISOString() };
+        emit({ type: "message", message: msg });
+        if (msg.payload.type === "OFFER") {
+          const offer = msg.payload;
+          emit({ type: "best_offer", businessId: key, businessName: b.name, offer });
+        }
+      });
+    });
   });
-  events.push({ type: "offer", offer: buildOffer(sessionId, key) });
-  events.push({ type: "status", status: "agreed" });
-  events.forEach((ev, i) => {
-    timers.push(
-      setTimeout(() => {
-        if (ev.type === "message") emit({ ...ev, message: { ...ev.message, at: new Date().toISOString() } });
-        else emit(ev);
-      }, 200 + i * gapMs),
-    );
-  });
+  at(last + 200, () => emit({ type: "status", status: "agreed" }));
   return () => timers.forEach(clearTimeout);
 }
 
-/* ---------- Assistant (shaxsiy agent rejasi) ---------- */
+export function mockConfirm(): ConfirmResult {
+  const orderId = `ord-${rid()}`;
+  return { orderId, paymentLink: `https://pay.tezcheck.uz/demo/${orderId}` };
+}
 
-const CATEGORY_RULES: { category: Business["category"]; re: RegExp; businessId: string; title: string }[] = [
-  { category: "restaurant", re: /osh|restoran|ovqat|stol|joy band|kafe|ziyofat/i, businessId: "chorsu", title: "Stol band qilish" },
-  { category: "autoservice", re: /mashina|moy|servis|avto|cobalt|kobalt|nexia|tormoz|diagnostika/i, businessId: "chilonzor", title: "Avtoservisga yozilish" },
-  { category: "shop", re: /do'kon|oziq|guruch|yog'|shakar|mahsulot|yetkaz/i, businessId: "malika", title: "Mahsulot buyurtmasi" },
+/* ---------- Shaxsiy agent rejasi ---------- */
+
+const RULES: { category: BusinessCategory; re: RegExp }[] = [
+  { category: "restaurant", re: /osh|restoran|ovqat|stol|joy band|kafe|ziyofat/i },
+  { category: "autoservice", re: /mashina|moy|servis|avto|cobalt|kobalt|nexia|tormoz|diagnostika/i },
+  { category: "shop", re: /do'kon|oziq|guruch|yog'|shakar|mahsulot|yetkaz/i },
 ];
+const DAY = /ertaga|bugun|shanba|yakshanba|dushanba|seshanba|chorshanba|payshanba|juma/i;
 
-export function mockParseAssistant(text: string): AssistantTask[] {
-  const parts = text
-    .split(/[,;\n]|\bva\b|\bhamda\b|\+/i)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const tasks: AssistantTask[] = [];
-  const global = /ertaga|bugun|shanba|yakshanba|dushanba|seshanba|chorshanba|payshanba|juma/i.exec(text)?.[0];
+function whenISO(text: string): string | undefined {
+  const time = /(\d{1,2})[:.](\d{2})/.exec(text);
+  const day = DAY.exec(text)?.[0]?.toLowerCase();
+  if (!day && !time) return undefined;
+  const d = new Date();
+  if (day === "ertaga") d.setDate(d.getDate() + 1);
+  const [h, m] = time ? [Number(time[1]), Number(time[2])] : [/kechqurun|kech/i.test(text) ? 19 : 12, 0];
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+}
+
+export function mockAgentRequest(text: string): AgentRequestResult {
+  const parts = text.split(/[,;\n]|\bva\b|\bhamda\b|\+/i).map((s) => s.trim()).filter(Boolean);
+  const tasks: NegotiationTask[] = [];
   parts.forEach((part, i) => {
-    const rule = CATEGORY_RULES.find((r) => r.re.test(part));
-    if (!rule) return;
-    if (tasks.some((t) => t.businessId === rule.businessId)) return;
-    const biz = DEMO_BUSINESSES.find((b) => b.id === rule.businessId)!;
+    const rule = RULES.find((r) => r.re.test(part));
+    if (!rule || tasks.some((t) => t.category === rule.category)) return;
     const people = /(\d+)\s*kishi/i.exec(part)?.[1] ?? /(\d+)\s*kishi/i.exec(text)?.[1];
-    const time = /(\d{1,2})[:.](\d{2})/.exec(part)?.[0];
-    const day = /ertaga|bugun|shanba|yakshanba|dushanba|seshanba|chorshanba|payshanba|juma/i.exec(part)?.[0] ?? global;
-    const when = [day && day[0].toUpperCase() + day.slice(1).toLowerCase(), time].filter(Boolean).join(", ") || undefined;
+    const budget = /(\d+)\s*(ming|k)\b/i.exec(part);
     tasks.push({
-      id: `task-${i}-${rule.businessId}`,
-      title: rule.title,
+      taskId: `t${i + 1}`,
       category: rule.category,
-      area: biz.area,
-      when,
+      need: part.charAt(0).toUpperCase() + part.slice(1) + ".",
+      when: whenISO(part) ?? whenISO(text),
+      where: "Toshkent",
       people: people ? Number(people) : undefined,
-      businessId: biz.id,
-      businessName: biz.name,
-      request: part.charAt(0).toUpperCase() + part.slice(1) + (part.endsWith(".") ? "" : "."),
+      budget: budget ? Number(budget[1]) * 1000 : undefined,
     });
   });
-  return tasks;
+  return { negotiationId: negotiationIdFor(tasks), tasks };
 }
 
-/* ---------- Biznes, buyurtmalar, analitika ---------- */
+/* ---------- Biznes, katalog, buyurtma, analitika ---------- */
 
-const mkId = () => Math.random().toString(36).slice(2, 8);
+export const mockBusinesses = () => ALL_MOCK_BUSINESSES;
 
-export function mockCreateBusiness(input: BusinessInput): Business {
-  return {
-    id: `demo-${mkId()}`,
-    name: input.name,
-    category: input.category,
-    area: input.area,
-    maxDiscountPct: input.maxDiscountPct,
-  };
+export function mockCreateBusiness(dto: CreateBusinessDto): Business {
+  const now = new Date().toISOString();
+  return { ...dto, id: `demo-${rid()}`, ownerUserId: "demo-owner", isDemo: true, createdAt: now, updatedAt: now };
 }
 
-export function mockChat(businessId: string, text: string): ChatReply {
-  const products = DEMO_PRODUCTS[businessId] ?? DEMO_PRODUCTS.chorsu;
-  const t = text.toLowerCase();
-  const hit = products.find((x) => x.name.toLowerCase().split(" ").some((w) => w.length > 3 && t.includes(w.slice(0, 4))));
-  if (hit) return { reply: `Ha, "${hit.name}" bor: ${hit.price.toLocaleString("en-US").replace(/,/g, " ")} so'm / ${hit.unit}. Buyurtma beraylikmi?` };
-  if (/soat|vaqt|ochiq|ish vaqti/.test(t)) return { reply: "Har kuni 09:00 dan 22:00 gacha ochiqmiz." };
-  if (/chegirma|arzon|skidka/.test(t)) return { reply: "Doimiy mijozlar va katta buyurtmalarga chegirma bor. Hajmini ayting, hisoblab beraman." };
-  return { reply: "Tushundim. Aniqroq ayting: nima kerak, qachonga va nechta? Katalogdan tanlab beraman." };
-}
-
-export function mockAccept(offerId: string): AcceptResult {
-  const sessionId = offerId.replace(/^offer-/, "");
-  const key = scenarioKey(sessionId);
-  const offer = { ...buildOffer(sessionId, key), status: "accepted" as const };
-  const biz = DEMO_BUSINESSES.find((b) => b.id === key)!;
-  return {
-    offer,
-    payUrl: `https://pay.botir.uz/demo/${offerId}`,
-    order: {
-      id: `ord-${mkId()}`,
-      businessId: biz.id,
-      customer: "Siz",
-      summary: `${offer.items.length} ta pozitsiya, chegirma ${offer.discountPct}%`,
-      total: offer.total,
-      status: "confirmed",
-      createdAt: new Date().toISOString(),
-    },
-  };
-}
-
-const iso = (minAgo: number) => new Date(Date.now() - minAgo * 60_000).toISOString();
+export const mockImport = (rows: CatalogRowInput[]): CatalogImportResult => ({ imported: rows.length, skipped: 0, errors: [] });
 
 export function mockOrders(businessId: string): Order[] {
-  const sets: Record<string, [string, string, number, Order["status"], number][]> = {
+  const it = (name: string, qty: number, price: number): OrderItem => ({ catalogItemId: `${businessId}-${name}`, name, qty, price });
+  const sets: Record<string, [OrderItem[], number, number, Order["status"], number][]> = {
     chorsu: [
-      ["Aziz R.", "6 kishilik stol, to'y oshi x6, non x6", 320160, "confirmed", 12],
-      ["Dilnoza K.", "Kabob x10, salat x4, choy x2", 247000, "paid", 55],
-      ["Sardor M.", "Osh x3 (olib ketish)", 135000, "new", 8],
-      ["Jasur T.", "12 kishilik stol, tug'ilgan kun", 612000, "done", 400],
-      ["Madina A.", "Osh x2, non x2", 98000, "cancelled", 720],
+      [[it("To'y oshi", 6, 45000), it("Tandir non", 6, 4000)], 320160, 8, "pending_confirm", 12],
+      [[it("Qo'y go'shti kabobi", 10, 18000), it("Salat", 4, 12000)], 228000, 0, "paid", 55],
+      [[it("To'y oshi", 3, 45000)], 135000, 0, "confirmed", 90],
+      [[it("To'y oshi", 12, 45000)], 540000, 10, "paid", 400],
+      [[it("To'y oshi", 2, 45000)], 90000, 0, "cancelled", 720],
     ],
     chilonzor: [
-      ["Bobur S.", "Moy + filtr + diagnostika, Cobalt", 220500, "confirmed", 20],
-      ["Otabek N.", "Tormoz kolodkasi, Nexia 2", 180000, "paid", 130],
-      ["Kamola Y.", "Balansirovka 4 g'ildirak", 100000, "new", 5],
-      ["Rustam H.", "Diagnostika, Gentra", 80000, "done", 900],
+      [[it("Moy almashtirish", 1, 120000), it("Moy filtri", 1, 45000), it("Diagnostika", 1, 80000)], 220500, 10, "pending_confirm", 20],
+      [[it("Tormoz kolodkasi", 1, 180000)], 180000, 0, "paid", 130],
+      [[it("Balansirovka", 1, 100000)], 100000, 0, "confirmed", 5],
     ],
     malika: [
-      ["Gulnora Q.", "Oylik to'plam (5 pozitsiya)", 371450, "confirmed", 30],
-      ["Anvar B.", "Guruch 1, yog' 1", 163000, "paid", 95],
-      ["Zarina I.", "Choy x3, shakar x2", 122000, "new", 11],
+      [[it("Lazer guruch 5 kg", 2, 85000), it("Yog' 5 l", 1, 78000)], 371450, 5, "pending_confirm", 30],
+      [[it("Guruch", 1, 85000), it("Yog'", 1, 78000)], 163000, 0, "paid", 95],
+      [[it("Choy", 3, 22000), it("Shakar", 2, 28000)], 122000, 0, "draft", 11],
     ],
   };
-  const rows = sets[businessId] ?? sets.chorsu;
-  return rows.map(([customer, summary, total, status, ago], i) => ({
-    id: `ord-${businessId}-${i}`,
+  return (sets[businessId] ?? sets.chorsu).map(([items, total, discountPct, status, ago], i) => ({
+    id: `ord-${businessId}-${i}`.padEnd(12, "0"),
     businessId,
-    customer,
-    summary,
+    userId: `user-${businessId}-${i}-${rid()}`,
+    items,
     total,
+    discountPct,
     status,
     createdAt: iso(ago),
-  }));
-}
-
-export function mockConversations(businessId: string): ConversationItem[] {
-  const sets: Record<string, [ConversationItem["channel"], string, string, number][]> = {
-    chorsu: [
-      ["telegram", "Aziz R.", "Ertaga 6 kishilik stol bormi?", 14],
-      ["web", "Mehmon", "Halol sertifikat bormi?", 40],
-      ["telegram", "Dilnoza K.", "Kabobni olib ketsa bo'ladimi?", 70],
-    ],
-    chilonzor: [
-      ["telegram", "Bobur S.", "Cobalt uchun moy narxi qancha?", 25],
-      ["web", "Mehmon", "Yakshanba ishlaysizlarmi?", 90],
-    ],
-    malika: [
-      ["telegram", "Gulnora Q.", "Bugun yetkazib berasizmi?", 33],
-      ["telegram", "Zarina I.", "Un narxi oshdimi?", 120],
-    ],
-  };
-  return (sets[businessId] ?? sets.chorsu).map(([channel, customer, lastMessage, ago], i) => ({
-    id: `conv-${businessId}-${i}`,
-    channel,
-    customer,
-    lastMessage,
-    at: iso(ago),
+    updatedAt: iso(ago),
   }));
 }
 
 export function mockAnalytics(businessId: string): Analytics {
   const sets: Record<string, Analytics> = {
     chorsu: {
-      topAsked: [
-        { text: "Stol band qilish (guruh)", count: 42 },
-        { text: "Osh narxi", count: 31 },
-        { text: "Olib ketish", count: 19 },
-      ],
-      missing: [
-        { text: "Halol sertifikat nusxasi", count: 7 },
-        { text: "Bolalar menyusi", count: 5 },
-        { text: "Vegetarian taom", count: 3 },
-      ],
-      lostClients: [
-        { name: "Nodir (guruh 10 kishi)", reason: "Chegirma 12% so'ragan, maksimal 10%", at: iso(300) },
-        { name: "Shahlo", reason: "Soat 23:00 gacha ochiq emas", at: iso(900) },
-      ],
+      topRequests: [{ query: "Stol band qilish (guruh)", count: 42 }, { query: "Osh narxi", count: 31 }, { query: "Olib ketish", count: 19 }],
+      notFound: [{ query: "Halol sertifikat nusxasi", count: 7 }, { query: "Bolalar menyusi", count: 5 }, { query: "Vegetarian taom", count: 3 }],
+      lostCustomers: [{ userId: "u1", name: "Nodir (guruh 10 kishi)", lastOrderAt: iso(300) }, { userId: "u2", name: "Shahlo", lastOrderAt: iso(900) }],
+      revenue: { today: 683160, week: 4120000, month: 15800000 },
     },
     chilonzor: {
-      topAsked: [
-        { text: "Moy almashtirish narxi", count: 38 },
-        { text: "Diagnostika", count: 27 },
-        { text: "Tormoz kolodkasi", count: 15 },
-      ],
-      missing: [
-        { text: "Konditsioner to'ldirish", count: 9 },
-        { text: "Kuzov ta'miri", count: 6 },
-      ],
-      lostClients: [{ name: "Ulug'bek", reason: "Yakshanba ish kuni emas", at: iso(500) }],
+      topRequests: [{ query: "Moy almashtirish narxi", count: 38 }, { query: "Diagnostika", count: 27 }, { query: "Tormoz kolodkasi", count: 15 }],
+      notFound: [{ query: "Konditsioner to'ldirish", count: 9 }, { query: "Kuzov ta'miri", count: 6 }],
+      lostCustomers: [{ userId: "u3", name: "Ulug'bek", lastOrderAt: iso(500) }],
+      revenue: { today: 400500, week: 2650000, month: 9300000 },
     },
     malika: {
-      topAsked: [
-        { text: "Yog' narxi", count: 33 },
-        { text: "Yetkazib berish", count: 29 },
-        { text: "Guruch navlari", count: 14 },
-      ],
-      missing: [
-        { text: "Go'sht mahsulotlari", count: 11 },
-        { text: "Sut mahsulotlari", count: 8 },
-      ],
-      lostClients: [{ name: "Feruza", reason: "Yetkazish 18:00 dan keyin yo'q", at: iso(200) }],
+      topRequests: [{ query: "Yog' narxi", count: 33 }, { query: "Yetkazib berish", count: 29 }, { query: "Guruch navlari", count: 14 }],
+      notFound: [{ query: "Go'sht mahsulotlari", count: 11 }, { query: "Sut mahsulotlari", count: 8 }],
+      lostCustomers: [{ userId: "u4", name: "Feruza", lastOrderAt: iso(200) }],
+      revenue: { today: 534450, week: 3300000, month: 12100000 },
     },
   };
   return sets[businessId] ?? sets.chorsu;
 }
 
-export function mockNegotiationSession(businessId: string, request: string): NegotiationSession {
-  const key = DEMO_BUSINESSES.some((b) => b.id === businessId) ? businessId : "chorsu";
-  const biz = DEMO_BUSINESSES.find((b) => b.id === key)!;
-  return {
-    id: `demo-${key}-${mkId()}`,
-    businessId: key,
-    businessName: biz.name,
-    request,
-    status: "running",
-    round: 0,
-    createdAt: new Date().toISOString(),
-  };
+/* ---------- Inbox ---------- */
+
+const chatMode = new Map<string, ChatMode>();
+
+export function mockChats(businessId: string): Chat[] {
+  const rows: [string, string, ChatMode, boolean, number, number][] = [
+    ["Aziz R.", "Ertaga 6 kishilik stol bormi?", "copilot", false, 6, 2],
+    ["Nodira S.", "Chegirma qilsangiz 10 kishi kelamiz", "copilot", false, 21, 1],
+    ["Bekzod (yetkazib beruvchi)", "Guruch narxi oshdi, yangi narx bilan kelishamizmi?", "copilot", true, 44, 1],
+    ["Dilnoza K.", "Kabobni olib ketsa bo'ladimi?", "autopilot", false, 80, 0],
+    ["Sardor M.", "Rahmat!", "off", false, 300, 0],
+  ];
+  return rows.map(([title, lastMessageText, mode, needsHuman, ago, unread], i) => {
+    const id = `chat-${businessId}-${i}`;
+    return { id, tgAccountId: "tg-demo", peerId: `${1000 + i}`, title, mode: chatMode.get(id) ?? mode, lastMessageAt: iso(ago), lastMessageText, needsHuman, unread };
+  });
 }
 
-/* ---------- Telegram ulash / inbox / yaxshilash (demo) ---------- */
-import type { ImproveData, InboxItem, Suggestion } from "./types";
+export function mockSetMode(chatId: string, mode: ChatMode): { mode: ChatMode } {
+  chatMode.set(chatId, mode);
+  return { mode };
+}
 
-export function mockInbox(businessId: string): InboxItem[] {
-  const rows: [string, InboxItem["channel"], string, string, InboxItem["mode"], InboxItem["status"], number][] = [
-    ["Aziz R.", "telegram", "Ertaga 6 kishilik stol bormi?", "Ha, ertaga 19:00 ga 6 kishilik yopiq zal bor. To'y oshi bilan taxminan 348 000 so'm. Band qilaymi?", "copilot", "draft", 6],
-    ["Nodira S.", "telegram", "Chegirma qilsangiz 10 kishi kelamiz", "Ajoyib! 10 kishilik guruhga 8% gacha chegirma bera olaman. Kun va vaqtni ayting.", "copilot", "draft", 21],
-    ["Mehmon (web)", "web", "Halol sertifikatingiz bormi?", "Bu savolga aniq javob bazamda yo'q. Egasiga yo'naltiraman.", "copilot", "needs_human", 44],
-    ["Dilnoza K.", "telegram", "Kabobni olib ketsa bo'ladimi?", "Albatta, olib ketish mumkin. 15 daqiqada tayyor bo'ladi.", "autopilot", "sent", 80],
+export function mockMessages(chatId: string): InboxMessage[] {
+  const i = Number(chatId.split("-").pop());
+  const m = (n: number, author: InboxMessage["author"], text: string, ago: number, extra: Partial<InboxMessage> = {}): InboxMessage => ({
+    id: `${chatId}-m${n}`,
+    chatId,
+    direction: author === "customer" ? "in" : "out",
+    author,
+    text,
+    sentAt: iso(ago),
+    ...extra,
+  });
+  const sets: InboxMessage[][] = [
+    [
+      m(0, "customer", "Assalomu alaykum", 9),
+      m(1, "ai", "Vaalaykum assalom! Qanday yordam bera olaman?", 8),
+      m(2, "customer", "Ertaga 6 kishilik stol bormi?", 6, { voiceUrl: "#", transcript: "Ertaga olti kishilik stol bormi, soat yettiga" }),
+      m(3, "ai", "Ha, ertaga 19:00 ga 6 kishilik yopiq zal bor. To'y oshi bilan taxminan 348 000 so'm. Band qilaymi?", 5, { isDraft: true }),
+    ],
+    [
+      m(0, "customer", "Chegirma qilsangiz 10 kishi kelamiz", 21),
+      m(1, "ai", "Ajoyib! 10 kishilik guruhga 8% gacha chegirma bera olaman. Kun va vaqtni ayting.", 20, { isDraft: true }),
+    ],
+    [
+      m(0, "customer", "Guruch narxi oshdi, yangi narx bilan kelishamizmi?", 44),
+      m(1, "ai", "Bu savol narx siyosatiga tegishli. Egasiga yo'naltiraman.", 43, { isDraft: true }),
+    ],
+    [m(0, "customer", "Kabobni olib ketsa bo'ladimi?", 82), m(1, "ai", "Albatta, olib ketish mumkin. 15 daqiqada tayyor bo'ladi.", 80)],
+    [m(0, "customer", "Rahmat!", 301), m(1, "owner", "Marhamat!", 300)],
   ];
-  return rows.map(([customer, channel, lastMessage, draft, mode, status, ago], i) => ({
-    id: `inb-${businessId}-${i}`,
-    customer,
-    channel,
-    lastMessage,
-    draft,
-    mode,
-    status,
-    at: iso(ago),
+  return sets[i] ?? sets[0];
+}
+
+/* ---------- Loop (o'z-o'zini yaxshilash) ---------- */
+
+export function mockLoop(businessId: string): LoopProposal[] {
+  const base = { businessId, status: "pending" as const, createdAt: new Date().toISOString() };
+  return [
+    { ...base, id: `p1-${rid()}`, kind: "catalog_item", title: "Katalogga \"Bolalar menyusi\" qo'shish", diff: "+ Bolalar menyusi: sho'rva, kotlet, kompot (35 000 so'm)\n+ tags: [bolalar, menyu]", reason: "So'nggi 7 kunda 5 marta so'ralgan, katalogda topilmagan", evalBefore: 72, evalAfter: 81 },
+    { ...base, id: `p2-${rid()}`, kind: "prompt_fix", title: "Guruh chegirmasini aniq aytish", diff: "- 'Chegirma bor' deb javob beradi\n+ 6+ kishi guruhga chegirma chegarasini narx bilan aytadi", reason: "2 ta katta guruh chegirma noaniqligi sababli qaytmagan", evalBefore: 72, evalAfter: 78 },
+    { ...base, id: `p3-${rid()}`, kind: "faq", title: "FAQ: ish vaqti va manzil", diff: "+ Q: Soat nechagacha ochiqsiz?\n+ A: Har kuni 09:00-22:00.", reason: "\"Soat nechagacha?\" savoli 9 marta takrorlangan", evalBefore: 72, evalAfter: 75 },
+  ];
+}
+
+export function mockFacts(businessId: string): MemoryFact[] {
+  return [
+    ["Mijozlar ko'pincha 19:00 dan keyin stol so'raydi", "Suhbatlar tahlili", 0.86],
+    ["Juma kuni guruh buyurtmalari 2 barobar ko'p", "Buyurtmalar tarixi", 0.9],
+    ["Aziz R. doimiy mijoz, odatda 6 kishi bilan keladi", "Suhbat #1", 0.78],
+    ["Egasi: choynak sovg'a qilish pul chegirmasidan arzonroq", "Egasi ko'rsatmasi", 0.95],
+  ].map(([fact, source, confidence], i) => ({
+    id: `f${i}`,
+    subjectType: i === 2 ? "customer" : "business",
+    subjectId: businessId,
+    fact: fact as string,
+    source: source as string,
+    confidence: confidence as number,
+    createdAt: iso(60 * (i + 1) * 5),
   }));
-}
-
-export function mockImprove(): ImproveData {
-  const suggestions: Suggestion[] = [
-    { id: "s1", title: "Katalogga \"Bolalar menyusi\" qo'shish", reason: "So'nggi 7 kunda 5 marta so'ralgan, katalogda yo'q", status: "proposed" },
-    { id: "s2", title: "Guruhga chegirma chegarasini 10% dan 12% ga oshirish", reason: "2 ta katta guruh (10+ kishi) chegirma sababli qaytmagan", status: "proposed" },
-    { id: "s3", title: "Javoblarga ish vaqtini avtomatik qo'shish", reason: "\"Soat nechagacha?\" savoli 9 marta takrorlangan", status: "proposed" },
-  ];
-  const facts = [
-    ["Mijozlar ko'pincha 19:00 dan keyin stol so'raydi", "Suhbatlar tahlili"],
-    ["Juma kuni guruh buyurtmalari 2 barobar ko'p", "Buyurtmalar tarixi"],
-    ["\"Osh\" so'zi bor savollarning 60% i narx haqida", "Suhbatlar tahlili"],
-    ["Egasi: choynak sovg'a qilish mumkin, pul chegirmasidan arzonroq", "Egasi ko'rsatmasi"],
-  ].map(([text, source], i) => ({ id: `f${i}`, text, source, at: iso(60 * (i + 1) * 5) }));
-  return { suggestions, facts };
 }

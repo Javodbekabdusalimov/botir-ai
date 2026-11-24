@@ -5,15 +5,17 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, CalendarClock, Loader2, MapPin, Play, Send, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { planAssistant, startNegotiation } from "@/lib/api";
-import type { AssistantTask } from "@/lib/types";
+import { agentRequest } from "@/lib/api";
+import { CATEGORY_LABEL, formatWhen } from "@/lib/format";
+import type { NegotiationTask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Msg {
   id: number;
   from: "me" | "agent";
   text: string;
-  tasks?: AssistantTask[];
+  tasks?: NegotiationTask[];
+  negotiationId?: string;
 }
 
 const EXAMPLES = [
@@ -29,7 +31,7 @@ export function AssistantChat() {
     { id: 0, from: "agent", text: "Salom! Men sizning shaxsiy agentingizman. Nima kerak? Men bizneslar bilan o'zim gaplashaman, siz faqat tasdiqlaysiz." },
   ]);
   const [busy, setBusy] = useState(false);
-  const [starting, setStarting] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -45,11 +47,11 @@ export function AssistantChat() {
     setMsgs((m) => [...m, { id: m.length, from: "me", text: t }]);
     setBusy(true);
     try {
-      const { tasks } = await planAssistant(t);
+      const { tasks, negotiationId } = await agentRequest(t);
       setMsgs((m) => [
         ...m,
         tasks.length
-          ? { id: m.length, from: "agent", text: tasks.length === 1 ? "Tushundim. Bitta vazifa:" : `Tushundim. ${tasks.length} ta vazifaga ajratdim:`, tasks }
+          ? { id: m.length, from: "agent", text: tasks.length === 1 ? "Tushundim. Bitta vazifa:" : `Tushundim. ${tasks.length} ta vazifaga ajratdim:`, tasks, negotiationId }
           : { id: m.length, from: "agent", text: "Tushunmadim. Nima kerakligini aniqroq ayting: masalan, \"Ertaga 6 kishilik osh joy band qil\"." },
       ]);
     } catch (e) {
@@ -60,17 +62,10 @@ export function AssistantChat() {
     }
   }
 
-  async function start(task: AssistantTask) {
+  function start(negotiationId: string) {
     if (starting) return;
-    setStarting(task.id);
-    setError(null);
-    try {
-      const s = await startNegotiation(task.businessId, task.request);
-      router.push(`/live/${encodeURIComponent(s.id)}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Muzokarani boshlab bo'lmadi");
-      setStarting(null);
-    }
+    setStarting(true);
+    router.push(`/live/${encodeURIComponent(negotiationId)}`);
   }
 
   return (
@@ -85,18 +80,18 @@ export function AssistantChat() {
             <div className={cn("max-w-[88%] space-y-3", m.from === "me" && "text-right")}>
               <p className={cn("inline-block rounded-2xl px-4 py-2.5 text-left text-[15px]", m.from === "me" ? "bg-agent/15" : "border border-border bg-card/60")}>{m.text}</p>
               {m.tasks?.map((t) => (
-                <article key={t.id} className="rounded-2xl border border-agent/30 bg-card p-4 text-left">
-                  <h2 className="font-display text-base font-bold">{t.title}</h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{t.businessName}</p>
+                <article key={t.taskId} className="rounded-2xl border border-agent/30 bg-card p-4 text-left">
+                  <h2 className="font-display text-base font-bold">{CATEGORY_LABEL[t.category] ?? t.category}</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{t.need}</p>
                   <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    {t.area && (
+                    {t.where && (
                       <li className="flex items-center gap-1">
-                        <MapPin className="size-3" aria-hidden="true" /> {t.area}
+                        <MapPin className="size-3" aria-hidden="true" /> {t.where}
                       </li>
                     )}
                     {t.when && (
                       <li className="flex items-center gap-1">
-                        <CalendarClock className="size-3" aria-hidden="true" /> {t.when}
+                        <CalendarClock className="size-3" aria-hidden="true" /> {formatWhen(t.when)}
                       </li>
                     )}
                     {t.people && (
@@ -105,12 +100,14 @@ export function AssistantChat() {
                       </li>
                     )}
                   </ul>
-                  <Button className="mt-3 h-11 w-full px-4 sm:w-auto" disabled={starting !== null} onClick={() => start(t)}>
-                    {starting === t.id ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
-                    Muzokarani boshlash
-                  </Button>
                 </article>
               ))}
+              {m.negotiationId && (
+                <Button className="h-11 w-full px-4 sm:w-auto" disabled={starting} onClick={() => start(m.negotiationId!)}>
+                  {starting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
+                  Muzokarani boshlash
+                </Button>
+              )}
             </div>
           </div>
         ))}

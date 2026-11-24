@@ -3,82 +3,102 @@
 import { useEffect, useState } from "react";
 import { streamNegotiation } from "@/lib/api";
 import { runMockStream } from "@/lib/mock";
-import type { AgentMessage, NegotiationEvent, NegotiationStatus, Offer } from "@/lib/types";
+import type { NegotiationEvent, NegotiationState, NegotiationStatus } from "@/lib/types";
 
-export interface ShownMessage extends AgentMessage {
-  /** Hozircha ko'rsatilgan belgilar soni (yozilish animatsiyasi) */
-  shown: number;
-}
-
-export interface PlaybackState {
-  messages: ShownMessage[];
-  typing: AgentMessage["role"] | null;
-  offer: Offer | null;
-  status: NegotiationStatus;
-  error: string | null;
-}
-
-const INITIAL: PlaybackState = { messages: [], typing: null, offer: null, status: "running", error: null };
+const INITIAL: NegotiationState = { lanes: {}, order: [], best: {}, status: "running", error: null };
 
 /**
- * SSE (yoki mock) hodisalarini navbatga qo'yib, "yozmoqda..." va harf-harf animatsiya bilan ketma-ket ko'rsatadi.
- * Hodisa tezligi (backend/mocks) qanday bo'lishidan qat'i nazar, ekran o'qiladigan sur'atda yuradi.
+ * SSE (yoki mock) hodisalarini har biznes uchun alohida navbatga qo'yib, "yozmoqda..." va harf-harf
+ * animatsiya bilan ketma-ket ko'rsatadi: bir necha biznes bilan muzokara parallel ketadi.
+ * Yakuniy status barcha chiziqlar ko'rsatib bo'lingach qo'llanadi.
  */
-export function useNegotiation(id: string, forceMock = false): PlaybackState {
-  const [state, setState] = useState<PlaybackState>(INITIAL);
+export function useNegotiation(id: string, forceMock = false): NegotiationState {
+  const [state, setState] = useState<NegotiationState>(INITIAL);
 
   useEffect(() => {
     let cancelled = false;
-    const queue: NegotiationEvent[] = [];
+    const queues = new Map<string, NegotiationEvent[]>();
+    const pumping = new Set<string>();
     const timers = new Set<ReturnType<typeof setTimeout>>();
-    let pumping = false;
+    let pendingStatus: NegotiationStatus | null = null;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
-        const t = setTimeout(() => {
-          timers.delete(t);
-          resolve();
-        }, reduce ? Math.min(ms, 60) : ms);
+        const t = setTimeout(
+          () => {
+            timers.delete(t);
+            resolve();
+          },
+          reduce ? Math.min(ms, 40) : ms,
+        );
         timers.add(t);
       });
 
-    async function pump() {
-      if (pumping) return;
-      pumping = true;
-      while (queue.length && !cancelled) {
-        const ev = queue.shift()!;
+    const patchLane = (bid: string, fn: (l: NegotiationState["lanes"][string]) => NegotiationState["lanes"][string]) =>
+      setState((s) => ({ ...s, lanes: { ...s.lanes, [bid]: fn(s.lanes[bid]) } }));
+
+    function tryFinish() {
+      if (pendingStatus && pumping.size === 0 && [...queues.values()].every((q) => q.length === 0)) {
+        const st = pendingStatus;
+        pendingStatus = null;
+        setState((s) => ({ ...s, status: st }));
+      }
+    }
+
+    async function pump(bid: string) {
+      if (pumping.has(bid)) return;
+      pumping.add(bid);
+      const q = queues.get(bid)!;
+      while (q.length && !cancelled) {
+        const ev = q.shift()!;
         if (ev.type === "message") {
           const m = ev.message;
-          setState((s) => ({ ...s, typing: m.role }));
-          await sleep(650 + Math.min(m.text.length * 6, 700));
+          patchLane(bid, (l) => ({ ...l, typing: m.fromAgent }));
+          await sleep(550 + Math.min(m.text.length * 5, 600));
           if (cancelled) break;
-          setState((s) => ({ ...s, typing: null, messages: [...s.messages, { ...m, shown: 0 }] }));
+          patchLane(bid, (l) => ({ ...l, typing: null, round: Math.max(l.round, m.round), messages: [...l.messages, { ...m, shown: 0 }] }));
           const step = reduce ? m.text.length : 3;
           for (let n = step; !cancelled; n += step) {
             const upto = Math.min(n, m.text.length);
-            setState((s) => ({
-              ...s,
-              messages: s.messages.map((x) => (x.id === m.id ? { ...x, shown: upto } : x)),
-            }));
+            patchLane(bid, (l) => ({ ...l, messages: l.messages.map((x) => (x.id === m.id ? { ...x, shown: upto } : x)) }));
             if (upto >= m.text.length) break;
-            await sleep(18);
+            await sleep(16);
           }
-          await sleep(450);
-        } else if (ev.type === "offer") {
-          setState((s) => ({ ...s, offer: ev.offer }));
-          await sleep(300);
-        } else {
-          setState((s) => ({ ...s, status: ev.status }));
+          await sleep(350);
+        } else if (ev.type === "best_offer") {
+          setState((s) => ({ ...s, best: { ...s.best, [ev.businessId]: { businessId: ev.businessId, businessName: ev.businessName, offer: ev.offer } } }));
         }
       }
-      pumping = false;
+      pumping.delete(bid);
+      tryFinish();
     }
 
-    const onEvent = (ev: NegotiationEvent) => {
-      queue.push(ev);
-      void pump();
+    const enqueue = (bid: string, ev: NegotiationEvent) => {
+      if (!queues.has(bid)) {
+        queues.set(bid, []);
+        setState((s) => ({
+          ...s,
+          order: [...s.order, bid],
+          lanes: { ...s.lanes, [bid]: { businessId: bid, messages: [], typing: null, round: 0 } },
+        }));
+      }
+      queues.get(bid)!.push(ev);
+      void pump(bid);
     };
+
+    const onEvent = (ev: NegotiationEvent) => {
+      if (cancelled) return;
+      if (ev.type === "message") enqueue(ev.message.businessId, ev);
+      else if (ev.type === "best_offer") enqueue(ev.businessId, ev);
+      else if (ev.type === "error") setState((s) => ({ ...s, error: ev.error }));
+      else if (ev.status === "running") setState((s) => ({ ...s, status: "running" }));
+      else {
+        pendingStatus = ev.status;
+        tryFinish();
+      }
+    };
+
     const stop = forceMock
       ? runMockStream(id, undefined, onEvent)
       : streamNegotiation(id, onEvent, (msg) => !cancelled && setState((s) => ({ ...s, error: msg })));

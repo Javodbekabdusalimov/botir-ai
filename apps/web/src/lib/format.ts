@@ -20,4 +20,10 @@ export const CATEGORY_LABEL: Record<string, string> = {
   shop: "Do'kon",
   autoservice: "Avtoservis",
   clinic: "Klinika",
+  beauty: "Go'zallik saloni",
+  other: "Boshqa",
 };
+
+export function shortId(id: string): string {
+  return id.slice(0, 4).toUpperCase();
+}

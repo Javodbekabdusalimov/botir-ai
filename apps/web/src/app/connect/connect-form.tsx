@@ -2,23 +2,27 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { Bot, CheckCircle2, FileSpreadsheet, Loader2, Send, Upload } from "lucide-react";
+import { CheckCircle2, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, inputClass, selectClass } from "@/components/field";
-import { chatWithBusiness, createBusiness, importCatalog } from "@/lib/api";
+import { createBusiness, importCatalog } from "@/lib/api";
 import { parseCatalogFile, SAMPLE_CSV, type CatalogRow } from "@/lib/catalog-parse";
 import { CATEGORY_LABEL, formatSom } from "@/lib/format";
-import { DEMO_PRODUCTS } from "@/lib/mock";
+import { SAMPLE_CATALOG } from "@/lib/mock";
 import type { Business, BusinessCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type Errors = Partial<Record<"name" | "area" | "catalog" | "form", string>>;
+type Errors = Partial<Record<"name" | "district" | "address" | "catalog" | "form", string>>;
+
+const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 export function ConnectForm() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<BusinessCategory>("restaurant");
-  const [area, setArea] = useState("");
+  const [district, setDistrict] = useState("");
+  const [address, setAddress] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [open, setOpen] = useState("09:00");
   const [close, setClose] = useState("22:00");
   const [discount, setDiscount] = useState(10);
@@ -38,9 +42,11 @@ export function ConnectForm() {
       const parsed = await parseCatalogFile(f);
       if (!parsed.length) throw new Error("Mahsulot topilmadi. Ustunlar: nomi, narx, birlik");
       setRows(parsed);
+      setFile(f);
       setFileName(f.name);
     } catch (err) {
       setRows([]);
+      setFile(null);
       setFileName("");
       setErrors((e) => ({ ...e, catalog: err instanceof Error ? err.message : "Faylni o'qib bo'lmadi" }));
     } finally {
@@ -48,8 +54,9 @@ export function ConnectForm() {
     }
   }
 
-  function useDemoCatalog() {
-    setRows(DEMO_PRODUCTS.chorsu.map((p) => ({ name: p.name, price: p.price, unit: p.unit })));
+  function loadSampleCatalog() {
+    setRows(SAMPLE_CATALOG);
+    setFile(null);
     setFileName("namuna katalog");
     setErrors((e) => ({ ...e, catalog: undefined }));
   }
@@ -59,7 +66,8 @@ export function ConnectForm() {
     if (busy) return;
     const next: Errors = {};
     if (name.trim().length < 2) next.name = "Biznes nomini kiriting";
-    if (area.trim().length < 2) next.area = "Hududni kiriting";
+    if (district.trim().length < 2) next.district = "Tumanni kiriting";
+    if (address.trim().length < 2) next.address = "Manzilni kiriting";
     if (!rows.length) next.catalog = "Katalog faylini yuklang (yoki namuna katalogni tanlang)";
     setErrors(next);
     if (Object.keys(next).length) return;
@@ -68,11 +76,13 @@ export function ConnectForm() {
       const biz = await createBusiness({
         name: name.trim(),
         category,
-        area: area.trim(),
-        hours: `${open}-${close}`,
+        district: district.trim(),
+        address: address.trim(),
+        workHours: Object.fromEntries(DAYS.map((d) => [d, [open, close]])) as Business["workHours"],
         maxDiscountPct: discount,
+        lang: "uz",
       });
-      await importCatalog(biz.id, rows);
+      await importCatalog(biz.id, file, rows);
       try {
         localStorage.setItem("botir.businessId", biz.id);
       } catch {}
@@ -96,17 +106,20 @@ export function ConnectForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="category" label="Kategoriya">
             <select id="category" className={selectClass} value={category} onChange={(e) => setCategory(e.target.value as BusinessCategory)}>
-              {(["restaurant", "shop", "autoservice", "clinic"] as const).map((c) => (
+              {(["restaurant", "shop", "autoservice", "clinic", "beauty", "other"] as const).map((c) => (
                 <option key={c} value={c}>
                   {CATEGORY_LABEL[c]}
                 </option>
               ))}
             </select>
           </Field>
-          <Field id="area" label="Hudud" error={errors.area}>
-            <Input id="area" className={inputClass} value={area} onChange={(e) => setArea(e.target.value)} aria-invalid={!!errors.area} aria-describedby={errors.area ? "area-err" : undefined} placeholder="Chilonzor, Toshkent" />
+          <Field id="district" label="Tuman" error={errors.district}>
+            <Input id="district" className={inputClass} value={district} onChange={(e) => setDistrict(e.target.value)} aria-invalid={!!errors.district} aria-describedby={errors.district ? "district-err" : undefined} placeholder="Chilonzor" />
           </Field>
         </div>
+        <Field id="address" label="Manzil" error={errors.address}>
+          <Input id="address" className={inputClass} value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" aria-invalid={!!errors.address} aria-describedby={errors.address ? "address-err" : undefined} placeholder="9-kvartal, 12-uy" />
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="open" label="Ish vaqti">
             <div className="flex items-center gap-2">
@@ -130,7 +143,7 @@ export function ConnectForm() {
             {parsing ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Upload className="size-4" aria-hidden="true" />}
             Fayl tanlash
           </Button>
-          <Button type="button" variant="ghost" className="h-11 px-4" onClick={useDemoCatalog}>
+          <Button type="button" variant="ghost" className="h-11 px-4" onClick={loadSampleCatalog}>
             <FileSpreadsheet className="size-4" aria-hidden="true" /> Namuna katalog
           </Button>
           <a download="katalog-namuna.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE_CSV)}`} className={cn(buttonVariants({ variant: "ghost" }), "h-11 px-4")}>
@@ -187,66 +200,22 @@ export function ConnectForm() {
 }
 
 function AgentReady({ business, count }: { business: Business; count: number }) {
-  const [text, setText] = useState("");
-  const [log, setLog] = useState<{ from: "me" | "agent"; text: string }[]>([
-    { from: "agent", text: `Salom! Men ${business.name} agentiman. Nima kerak?` },
-  ]);
-  const [sending, setSending] = useState(false);
-
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    const t = text.trim();
-    if (!t || sending) return;
-    setText("");
-    setLog((l) => [...l, { from: "me", text: t }]);
-    setSending(true);
-    try {
-      const r = await chatWithBusiness(business.id, t);
-      setLog((l) => [...l, { from: "agent", text: r.reply }]);
-    } catch {
-      setLog((l) => [...l, { from: "agent", text: "Kechirasiz, hozir javob bera olmayman. Qayta urinib ko'ring." }]);
-    } finally {
-      setSending(false);
-    }
-  }
-
   return (
-    <div className="rise-in mt-8 space-y-6">
-      <div className="rounded-2xl border border-agent/40 bg-agent/10 p-5">
-        <p className="flex items-center gap-2 font-display text-xl font-bold text-agent">
-          <CheckCircle2 className="size-6" aria-hidden="true" /> Agent tayyor
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {business.name}: {count} ta mahsulot yuklandi, maksimal chegirma {business.maxDiscountPct}%.
-        </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <Link href="/dashboard" className={cn(buttonVariants(), "h-11 px-4")}>
-            Panelga o'tish
-          </Link>
-          <Link href="/connect/telegram" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-4")}>
-            Telegramni ulash
-          </Link>
-        </div>
+    <div className="rise-in mt-8 rounded-2xl border border-agent/40 bg-agent/10 p-5">
+      <p className="flex items-center gap-2 font-display text-xl font-bold text-agent">
+        <CheckCircle2 className="size-6" aria-hidden="true" /> Agent tayyor
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {business.name}: {count} ta mahsulot yuklandi, maksimal chegirma {business.maxDiscountPct}%.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link href="/dashboard" className={cn(buttonVariants(), "h-11 px-4")}>
+          Panelga o'tish
+        </Link>
+        <Link href="/connect/telegram" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-4")}>
+          Telegramni ulash
+        </Link>
       </div>
-      <section aria-label="Agentni sinash" className="rounded-2xl border border-border bg-card/60 p-4">
-        <h2 className="flex items-center gap-2 text-lg font-bold">
-          <Bot className="size-5 text-biz" aria-hidden="true" /> Agentni sinab ko'ring
-        </h2>
-        <div className="mt-3 max-h-72 space-y-2 overflow-y-auto" aria-live="polite">
-          {log.map((m, i) => (
-            <p key={i} className={cn("max-w-[88%] rounded-2xl px-3 py-2 text-sm", m.from === "me" ? "ml-auto bg-agent/15" : "bg-biz/10")}>
-              {m.text}
-            </p>
-          ))}
-          {sending && <p className="text-xs text-muted-foreground">Agent yozmoqda...</p>}
-        </div>
-        <form onSubmit={send} className="mt-3 flex gap-2">
-          <Input value={text} onChange={(e) => setText(e.target.value)} className={inputClass} placeholder="Masalan: osh narxi qancha?" aria-label="Xabar" />
-          <Button type="submit" className="size-11" disabled={sending || !text.trim()} aria-label="Yuborish">
-            <Send className="size-4" />
-          </Button>
-        </form>
-      </section>
     </div>
   );
 }

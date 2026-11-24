@@ -5,9 +5,9 @@ import { AlertTriangle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NegotiationStage, OfferCard } from "@/components/negotiation";
 import { useNegotiation } from "@/hooks/use-negotiation";
-import { acceptOffer, getProducts, recallSession } from "@/lib/api";
-import { DEMO_BUSINESSES, SCENARIOS, scenarioKey } from "@/lib/mock";
-import type { AcceptResult, Product } from "@/lib/types";
+import { confirmNegotiation, getBusinesses } from "@/lib/api";
+import { ALL_MOCK_BUSINESSES } from "@/lib/mock";
+import type { ConfirmResult } from "@/lib/types";
 
 export function LiveView({ id }: { id: string }) {
   const [attempt, setAttempt] = useState(0);
@@ -16,38 +16,37 @@ export function LiveView({ id }: { id: string }) {
 
 function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   const state = useNegotiation(id);
-  const [meta, setMeta] = useState<{ products: Product[]; request: string; bizName?: string } | null>(null);
-  const [accept, setAccept] = useState<AcceptResult | null>(null);
-  const [accepting, setAccepting] = useState(false);
-  const [acceptError, setAcceptError] = useState<string | null>(null);
+  const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(ALL_MOCK_BUSINESSES.map((b) => [b.id, b.name])));
+  const [skip, setSkip] = useState(0);
+  const [result, setResult] = useState<ConfirmResult | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
-    const s = recallSession(id);
-    const key = scenarioKey(id);
-    const bizName = s?.businessName ?? DEMO_BUSINESSES.find((b) => b.id === (s?.businessId ?? key))?.name;
-    const request = s?.request ?? SCENARIOS[key].defaultRequest;
-    getProducts(s?.businessId ?? key)
-      .catch(() => [] as Product[])
-      .then((products) => live && setMeta({ products, request, bizName }));
+    getBusinesses()
+      .then((list) => live && setNames((n) => ({ ...n, ...Object.fromEntries(list.map((b) => [b.id, b.name])) })))
+      .catch(() => {});
     return () => {
       live = false;
     };
-  }, [id]);
-  const { products = [], request, bizName } = meta ?? {};
+  }, []);
 
-  const offer = useMemo(() => (accept ? { ...state.offer!, status: "accepted" as const } : state.offer), [state.offer, accept]);
+  // Takliflar narx bo'yicha o'sish tartibida; "Boshqasi" keyingisiga o'tkazadi
+  const ranked = useMemo(() => Object.values(state.best).sort((a, b) => a.offer.price - b.offer.price), [state.best]);
+  const current = ranked.length ? ranked[skip % ranked.length] : null;
+  const ready = state.status === "agreed" || state.status === "confirmed";
 
-  async function onAccept() {
-    if (!state.offer || accepting) return;
-    setAccepting(true);
-    setAcceptError(null);
+  async function onConfirm() {
+    if (!current || confirming) return;
+    setConfirming(true);
+    setConfirmError(null);
     try {
-      setAccept(await acceptOffer(state.offer.id));
+      setResult(await confirmNegotiation(id, current.businessId));
     } catch (e) {
-      setAcceptError(e instanceof Error ? e.message : "Tasdiqlab bo'lmadi, qayta urinib ko'ring");
+      setConfirmError(e instanceof Error ? e.message : "Tasdiqlab bo'lmadi, qayta urinib ko'ring");
     } finally {
-      setAccepting(false);
+      setConfirming(false);
     }
   }
 
@@ -55,8 +54,10 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
     <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
       <header className="mb-6">
         <p className="text-sm font-medium text-agent">Jonli muzokara</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-4xl">{bizName ?? "Biznes agenti"} bilan kelishuv</h1>
-        {request && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">So'rov: {request}</p>}
+        <h1 className="mt-1 text-2xl font-bold sm:text-4xl">
+          {state.order.length > 1 ? `${state.order.length} ta biznes bilan parallel muzokara` : "Agentlar kelishmoqda"}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Shaxsiy agentingiz sizning nomingizdan gaplashadi. Yakuniy qaror sizda.</p>
       </header>
 
       {state.error && (
@@ -69,22 +70,24 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
         </div>
       )}
 
-      <NegotiationStage state={state} businessName={bizName} />
+      <NegotiationStage state={state} names={names} />
 
-      {state.status === "rejected" || state.status === "timeout" ? (
+      {state.status === "rejected" || state.status === "failed" ? (
         <p className="mt-6 rounded-xl border border-border p-4 text-sm text-muted-foreground">
           Agentlar kelisha olmadi. Boshqa biznes bilan urinib ko'ring yoki so'rovni o'zgartiring.
         </p>
       ) : (
-        offer && (
+        current && (
           <div className="mt-6 sm:mx-auto sm:max-w-xl">
             <OfferCard
-              offer={offer}
-              products={products}
-              accept={accept}
-              accepting={accepting}
-              onAccept={onAccept}
-              error={acceptError}
+              best={current}
+              ready={ready}
+              confirming={confirming}
+              result={result}
+              error={confirmError}
+              onConfirm={onConfirm}
+              onOther={() => setSkip((s) => s + 1)}
+              othersLeft={ranked.length > 1}
             />
           </div>
         )

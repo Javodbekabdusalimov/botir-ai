@@ -1,24 +1,28 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Bot, Building2, Check, CheckCircle2, Copy, Loader2, ShieldCheck, Tag } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Building2, Check, CheckCircle2, Copy, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatSom } from "@/lib/format";
+import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { PlaybackState } from "@/hooks/use-negotiation";
-import type { AcceptResult, AgentRole, Offer, Product } from "@/lib/types";
+import type { A2AType, BestOffer, ConfirmResult, Lane, NegotiationState } from "@/lib/types";
 
 export const MAX_ROUNDS = 3;
 
-function Bubble({ role, text, typing }: { role: AgentRole; text?: string; typing?: boolean }) {
-  const biz = role === "biz_agent";
+const PAYLOAD: Record<A2AType, { label: string; cls: string }> = {
+  REQUEST: { label: "So'rov", cls: "bg-agent/20 text-agent" },
+  OFFER: { label: "Taklif", cls: "bg-biz/20 text-biz" },
+  COUNTER: { label: "Qarshi taklif", cls: "bg-fuchsia-400/20 text-fuchsia-300" },
+  ACCEPT: { label: "Qabul", cls: "bg-emerald-400/20 text-emerald-300" },
+  REJECT: { label: "Rad", cls: "bg-destructive/20 text-destructive" },
+};
+
+function Bubble({ biz, type, text, typing }: { biz: boolean; type?: A2AType; text?: string; typing?: boolean }) {
   return (
     <div
       className={cn(
-        "rise-in col-span-2 max-w-[90%] rounded-2xl border px-4 py-3 text-[15px] leading-relaxed md:col-span-1 md:max-w-full",
-        biz
-          ? "justify-self-end rounded-tr-sm border-biz/30 bg-biz/10 md:col-start-2"
-          : "justify-self-start rounded-tl-sm border-agent/30 bg-agent/10 md:col-start-1",
+        "rise-in col-span-2 max-w-[92%] rounded-2xl border px-4 py-3 text-[15px] leading-relaxed md:col-span-1 md:max-w-full",
+        biz ? "justify-self-end rounded-tr-sm border-biz/30 bg-biz/10 md:col-start-2" : "justify-self-start rounded-tl-sm border-agent/30 bg-agent/10 md:col-start-1",
       )}
     >
       {typing ? (
@@ -28,77 +32,103 @@ function Bubble({ role, text, typing }: { role: AgentRole; text?: string; typing
           ))}
         </span>
       ) : (
-        text
+        <>
+          {type && (
+            <span className={cn("mb-1.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide", PAYLOAD[type].cls)} title={PAYLOAD[type].label}>
+              {type}
+            </span>
+          )}
+          <p>{text}</p>
+        </>
       )}
     </div>
   );
 }
 
-function ColumnHeader({ side }: { side: "left" | "right" }) {
-  const biz = side === "right";
+function ColumnHeader({ biz, name }: { biz: boolean; name?: string }) {
   const Icon = biz ? Building2 : Bot;
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold",
-        biz ? "border-biz/30 text-biz" : "border-agent/30 text-agent",
-      )}
-    >
-      <Icon className="size-4" aria-hidden="true" />
-      {biz ? "Biznes agenti" : "Mijoz agenti"}
+    <div className={cn("flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold", biz ? "border-biz/30 text-biz" : "border-agent/30 text-agent")}>
+      <Icon className="size-4 shrink-0" aria-hidden="true" />
+      <span className="truncate">{biz ? (name ? `Biznes agenti: ${name}` : "Biznes agenti") : "Mijoz agenti"}</span>
     </div>
   );
 }
 
 export function NegotiationStage({
   state,
-  businessName,
+  names,
   className,
   autoScroll = true,
 }: {
-  state: PlaybackState;
-  businessName?: string;
+  state: NegotiationState;
+  names: Record<string, string>;
   className?: string;
   autoScroll?: boolean;
 }) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const active = picked && state.lanes[picked] ? picked : state.order[0];
+  const lane: Lane | undefined = active ? state.lanes[active] : undefined;
   const endRef = useRef<HTMLDivElement>(null);
+  const len = lane?.messages.length ?? 0;
   useEffect(() => {
     if (autoScroll) endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [state.messages.length, state.typing, state.offer, autoScroll]);
-  const rounds = Math.min(MAX_ROUNDS, state.messages.filter((m) => m.role === "biz_agent").length);
+  }, [len, lane?.typing, active, autoScroll]);
+
+  const nameOf = (id: string) => names[id] ?? state.best[id]?.businessName ?? "Biznes";
+  const multi = state.order.length > 1;
 
   return (
     <section aria-label="Agentlar muzokarasi" className={className}>
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <ColumnHeader side="left" />
-        <div className="relative">
-          <ColumnHeader side="right" />
-          {businessName && (
-            <span className="absolute -bottom-5 right-1 hidden max-w-full truncate text-xs text-muted-foreground md:block">
-              {businessName}
-            </span>
-          )}
+      {multi && (
+        <div role="tablist" aria-label="Bizneslar" className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          {state.order.map((id) => {
+            const l = state.lanes[id];
+            const sel = id === active;
+            const b = state.best[id];
+            return (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={sel}
+                onClick={() => setPicked(id)}
+                className={cn("min-h-11 shrink-0 rounded-xl border px-3 py-1.5 text-left text-sm", sel ? "border-biz bg-biz/10" : "border-border text-muted-foreground hover:text-foreground")}
+              >
+                <span className="flex items-center gap-1.5 font-medium">
+                  {l.typing && <span className="size-1.5 animate-pulse rounded-full bg-biz" />}
+                  {nameOf(id)}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Raund {Math.min(l.round, MAX_ROUNDS)}/{MAX_ROUNDS}
+                  {b && ` · ${formatSom(b.offer.price)}`}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      )}
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <ColumnHeader biz={false} />
+        <ColumnHeader biz name={active ? nameOf(active) : undefined} />
       </div>
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          Raund {rounds}/{MAX_ROUNDS}
+          Raund {Math.min(lane?.round ?? 0, MAX_ROUNDS)}/{MAX_ROUNDS}
         </span>
         <span aria-live="polite">
           {state.status === "running" && "Muzokara ketmoqda"}
           {state.status === "agreed" && "Kelishildi"}
+          {state.status === "confirmed" && "Tasdiqlandi"}
           {state.status === "rejected" && "Rad etildi"}
-          {state.status === "timeout" && "Vaqt tugadi"}
+          {state.status === "failed" && "Xatolik"}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-3" aria-live="polite">
-        {state.messages.length === 0 && !state.typing && !state.error && (
-          <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">Agentlar ulanmoqda...</p>
-        )}
-        {state.messages.map((m) => (
-          <Bubble key={m.id} role={m.role} text={m.text.slice(0, m.shown)} />
+        {!lane && !state.error && <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">Agentlar ulanmoqda...</p>}
+        {lane?.messages.map((m) => (
+          <Bubble key={m.id} biz={m.fromAgent === "business"} type={m.payload.type} text={m.text.slice(0, m.shown)} />
         ))}
-        {state.typing && <Bubble role={state.typing} typing />}
+        {lane?.typing && <Bubble biz={lane.typing === "business"} typing />}
       </div>
       <div ref={endRef} />
     </section>
@@ -106,56 +136,52 @@ export function NegotiationStage({
 }
 
 export function OfferCard({
-  offer,
-  products,
-  accept,
-  accepting,
-  onAccept,
+  best,
+  ready,
+  confirming,
+  result,
   error,
+  onConfirm,
+  onOther,
+  othersLeft,
   compact,
 }: {
-  offer: Offer;
-  products: Product[];
-  accept: AcceptResult | null;
-  accepting: boolean;
-  onAccept?: () => void;
+  best: BestOffer;
+  /** Muzokara tugagan (status agreed) */
+  ready: boolean;
+  confirming: boolean;
+  result: ConfirmResult | null;
   error?: string | null;
+  onConfirm?: () => void;
+  onOther?: () => void;
+  othersLeft?: boolean;
   compact?: boolean;
 }) {
-  const rows = offer.items.map((it) => {
-    const p = products.find((x) => x.id === it.productId);
-    return { key: it.productId, name: p?.name ?? "Mahsulot", unit: p?.unit ?? "", qty: it.qty, sum: (p?.price ?? 0) * it.qty };
-  });
-  const subtotal = rows.reduce((s, r) => s + r.sum, 0);
-  const done = accept !== null;
-
+  const { offer } = best;
+  const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
     <div className="rise-in rounded-2xl border border-primary/40 bg-card p-4 shadow-[0_0_40px_-10px_var(--agent)] sm:p-5">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <Tag className="size-4 text-agent" aria-hidden="true" />
-          Yakuniy taklif
+          <Trophy className="size-4 text-biz" aria-hidden="true" />
+          {ready ? "Eng yaxshi taklif" : "Joriy eng yaxshi taklif"}
         </h2>
-        <span className="rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold text-agent">
-          -{offer.discountPct}% chegirma
-        </span>
+        {offer.discountPct > 0 && <span className="shrink-0 rounded-full bg-agent/15 px-2.5 py-1 text-xs font-semibold text-agent">-{offer.discountPct}%</span>}
       </div>
+      <p className="mb-3 text-sm text-muted-foreground">{best.businessName}</p>
       <ul className="divide-y divide-border text-sm">
-        {rows.map((r) => (
-          <li key={r.key} className="flex items-start justify-between gap-3 py-2">
+        {offer.items.map((i) => (
+          <li key={i.catalogItemId} className="flex items-start justify-between gap-3 py-2">
             <span>
-              {r.name}
-              <span className="text-muted-foreground">
-                {" "}
-                x {r.qty} {r.unit}
-              </span>
+              {i.name}
+              <span className="text-muted-foreground"> x {i.qty}</span>
             </span>
-            {subtotal > 0 && <span className="shrink-0 tabular-nums">{formatSom(r.sum)}</span>}
+            <span className="shrink-0 tabular-nums">{formatSom(i.price * i.qty)}</span>
           </li>
         ))}
       </ul>
       <dl className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-        {subtotal > 0 && (
+        {offer.discountPct > 0 && (
           <div className="flex justify-between text-muted-foreground">
             <dt>Chegirmagacha</dt>
             <dd className="tabular-nums line-through">{formatSom(subtotal)}</dd>
@@ -163,44 +189,44 @@ export function OfferCard({
         )}
         <div className="flex items-baseline justify-between">
           <dt className="font-medium">Jami</dt>
-          <dd className="font-display text-2xl font-bold tabular-nums">{formatSom(offer.total)}</dd>
+          <dd className="font-display text-2xl font-bold tabular-nums">{formatSom(offer.price)}</dd>
         </div>
+        {offer.validUntil && <p className="text-xs text-muted-foreground">Amal qiladi: {formatWhen(offer.validUntil)} gacha</p>}
       </dl>
 
-      {!done && (
+      {!result && !compact && (
         <div className="mt-4">
-          <Button
-            size="lg"
-            className="h-12 w-full text-base"
-            disabled={accepting || !onAccept || offer.status !== "proposed"}
-            onClick={onAccept}
-          >
-            {accepting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
-            {accepting ? "Tasdiqlanmoqda..." : "Tasdiqlayman"}
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" className="h-12 flex-1 text-base" disabled={!ready || confirming || !onConfirm} onClick={onConfirm}>
+              {confirming ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
+              {confirming ? "Tasdiqlanmoqda..." : ready ? "Tasdiqlayman" : "Muzokara davom etmoqda"}
+            </Button>
+            {othersLeft && (
+              <Button size="lg" variant="outline" className="h-12 px-4" disabled={confirming} onClick={onOther}>
+                <Repeat className="size-4" aria-hidden="true" /> Boshqasi
+              </Button>
+            )}
+          </div>
           {error && (
             <p role="alert" className="mt-2 text-sm text-destructive">
               {error}
             </p>
           )}
-          {!compact && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5" aria-hidden="true" />
-              Agent faqat taklif qiladi: to'lov va band qilish sizning tasdig'ingizdan keyin.
-            </p>
-          )}
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5" aria-hidden="true" />
+            Agent faqat taklif qiladi: to'lov va band qilish sizning tasdig'ingizdan keyin.
+          </p>
         </div>
       )}
-
-      {done && <PaymentBlock result={accept} />}
+      {result && <PaymentBlock result={result} />}
     </div>
   );
 }
 
-function PaymentBlock({ result }: { result: AcceptResult }) {
+function PaymentBlock({ result }: { result: ConfirmResult }) {
   const copy = () => {
     try {
-      void navigator.clipboard.writeText(result.payUrl);
+      void navigator.clipboard.writeText(result.paymentLink);
     } catch {}
   };
   return (
@@ -219,7 +245,7 @@ function PaymentBlock({ result }: { result: AcceptResult }) {
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-xs">{result.payUrl}</code>
+          <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-xs">{result.paymentLink}</code>
           <Button variant="outline" size="icon" className="size-11" onClick={copy} aria-label="Havolani nusxalash">
             <Copy className="size-4" />
           </Button>

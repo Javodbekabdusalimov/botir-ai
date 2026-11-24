@@ -1,36 +1,35 @@
 "use client";
 
-import { MessageCircle, Send } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, Send } from "lucide-react";
 import { Empty, ErrorBox, Loading, Panel } from "@/components/states";
 import { useAsync } from "@/hooks/use-async";
 import { useBusinessId } from "@/hooks/use-business";
-import { getAnalytics, getConversations, getOrders } from "@/lib/api";
-import { formatSom, formatWhen } from "@/lib/format";
+import { getAnalytics, getChats, getOrders } from "@/lib/api";
+import { formatSom, formatWhen, shortId } from "@/lib/format";
 import type { OrderStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STATUS: Record<OrderStatus, { label: string; cls: string }> = {
-  new: { label: "Yangi", cls: "bg-biz/15 text-biz" },
+  draft: { label: "Qoralama", cls: "bg-muted text-muted-foreground" },
+  pending_confirm: { label: "Tasdiq kutilmoqda", cls: "bg-biz/15 text-biz" },
   confirmed: { label: "Tasdiqlangan", cls: "bg-agent/15 text-agent" },
   paid: { label: "To'langan", cls: "bg-emerald-400/15 text-emerald-300" },
-  done: { label: "Bajarilgan", cls: "bg-muted text-muted-foreground" },
   cancelled: { label: "Bekor qilingan", cls: "bg-destructive/15 text-destructive" },
 };
 
 export function Overview() {
   const id = useBusinessId();
   const orders = useAsync(`orders:${id}`, () => getOrders(id));
-  const convs = useAsync(`convs:${id}`, () => getConversations(id));
+  const chats = useAsync(`chats:${id}`, () => getChats(id));
   const stats = useAsync(`stats:${id}`, () => getAnalytics(id));
-
-  const revenue = (orders.data ?? []).filter((o) => o.status !== "cancelled" && o.status !== "new").reduce((s, o) => s + o.total, 0);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Buyurtmalar" value={orders.data ? String(orders.data.length) : "..."} />
-        <Stat label="Tushum" value={orders.data ? formatSom(revenue) : "..."} />
-        <Stat label="Suhbatlar" value={convs.data ? String(convs.data.length) : "..."} />
+        <Stat label="Bugungi tushum" value={stats.data ? formatSom(stats.data.revenue.today) : "..."} />
+        <Stat label="Oylik tushum" value={stats.data ? formatSom(stats.data.revenue.month) : "..."} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -46,9 +45,9 @@ export function Overview() {
               {orders.data.map((o) => (
                 <li key={o.id} className="flex items-start justify-between gap-3 py-3">
                   <div className="min-w-0">
-                    <p className="font-medium">{o.customer}</p>
-                    <p className="truncate text-sm text-muted-foreground">{o.summary}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{formatWhen(o.createdAt)}</p>
+                    <p className="font-medium">Mijoz #{shortId(o.userId)}</p>
+                    <p className="truncate text-sm text-muted-foreground">{o.items.map((i) => `${i.name} x${i.qty}`).join(", ")}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{formatWhen(o.createdAt)}{o.discountPct > 0 && ` · -${o.discountPct}%`}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-semibold tabular-nums">{formatSom(o.total)}</p>
@@ -63,22 +62,24 @@ export function Overview() {
         </Panel>
 
         <Panel title="Suhbatlar">
-          {convs.loading ? (
+          {chats.loading ? (
             <Loading />
-          ) : convs.error ? (
-            <ErrorBox message={convs.error} onRetry={convs.reload} />
-          ) : !convs.data?.length ? (
-            <Empty>Suhbatlar yo'q.</Empty>
+          ) : chats.error ? (
+            <ErrorBox message={chats.error} onRetry={chats.reload} />
+          ) : !chats.data?.length ? (
+            <Empty>Suhbatlar yo'q. Telegramni ulang.</Empty>
           ) : (
             <ul className="divide-y divide-border">
-              {convs.data.map((c) => (
-                <li key={c.id} className="flex items-start gap-3 py-3">
-                  {c.channel === "telegram" ? <Send className="mt-0.5 size-4 shrink-0 text-agent" aria-label="Telegram" /> : <MessageCircle className="mt-0.5 size-4 shrink-0 text-biz" aria-label="Veb" />}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{c.customer}</p>
-                    <p className="truncate text-sm text-muted-foreground">{c.lastMessage}</p>
-                  </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">{formatWhen(c.at)}</span>
+              {chats.data.slice(0, 5).map((c) => (
+                <li key={c.id}>
+                  <Link href="/dashboard/inbox" className="flex min-h-11 items-start gap-3 py-3">
+                    {c.needsHuman ? <AlertCircle className="mt-0.5 size-4 shrink-0 text-biz" aria-label="Egasi javobi kerak" /> : <Send className="mt-0.5 size-4 shrink-0 text-agent" aria-label="Telegram" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{c.title}</p>
+                      <p className="truncate text-sm text-muted-foreground">{c.lastMessageText}</p>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatWhen(c.lastMessageAt)}</span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -94,20 +95,20 @@ export function Overview() {
         stats.data && (
           <div className="grid gap-6 md:grid-cols-3">
             <Panel title="Eng ko'p so'ralgan">
-              <Bars items={stats.data.topAsked} tone="bg-agent" empty="Ma'lumot yo'q" />
+              <Bars items={stats.data.topRequests.map((x) => ({ text: x.query, count: x.count }))} tone="bg-agent" empty="Ma'lumot yo'q" />
             </Panel>
             <Panel title="Topilmagan (katalogda yo'q)">
-              <Bars items={stats.data.missing} tone="bg-biz" empty="Hammasi katalogda bor" />
+              <Bars items={stats.data.notFound.map((x) => ({ text: x.query, count: x.count }))} tone="bg-biz" empty="Hammasi katalogda bor" />
             </Panel>
             <Panel title="Qaytmagan mijozlar">
-              {stats.data.lostClients.length === 0 ? (
+              {stats.data.lostCustomers.length === 0 ? (
                 <Empty>Yo'qotilgan mijoz yo'q</Empty>
               ) : (
                 <ul className="space-y-3 text-sm">
-                  {stats.data.lostClients.map((l, i) => (
-                    <li key={i}>
+                  {stats.data.lostCustomers.map((l) => (
+                    <li key={l.userId}>
                       <p className="font-medium">{l.name}</p>
-                      {l.reason && <p className="text-muted-foreground">{l.reason}</p>}
+                      <p className="text-muted-foreground">Oxirgi buyurtma: {formatWhen(l.lastOrderAt)}</p>
                     </li>
                   ))}
                 </ul>

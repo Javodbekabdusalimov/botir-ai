@@ -1,10 +1,8 @@
 import Papa from "papaparse";
 
-export interface CatalogRow {
-  name: string;
-  price: number;
-  unit: string;
-}
+import type { CatalogRowInput } from "./types";
+
+export type CatalogRow = CatalogRowInput;
 
 const NAME_KEYS = ["name", "nomi", "nom", "mahsulot", "tovar", "название", "наименование"];
 const PRICE_KEYS = ["price", "narx", "narxi", "цена", "summa"];

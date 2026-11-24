@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-/** Server ma'lumotini yuklash: loading/error/reload. key o'zgarsa qayta yuklanadi. */
+/**
+ * Server ma'lumotini yuklash: `{ data, error, loading, reload }`.
+ * `key` o'zgarsa yoki `reload()` chaqirilsa qayta yuklanadi; eskirgan so'rov natijasi (race) e'tiborga olinmaydi.
+ * Eslatma: `fn` har renderda yangi bo'lishi mumkin, shuning uchun faqat `key` ga tayanadi.
+ */
 export function useAsync<T>(key: string, fn: () => Promise<T>) {
   const [nonce, setNonce] = useState(0);
   const [res, setRes] = useState<{ k: string; data?: T; error?: string } | null>(null);

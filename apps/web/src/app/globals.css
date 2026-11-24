@@ -131,6 +131,80 @@
   }
 }
 
+/* ---- v4: premium qatlam ---- */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --green-deep: #052e16;
+  --green-mid: #14532d;
+  --elev-glass: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 2px rgb(23 23 23 / 0.04), 0 12px 32px -12px rgb(21 128 61 / 0.18);
+}
+
+/* Nozik donador tekstura: faqat qo'zg'almas, pointer-events yo'q qatlamda (scroll konteynerda emas) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Oynasimon (glass) yuza: shaffoflik kamaytirilganda to'q fon */
+.glass {
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.8);
+  box-shadow: var(--elev-glass);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* To'q yashil sahna: stats, CTA va /live arena uchun */
+.stage-deep {
+  background:
+    radial-gradient(40rem 20rem at 85% -20%, rgb(34 197 94 / 0.35), transparent 60%),
+    radial-gradient(30rem 18rem at 0% 110%, rgb(245 158 11 / 0.16), transparent 60%),
+    linear-gradient(160deg, #14532d 0%, #052e16 100%);
+  color: #f0fdf4;
+}
+
+/* Gradient matn: faqat bitta so'zda, yashil oralig'ida */
+.text-grad { background: linear-gradient(100deg, #15803d 0%, #22c55e 55%, #15803d 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Kartochka: ko'rsatkich ostida yashil yog'du va ko'tarilish (faqat hover qurilmalarda) */
+@media (hover: hover) and (pointer: fine) {
+  .lift { transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out); }
+  .lift:hover { transform: translateY(-3px); box-shadow: var(--elev-lift); }
+}
+
+/* Bosilganda ozgina kichrayish */
+.press { transition: transform 160ms var(--ease-out); }
+.press:active { transform: scale(0.97); }
+
+/* Skroll bilan paydo bo'lish: faqat qo'llab-quvvatlansa va reduced-motion bo'lmasa; aks holda doim ko'rinadi */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { animation: reveal-up linear both; animation-timeline: view(); animation-range: entry 0% entry 35%; }
+    @keyframes reveal-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  }
+}
+
+/* Agentlar orasidagi oqim nuqtalari (/live arena) */
+@keyframes flow-x { 0% { transform: translateX(0); opacity: 0; } 15%, 85% { opacity: 1; } 100% { transform: translateX(var(--flow-d, 120px)); opacity: 0; } }
+.flow-dot { animation: flow-x 1.8s var(--ease-out) infinite; }
+.flow-dot:nth-child(2) { animation-delay: 0.6s; }
+.flow-dot:nth-child(3) { animation-delay: 1.2s; }
+
+/* Muvaffaqiyat: konfetti zarralari (CSS, 12 ta) */
+@keyframes confetti-fall { 0% { transform: translate3d(0, -10px, 0) rotate(0); opacity: 1; } 100% { transform: translate3d(var(--dx), 120px, 0) rotate(var(--rot)); opacity: 0; } }
+.confetti i { position: absolute; top: 0; left: 50%; width: 7px; height: 11px; border-radius: 2px; animation: confetti-fall 1.4s var(--ease-out) both; }
+.confetti i:nth-child(3n) { background: #22c55e; } .confetti i:nth-child(3n+1) { background: #f59e0b; } .confetti i:nth-child(3n+2) { background: #bbf7d0; }
+
+/* Marquee yo'q: integratsiyalar qatori statik; faqat bitta sekin gorizontal harakat ishlatilmaydi */
+
 /* Khatam (sakkiz qirrali yulduz) naqshi: past shaffoflikda */
 .khatam {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%2316a34a' stroke-opacity='.09' stroke-width='1'%3E%3Crect x='14' y='14' width='28' height='28'/%3E%3Crect x='14' y='14' width='28' height='28' transform='rotate(45 28 28)'/%3E%3C/g%3E%3C/svg%3E");
@@ -189,7 +263,7 @@
 .fade-in { animation: fade-in 0.25s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .typing-dot, .rise-in, .slide-up, .pop-in, .fade-in, .price-in, .strike::after, .shimmer, .flow-line, .node-pulse, .float-y { animation: none; }
+  .flow-dot, .confetti i, .typing-dot, .rise-in, .slide-up, .pop-in, .fade-in, .price-in, .strike::after, .shimmer, .flow-line, .node-pulse, .float-y { animation: none; }
   .check-draw path { animation: none; stroke-dashoffset: 0; }
   html { scroll-behavior: auto; }
 }

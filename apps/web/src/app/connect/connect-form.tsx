@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import type React from "react";
 
 import Link from "next/link";
@@ -92,6 +93,7 @@ export function ConnectForm() {
       try {
         localStorage.setItem("botir.businessId", biz.id);
       } catch {}
+      track("generate_lead", { category, items: rows.length });
       setReady({ biz, result: { ...result, errors: [...result.errors, ...skipped.map((n) => `${n}-qator: nomi yoki narxi noto'g'ri`)] } });
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Ulab bo'lmadi, qayta urinib ko'ring" });

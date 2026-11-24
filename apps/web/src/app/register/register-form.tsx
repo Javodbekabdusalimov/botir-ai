@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export function RegisterForm() {
     setFormError(null);
     try {
       await registerUser({ name: name.trim(), phone: phoneDigits(phone), password, role });
+      track("sign_up", { method: "phone", role });
       router.push(role === "business" ? "/connect" : "/assistant");
     } catch (e) {
       setFormError(e instanceof ApiError && e.message ? e.message : "Ro'yxatdan o'tib bo'lmadi. Qayta urinib ko'ring");

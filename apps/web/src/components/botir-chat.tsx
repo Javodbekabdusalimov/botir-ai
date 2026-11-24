@@ -53,7 +53,9 @@ function NegotiationTurn({ id, names, onDone }: { id: string; names: Record<stri
   const ready = state.status === "agreed" || state.status === "confirmed";
   const msgCount = state.order.reduce((s, b) => s + state.lanes[b].messages.length, 0);
   const typing = state.order.map((b) => ({ b, t: state.lanes[b].typing })).filter((x) => x.t);
-  useEffect(onDone, [msgCount, typing.length, ranked.length, result, onDone]);
+  useEffect(() => {
+    onDone();
+  }, [msgCount, typing.length, ranked.length, result, onDone]);
 
   const current = ranked.length ? ranked[skip % ranked.length] : null;
   async function confirm() {
@@ -137,7 +139,9 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
   const names = useAsync("businesses", getBusinesses);
   const nameMap = useMemo(() => Object.fromEntries((names.data ?? []).map((b) => [b.id, b.name])), [names.data]);
   const scroll = useCallback(() => endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }), []);
-  useEffect(scroll, [turns.length, busy, scroll]);
+  useEffect(() => {
+    scroll();
+  }, [turns.length, busy, scroll]);
 
   async function send(raw: string) {
     const t = raw.trim();

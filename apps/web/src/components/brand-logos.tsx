@@ -21,13 +21,13 @@ export function PayLogos({ height = 20, className }: { height?: number; classNam
   return (
     <ul className={cn("flex flex-wrap items-center gap-2", className)} aria-label="To'lov usullari">
       {(["payme", "click", "uzum"] as const).map((k) => (
-        <li key={k} className="grid h-9 place-items-center rounded-lg border border-border bg-card px-3 shadow-sm">
+        <li key={k} className="flex h-9 items-center justify-center rounded-lg border border-border bg-card px-3 shadow-sm">
           {k === "payme" ? (
             <BrandLogo brand={k} height={height} />
           ) : (
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center justify-center gap-1.5">
               <BrandLogo brand={k} height={height + 2} />
-              <span className="text-sm font-bold capitalize">{k}</span>
+              <span className="text-sm font-bold capitalize leading-none">{k}</span>
             </span>
           )}
         </li>

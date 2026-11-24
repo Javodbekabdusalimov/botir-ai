@@ -49,14 +49,14 @@ export function LandingPreview() {
         <Link href="/live/demo-chorsu" className="mt-1 flex min-h-11 items-center justify-center gap-1.5 rounded-xl text-sm font-medium text-agent hover:underline">
           To'liq ekranda ko'rish <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
+        <div className="mt-1 hidden items-center justify-between gap-3 border-t border-border pt-2.5 sm:flex">
+          <p className="text-[11px] font-semibold text-muted-foreground">TezCheck orqali to&apos;lov</p>
+          <PayLogos height={14} />
+        </div>
       </div>
     </div>
       <div className="pop-in absolute -top-4 right-6 z-10 hidden rounded-2xl border border-tint-3 bg-white/90 px-3 py-2 text-xs font-semibold text-green-900 shadow-soft backdrop-blur sm:flex sm:items-center sm:gap-1.5">
         <ShieldCheck className="size-4 text-green-600" aria-hidden="true" /> PolicyGuard: chegirma ≤ limit
-      </div>
-      <div className="slide-up absolute -bottom-6 -right-2 z-10 hidden rounded-2xl border border-border bg-white/95 p-3 shadow-soft backdrop-blur sm:block lg:-right-6">
-        <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">TezCheck orqali to&apos;lov</p>
-        <PayLogos height={16} />
       </div>
     </div>
   );

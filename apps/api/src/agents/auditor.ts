@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { LlmClient } from './llm/llm-client';
 import type { AgentMessage } from './shared';
 import type { AgentStore } from './store/agent-store';
@@ -18,7 +19,7 @@ export class Auditor {
     private readonly store: AgentStore,
   ) {}
 
-  async review(input: { sessionId: string; transcript: AgentMessage[]; products: Product[]; maxDiscountPct: number }): Promise<AuditFinding[]> {
+  async review(input: { sessionId: string; businessId?: string; transcript: AgentMessage[]; products: Product[]; maxDiscountPct: number }): Promise<AuditFinding[]> {
     const catalog = input.products.map((p) => `${p.name}: ${p.price} so'm`).join('; ');
     const { data } = await this.llm.completeJson<{ findings?: RawFinding[] }>({
       model: 'haiku',
@@ -36,7 +37,14 @@ export class Auditor {
     const at = new Date().toISOString();
     const findings: AuditFinding[] = (data.findings ?? [])
       .filter((f) => TYPES.includes(f.type as AuditFindingType))
-      .map((f) => ({ sessionId: input.sessionId, type: f.type as AuditFindingType, detail: String(f.detail ?? ''), at }));
+      .map((f) => ({
+        id: randomUUID(),
+        sessionId: input.sessionId,
+        businessId: input.businessId,
+        type: f.type as AuditFindingType,
+        detail: String(f.detail ?? ''),
+        at,
+      }));
     for (const f of findings) await this.store.saveAuditFinding(f);
     return findings;
   }

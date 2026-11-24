@@ -3,10 +3,13 @@ import type {
   AgentBusiness,
   AuditFinding,
   BusinessCategory,
+  GoldenCase,
   LlmCallRecord,
   MemoryFact,
   PolicyViolationRecord,
   Product,
+  PromptVersion,
+  Proposal,
 } from '../types';
 
 /** Persistence port. MemoryStore for demo; Ibrat's PrismaStore implements the same interface. */
@@ -20,4 +23,12 @@ export interface AgentStore {
   getMemoryFacts(userId: string): Promise<MemoryFact[]>;
   savePolicyViolation(v: PolicyViolationRecord): Promise<void>;
   saveAuditFinding(f: AuditFinding): Promise<void>;
+  getAuditFindings(businessId: string): Promise<AuditFinding[]>;
+  // Loop engineering
+  getGoldenCases(businessId: string): Promise<GoldenCase[]>;
+  getPromptVersions(businessId: string): Promise<PromptVersion[]>; // ordered by version asc
+  savePromptVersion(v: PromptVersion): Promise<void>; // upsert by id
+  getProposals(businessId: string): Promise<Proposal[]>;
+  getProposal(id: string): Promise<Proposal | undefined>;
+  saveProposal(p: Proposal): Promise<void>; // upsert by id
 }

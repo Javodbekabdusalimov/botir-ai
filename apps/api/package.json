@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start:dev": "prisma db push --skip-generate && tsx src/seed.ts && tsx watch src/main.ts",
+    "start:dev": "prisma generate && prisma db push --skip-generate && tsx src/seed.ts && tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",

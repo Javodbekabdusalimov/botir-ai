@@ -13,6 +13,8 @@ import { chatKey, messageKey, type Chat, type TgMessage, type TgStore } from './
 const log = createLogger('tg-sync');
 
 export type OnIncoming = (chat: Chat, msg: TgMessage) => Promise<void> | void;
+/** Message the account owner wrote to their own "Saved Messages" (B2C: commands to Botir). */
+export type OnSelf = (accountId: string, text: string) => Promise<void> | void;
 
 export interface SyncOptions {
   dialogs?: number; // default 30
@@ -23,6 +25,7 @@ interface Connected {
   client: TelegramClient;
   peers: Map<string, EntityLike>; // peerId → input peer (for sending)
   sentIds: Set<number>; // our own sends, so the echo event doesn't overwrite author 'ai'
+  selfId: string; // own Telegram user id = "Saved Messages" peer
 }
 
 export function toTgMessage(chatId: string, m: Api.Message): TgMessage {
@@ -44,6 +47,7 @@ export class TgSync {
     private readonly store: TgStore,
     private readonly onIncoming: OnIncoming,
     private readonly creds: TgApiCreds = loadTgApiCreds(),
+    private readonly onSelf?: OnSelf,
   ) {}
 
   /** Decrypts the stored session, connects, imports history, subscribes to new messages. */
@@ -60,7 +64,7 @@ export class TgSync {
     );
     client.setLogLevel(LogLevel.NONE);
     await client.connect();
-    const conn: Connected = { client, peers: new Map(), sentIds: new Set() };
+    const conn: Connected = { client, peers: new Map(), sentIds: new Set(), selfId: account.tgUserId };
     this.connected.set(accountId, conn);
 
     const stats = await this.importHistory(accountId, conn, opts);
@@ -103,9 +107,14 @@ export class TgSync {
       const m = e.message;
       if (!e.isPrivate || !m.message || !m.chatId) return;
       if (m.out && conn.sentIds.delete(m.id)) return;
+      const peerId = m.chatId.toString();
+      // Saved Messages is not a customer chat (importHistory skips it too).
+      if (peerId === conn.selfId) {
+        if (m.out) await this.onSelf?.(accountId, m.message);
+        return;
+      }
       const sender = await m.getSender();
       if (sender instanceof Api.User && sender.bot) return;
-      const peerId = m.chatId.toString();
       const input = await m.getInputChat();
       if (input) conn.peers.set(peerId, input);
 
@@ -138,6 +147,14 @@ export class TgSync {
     conn.sentIds.add(sent.id);
     if (conn.sentIds.size > 500) conn.sentIds.clear();
     return sent;
+  }
+
+  /** Reply into the owner's own "Saved Messages". */
+  async sendToSelf(accountId: string, text: string): Promise<void> {
+    const conn = this.connected.get(accountId);
+    if (!conn) throw new Error(`Account ${accountId} is not connected`);
+    const sent = await conn.client.sendMessage('me', { message: text });
+    conn.sentIds.add(sent.id);
   }
 
   isConnected(accountId: string): boolean {

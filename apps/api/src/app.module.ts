@@ -5,6 +5,7 @@ import { AuthService } from './auth/auth.service';
 import { BusinessesController } from './businesses/businesses.controller';
 import { AnalyticsService } from './businesses/analytics.service';
 import { ok } from './common/http';
+import { PrismaActionStore } from './db/prisma-action-store';
 import { PrismaAgentStore } from './db/prisma-agent-store';
 import { PrismaTgStore } from './db/prisma-tg-store';
 import { PrismaService } from './db/prisma.service';
@@ -19,7 +20,9 @@ import { PaymentsController } from './payments/payments.controller';
 import { TestPayController } from './payments/test-pay.controller';
 import { TestPaymentLinkProvider } from './payments/test-payment.provider';
 import { TezcheckPaymentLinkProvider } from './payments/tezcheck-payment.provider';
+import { MeTgController } from './tg/me-tg.controller';
 import { TgController } from './tg/tg.controller';
+import { TgUserService } from './tg/tg-user.service';
 import { TgService } from './tg/tg.service';
 
 @Controller()
@@ -41,9 +44,10 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, LoopController],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
+    PrismaActionStore, TgUserService,
     TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller,
     // Real TezCheck bills when the key is configured; otherwise clearly-labeled TEST links.
     {

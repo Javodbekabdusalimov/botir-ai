@@ -284,6 +284,31 @@ export interface SetModeDto {
   mode: ChatMode;
 }
 
+// ---------- Shaxsiy Telegram (B2C, /me/*, Bearer token) ----------
+/** POST /me/tg-connect/start; keyin POST /me/tg-connect/code — TgConnectCodeDto */
+export interface MeTgConnectStartDto {
+  phone: string;
+}
+/** GET /me/tg-connect */
+export interface MeTgStatus {
+  /** false = serverda TG_API_ID/TG_API_HASH yo'q (start/code → 503) */
+  available: boolean;
+  connected: boolean;
+  username?: string;
+  connectedAt?: ISODate;
+}
+export type UserActionStatus = 'pending' | 'sending' | 'sent' | 'rejected' | 'failed';
+/** GET /me/actions — AI foydalanuvchi Telegramidan yubormoqchi bo'lgan xabar; faqat approve'dan keyin yuboriladi */
+export interface UserAction {
+  id: UUID;
+  chatId: string;
+  peerTitle: string;
+  text: string;
+  status: UserActionStatus;
+  reason?: string;
+  createdAt: ISODate;
+}
+
 // ---------- Loop / o'z-o'zini yaxshilash (§3.6) ----------
 export type ProposalKind = 'prompt_fix' | 'catalog_item' | 'faq';
 

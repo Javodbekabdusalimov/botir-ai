@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import type { Negotiation } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { Observable, ReplaySubject } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -53,7 +53,11 @@ export class NegotiationsService {
 
     const tasks = await this.agents.parseTasks(text);
     const negotiation = await this.prisma.negotiation.create({
-      data: { userId, tasks, status: tasks.length > 0 ? 'running' : 'failed' },
+      data: {
+        userId,
+        tasks: tasks as unknown as Prisma.InputJsonValue,
+        status: tasks.length > 0 ? 'running' : 'failed',
+      },
     });
 
     const stream = new ReplaySubject<NegotiationEvent>(STREAM_BUFFER);
@@ -95,7 +99,7 @@ export class NegotiationsService {
       data: {
         businessId: best.businessId,
         userId: negotiation.userId,
-        items: best.offer.items,
+        items: best.offer.items as unknown as Prisma.InputJsonValue,
         total: best.offer.price,
         discountPct: best.offer.discountPct,
         status: 'confirmed',
@@ -189,7 +193,7 @@ export class NegotiationsService {
         round: turn.round,
         text: turn.text,
         type: turn.payload.type,
-        payload: turn.payload,
+        payload: turn.payload as unknown as Prisma.InputJsonValue,
       },
     });
 

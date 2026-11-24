@@ -14,3 +14,6 @@ export default function MeTelegramPage() {
     </div>
   );
 }
+
+// Sahifa auth-guard ichida: kirishdan oldin render qilinmaydi
+export const instant = false;

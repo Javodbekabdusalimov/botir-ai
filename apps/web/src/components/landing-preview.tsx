@@ -51,10 +51,10 @@ export function LandingPreview() {
         </Link>
       </div>
     </div>
-      <div className="pop-in absolute -right-3 top-16 hidden rounded-2xl border border-tint-3 bg-white/90 px-3 py-2 text-xs font-semibold text-green-900 shadow-soft backdrop-blur sm:flex sm:items-center sm:gap-1.5 lg:-right-6">
+      <div className="pop-in absolute -top-4 right-6 z-10 hidden rounded-2xl border border-tint-3 bg-white/90 px-3 py-2 text-xs font-semibold text-green-900 shadow-soft backdrop-blur sm:flex sm:items-center sm:gap-1.5">
         <ShieldCheck className="size-4 text-green-600" aria-hidden="true" /> PolicyGuard: chegirma ≤ limit
       </div>
-      <div className="slide-up absolute -bottom-5 -left-3 hidden rounded-2xl border border-border bg-white/95 p-3 shadow-soft backdrop-blur sm:block lg:-left-8">
+      <div className="slide-up absolute -bottom-6 -right-2 z-10 hidden rounded-2xl border border-border bg-white/95 p-3 shadow-soft backdrop-blur sm:block lg:-right-6">
         <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">TezCheck orqali to&apos;lov</p>
         <PayLogos height={16} />
       </div>

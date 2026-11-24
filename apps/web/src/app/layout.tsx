@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { Manrope, Unbounded } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { BottomNav, SiteHeader } from "@/components/site-nav";
 
-const sans = Manrope({ variable: "--font-sans-ui", subsets: ["latin", "latin-ext", "cyrillic"], display: "swap" });
-const display = Unbounded({ variable: "--font-display-ui", subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "600", "700"], display: "swap" });
+// Shriftlar lokal (public emas, src/app/fonts): Manrope (UI) va Unbounded (sarlavhalar), Google Fonts SIL OFL. Offline build ishlaydi.
+const sans = localFont({ src: "./fonts/Manrope-latin.woff2", variable: "--font-sans-ui", weight: "200 800", display: "swap" });
+const display = localFont({ src: "./fonts/Unbounded-latin.woff2", variable: "--font-display-ui", weight: "300 900", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Botir AI: agent agent bilan gaplashadi",

@@ -13,3 +13,5 @@ Photos (Wikimedia Commons, resized to 1200px, quality 70):
 - customer.jpg: "Woman looking at phone in a casual setting while smiling and enjoying the moment with a relaxed atmosphere.jpg", CC BY 2.0
 - shop.jpg: "Siyob Bazaar in Samarkand.jpg", CC0, https://commons.wikimedia.org/wiki/File:Siyob_Bazaar_in_Samarkand.jpg
 Demo business names and quotes in the UI are fictional.
+
+Fonts (src/app/fonts, SIL Open Font License 1.1): Manrope and Unbounded, latin subset, from Google Fonts.

@@ -35,7 +35,7 @@ function useNav(): NavLink[] {
 }
 
 function isActive(path: string, href: string) {
-  return href === "/" ? path === "/" : path.startsWith(href);
+  return ["/", "/dashboard", "/connect"].includes(href) ? path === href : path.startsWith(href);
 }
 
 const ROLE_LABEL = { business: "Biznes", user: "Mijoz" } as const;

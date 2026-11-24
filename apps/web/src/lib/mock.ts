@@ -81,7 +81,11 @@ const MULTI = ["chorsu", "besh", "samarqand"];
 
 /** negotiationId ichidan biznes chiziqlari: "demo-chorsu+chilonzor-ab12" yoki "demo-multi-ab12" */
 export function laneKeys(id: string): string[] {
-  const seg = /^demo-([a-z+]+)/.exec(id)?.[1] ?? "multi";
+  let raw = id;
+  try {
+    raw = decodeURIComponent(id); // "%2B" -> "+"
+  } catch {}
+  const seg = /^demo-([a-z+]+)/.exec(raw)?.[1] ?? "multi";
   if (seg === "multi") return MULTI;
   const keys = seg.split("+").filter((k) => PLANS[k]).slice(0, 3);
   return keys.length ? keys : ["chorsu"];

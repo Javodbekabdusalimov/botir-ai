@@ -112,7 +112,7 @@ export default function Home() {
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-tint-3 bg-tint-1 px-3 py-1.5 text-xs font-semibold text-green-900">
               <LogoMark className="size-4" /> O&apos;zbekiston uchun AI agentlar tarmog&apos;i
             </p>
-            <h1 className="text-balance font-display text-[2rem] font-bold leading-[1.1] sm:text-5xl lg:text-[3.4rem]">
+            <h1 className="text-balance font-display text-[2rem] font-bold leading-[1.1] sm:text-5xl lg:text-[2.9rem]">
               Agent agent bilan <span className="text-agent">gaplashadi</span>, siz faqat <span className="rounded-lg bg-tint-2 px-2">tasdiqlaysiz</span>.
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
@@ -143,7 +143,7 @@ export default function Home() {
             {INTEGRATIONS.map((i) => (
               <li key={i.brand} className="flex h-10 items-center gap-2" title={i.label}>
                 <BrandLogo brand={i.brand} height={i.brand === "telegram" || i.brand === "instagram" ? 26 : 22} />
-                {(i.brand === "telegram" || i.brand === "instagram" || i.brand === "uzum") && <span className="text-sm font-semibold">{i.label}</span>}
+                {i.brand !== "payme" && <span className="text-sm font-semibold">{i.label}</span>}
               </li>
             ))}
           </ul>

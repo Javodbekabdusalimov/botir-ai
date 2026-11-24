@@ -22,7 +22,14 @@ export function PayLogos({ height = 20, className }: { height?: number; classNam
     <ul className={cn("flex flex-wrap items-center gap-2", className)} aria-label="To'lov usullari">
       {(["payme", "click", "uzum"] as const).map((k) => (
         <li key={k} className="grid h-9 place-items-center rounded-lg border border-border bg-card px-3 shadow-sm">
-          <BrandLogo brand={k} height={height} />
+          {k === "payme" ? (
+            <BrandLogo brand={k} height={height} />
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <BrandLogo brand={k} height={height + 2} />
+              <span className="text-sm font-bold capitalize">{k}</span>
+            </span>
+          )}
         </li>
       ))}
     </ul>

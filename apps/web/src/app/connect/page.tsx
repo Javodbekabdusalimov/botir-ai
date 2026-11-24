@@ -14,3 +14,6 @@ export default function ConnectPage() {
     </div>
   );
 }
+
+// Sahifa auth-guard ichida: kirishdan oldin render qilinmaydi
+export const instant = false;

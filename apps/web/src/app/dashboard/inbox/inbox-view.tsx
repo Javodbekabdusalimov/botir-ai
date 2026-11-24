@@ -42,7 +42,7 @@ export function InboxView() {
   const visible = filter === "human" ? sorted.filter((c) => c.needsHuman) : sorted;
 
   return (
-    <div className="grid h-[calc(100dvh-16rem)] min-h-[30rem] gap-4 md:grid-cols-[21rem_1fr]">
+    <div className="grid h-[calc(100dvh-17rem)] min-h-[28rem] gap-4 md:grid-cols-[21rem_1fr]">
       <div className={cn("min-h-0 overflow-y-auto pr-1", current && "hidden md:block")}>
         {urgent > 0 && (
           <p className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="status">

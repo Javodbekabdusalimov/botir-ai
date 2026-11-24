@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePaidOrders } from "@/lib/orders-store";
 import { Textarea } from "@/components/ui/textarea";
 import { agentRequest } from "@/lib/api";
-import { CATEGORY_LABEL, formatSom, formatWhen, shortId } from "@/lib/format";
+import { CATEGORY_LABEL, formatSom, formatWhen } from "@/lib/format";
 import type { NegotiationTask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -78,9 +78,9 @@ export function AssistantChat() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col px-4 py-6 sm:py-10">
+    <div className="mx-auto flex h-[calc(100dvh-7rem)] max-w-2xl flex-col px-4 py-4 sm:h-[calc(100dvh-2.9rem)] sm:py-6">
       <p className="text-sm font-medium text-agent">Shaxsiy agent</p>
-      <h1 className="mt-1 text-3xl font-bold sm:text-4xl">Yordamchingizga ayting</h1>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Yordamchingizga ayting</h1>
 
       {authStatus === "out" && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-tint-3 bg-tint-1 px-4 py-3 text-sm">
@@ -92,8 +92,9 @@ export function AssistantChat() {
       )}
       {user && <p className="mt-2 text-sm text-muted-foreground">Salom, {user.name}.</p>}
 
+      <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
       {orders.length > 0 && (
-        <section aria-label="Buyurtmalaringiz" className="mt-5 space-y-3">
+        <section aria-label="Buyurtmalaringiz" className="mb-2 space-y-3">
           <h2 className="font-sans text-sm font-bold">Buyurtmalaringiz</h2>
           {orders.map((o) => (
             <article key={o.orderId} className="rounded-2xl border border-green-500/30 bg-card p-4 shadow-soft">
@@ -101,7 +102,7 @@ export function AssistantChat() {
                 <div className="min-w-0">
                   <h3 className="truncate font-display text-base font-bold">{o.businessName}</h3>
                   <p className="text-xs text-muted-foreground">
-                    #{shortId(o.orderId)} · {formatWhen(o.paidAt)}
+                    #{o.orderId.slice(-6).toUpperCase()} · {formatWhen(o.paidAt)}
                   </p>
                 </div>
                 <span className="flex shrink-0 items-center gap-1 rounded-full bg-tint-2 px-2.5 py-1 text-xs font-semibold text-green-900">
@@ -124,7 +125,7 @@ export function AssistantChat() {
         </section>
       )}
 
-      <div className="mt-6 min-h-[40vh] space-y-3" aria-live="polite">
+
         {msgs.map((m) => (
           <div key={m.id} className={cn("rise-in flex gap-2", m.from === "me" && "justify-end")}>
             {m.from === "agent" && <Bot className="mt-2 size-5 shrink-0 text-agent" aria-hidden="true" />}
@@ -180,7 +181,7 @@ export function AssistantChat() {
         </p>
       )}
 
-      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+      <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1 pt-2">
         {EXAMPLES.map((ex) => (
           <button key={ex} type="button" onClick={() => setText(ex)} className="min-h-11 shrink-0 rounded-full border border-tint-3 bg-card px-4 text-sm font-medium text-green-900 shadow-sm transition-colors hover:bg-tint-1 focus-visible:outline-2 focus-visible:outline-ring">
             {ex}
@@ -192,7 +193,7 @@ export function AssistantChat() {
           e.preventDefault();
           void send(text);
         }}
-        className="flex items-end gap-2"
+        className="flex shrink-0 items-end gap-2"
       >
         <label htmlFor="ask" className="sr-only">
           Yordamchiga xabar

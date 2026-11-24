@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookOpen, ChevronDown, Clock, Crown, MapPin, MessagesSquare, Send, Sparkles } from "lucide-react";
 import { setBusinessId, useBusinessId } from "@/hooks/use-business";
 import { useAsync } from "@/hooks/use-async";
@@ -32,6 +32,13 @@ function hours(b?: Business) {
 
 function BizSelect({ list, current }: { list: Business[]; current?: Business }) {
   const [open, setOpen] = useState(false);
+  // Egasi faqat o'z biznesini ko'radi (API boshqasiga 403 beradi): tanlov kerak emas.
+  if (list.length <= 1)
+    return (
+      <span className="flex h-10 w-full items-center rounded-xl border border-white/30 bg-white/15 px-3 text-sm font-semibold text-white backdrop-blur-md sm:w-60">
+        <span className="min-w-0 flex-1 truncate">{current?.name ?? "Mening biznesim"}</span>
+      </span>
+    );
   return (
     <div className="relative">
       <button
@@ -74,9 +81,14 @@ const glass = "flex h-10 items-center gap-2 rounded-xl border border-white/30 bg
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const id = useBusinessId();
-  const { business } = useAuth();
+  const { business, user } = useAuth();
+  const own = user?.role === "business" ? user.businessId : null;
   const list = useAsync("businesses", getBusinesses);
-  const all = list.data ?? [];
+  // Kirgan biznes egasi: faqat o'z biznesi (boshqasini tanlasa API 403). Mehmon/demo: hamma namuna biznes.
+  const all = (list.data ?? []).filter((b) => !own || b.id === own || ALIAS[own] === b.id);
+  useEffect(() => {
+    if (own && id !== own) setBusinessId(own);
+  }, [own, id]);
   const current = all.find((b) => b.id === id || ALIAS[id] === b.id);
   const name = current?.name ?? business?.name;
   const plan = business?.plan ?? current?.plan ?? "start";

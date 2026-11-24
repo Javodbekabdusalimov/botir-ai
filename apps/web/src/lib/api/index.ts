@@ -136,6 +136,9 @@ export async function runLoop(businessId: string): Promise<LoopProposal[]> {
   );
   return Array.isArray(r) ? r : r.proposals;
 }
+/** Mavjud takliflar (sahifa ochilganda). Demo: bo'sh — foydalanuvchi "Yaxshilash"ni bosadi. */
+export const getProposals = (businessId: string) =>
+  request<LoopProposal[]>(`/loop/proposals?businessId=${encodeURIComponent(businessId)}`, undefined, () => [] as LoopProposal[]);
 export const decideProposal = (id: string, decision: "approve" | "reject") =>
   request<{ ok: true }>(`/loop/proposals/${id}/${decision}`, json("POST"), () => ({ ok: true as const }));
 export const getFacts = (businessId: string) =>

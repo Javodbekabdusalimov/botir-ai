@@ -13,7 +13,6 @@ export const INTEGRATIONS: { brand: BrandKey; label: string }[] = [
   { brand: "click", label: "Click" },
   { brand: "uzum", label: "Uzum" },
   { brand: "telegram", label: "Telegram" },
-  { brand: "instagram", label: "Instagram" },
 ];
 
 const TEAM = [
@@ -64,7 +63,7 @@ export function SiteFooter() {
           <ul className="mt-3 grid grid-cols-2 gap-2">
             {INTEGRATIONS.map((i) => (
               <li key={i.brand} className="flex h-10 items-center justify-center rounded-xl border border-border bg-card px-2 shadow-sm">
-                <BrandLogo brand={i.brand} height={i.brand === "telegram" || i.brand === "instagram" ? 20 : 16} />
+                <BrandLogo brand={i.brand} height={i.brand === "telegram" ? 20 : 16} />
               </li>
             ))}
           </ul>

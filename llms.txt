@@ -1,0 +1,14 @@
+# Botir AI
+
+> Uzbek agent-to-agent commerce network: every business has an AI seller agent, every person a personal agent. Agents negotiate (REQUEST → OFFER → COUNTER → ACCEPT, max 3 rounds); the human only confirms. Money is inbound only (TezCheck).
+
+## Start here
+- [AGENTS.md](AGENTS.md): map, invariants, run/verify, golden path
+- [docs/FLOWS.md](docs/FLOWS.md): sequence diagrams (negotiation, payment, self-improvement, auth)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): decisions (Uzbek)
+
+## Code
+- [packages/shared/src/index.ts](packages/shared/src/index.ts): HTTP/SSE contract
+- [apps/api/src/agents/README.md](apps/api/src/agents/README.md): agent layer, PolicyGuard, loop engineering
+- [apps/api/README.md](apps/api/README.md): endpoints, env, test accounts
+- [apps/web/src/lib/api.ts](apps/web/src/lib/api.ts): web client (SSE reconnect, mock fallback, mode badge)

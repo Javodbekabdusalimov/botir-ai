@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 /** Ishonch qatori: haqiqiy integratsiyalar (uydirma mijoz logotiplari yo'q). */
-const TRUST: BrandKey[] = ["payme", "click", "uzum", "telegram", "instagram"];
+const TRUST: BrandKey[] = ["payme", "click", "uzum", "telegram"];
 
 /** Raqamlar: faqat mahsulot qoidalari (haqiqiy, o'lchanmagan taxminlar emas). */
 const FACTS = [
@@ -91,7 +91,7 @@ export default function Home() {
             <li className="flex h-10 items-center"><TezCheckMark /></li>
             {TRUST.map((b) => (
               <li key={b} className="flex h-10 items-center gap-2">
-                <BrandLogo brand={b} height={b === "telegram" || b === "instagram" ? 26 : 24} />
+                <BrandLogo brand={b} height={b === "telegram" ? 26 : 24} />
                 {b !== "payme" && <span className="text-sm font-semibold capitalize">{b}</span>}
               </li>
             ))}

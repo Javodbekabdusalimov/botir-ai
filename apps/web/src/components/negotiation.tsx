@@ -319,8 +319,6 @@ function AnimatedPrice({ price }: { price: number }) {
   );
 }
 
-/** Konfetti zarralari: deterministik (SSR/hydration xavfsiz), Math.random ishlatilmaydi. */
-const CONFETTI = Array.from({ length: 12 }, (_, i) => ({ dx: (i - 5.5) * 22, rot: (i % 2 ? 1 : -1) * (120 + i * 25), delay: i * 30 }));
 
 const OPENED = new Set<string>();
 
@@ -388,11 +386,6 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
   if (status === "paid")
     return (
       <div ref={(el) => el?.scrollIntoView({ block: "center", behavior: "smooth" })} className="slide-up relative mt-4 overflow-hidden rounded-2xl border border-green-500/40 bg-tint-1 p-5 text-center" role="status">
-        <span className="confetti pointer-events-none absolute inset-x-0 top-6" aria-hidden="true">
-          {CONFETTI.map((c, i) => (
-            <i key={i} style={{ ["--dx" as string]: `${c.dx}px`, ["--rot" as string]: `${c.rot}deg`, animationDelay: `${c.delay}ms` }} />
-          ))}
-        </span>
         <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-green-950">
           <svg viewBox="0 0 24 24" className="check-draw size-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12.5l4.5 4.5L19 7.5" />

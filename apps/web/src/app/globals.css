@@ -195,10 +195,6 @@ body::before {
 .flow-dot:nth-child(2) { animation-delay: 0.6s; }
 .flow-dot:nth-child(3) { animation-delay: 1.2s; }
 
-/* Muvaffaqiyat: konfetti zarralari (CSS, 12 ta) */
-@keyframes confetti-fall { 0% { transform: translate3d(0, -10px, 0) rotate(0); opacity: 1; } 100% { transform: translate3d(var(--dx), 120px, 0) rotate(var(--rot)); opacity: 0; } }
-.confetti i { position: absolute; top: 0; left: 50%; width: 7px; height: 11px; border-radius: 2px; animation: confetti-fall 1.4s var(--ease-out) both; }
-.confetti i:nth-child(3n) { background: #22c55e; } .confetti i:nth-child(3n+1) { background: #f59e0b; } .confetti i:nth-child(3n+2) { background: #bbf7d0; }
 
 /* Marquee yo'q: integratsiyalar qatori statik; faqat bitta sekin gorizontal harakat ishlatilmaydi */
 
@@ -260,7 +256,7 @@ body::before {
 .fade-in { animation: fade-in 0.25s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .flow-dot, .confetti i, .typing-dot, .rise-in, .slide-up, .pop-in, .fade-in, .price-in, .strike::after, .shimmer, .flow-line, .node-pulse, .float-y { animation: none; }
+  .flow-dot, .typing-dot, .rise-in, .slide-up, .pop-in, .fade-in, .price-in, .strike::after, .shimmer, .flow-line, .node-pulse, .float-y { animation: none; }
   .check-draw path { animation: none; stroke-dashoffset: 0; }
   html { scroll-behavior: auto; }
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { CheckCircle2, FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, inputClass, selectClass } from "@/components/field";
@@ -10,7 +10,7 @@ import { createBusiness, importCatalog } from "@/lib/api";
 import { parseCatalogFile, SAMPLE_CSV, type CatalogRow } from "@/lib/catalog-parse";
 import { CATEGORY_LABEL, formatSom } from "@/lib/format";
 import { SAMPLE_CATALOG } from "@/lib/mock";
-import type { Business, BusinessCategory } from "@/lib/types";
+import type { Business, BusinessCategory, CatalogImportResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Errors = Partial<Record<"name" | "district" | "address" | "catalog" | "form", string>>;
@@ -31,7 +31,9 @@ export function ConnectForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [parsing, setParsing] = useState(false);
-  const [ready, setReady] = useState<Business | null>(null);
+  const [ready, setReady] = useState<{ biz: Business; result: CatalogImportResult } | null>(null);
+  const [skipped, setSkipped] = useState<number[]>([]);
+  const [drag, setDrag] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function onFile(f: File | undefined) {
@@ -39,9 +41,10 @@ export function ConnectForm() {
     setParsing(true);
     setErrors((e) => ({ ...e, catalog: undefined }));
     try {
-      const parsed = await parseCatalogFile(f);
+      const { rows: parsed, skipped: bad } = await parseCatalogFile(f);
       if (!parsed.length) throw new Error("Mahsulot topilmadi. Ustunlar: nomi, narx, birlik");
       setRows(parsed);
+      setSkipped(bad);
       setFile(f);
       setFileName(f.name);
     } catch (err) {
@@ -56,6 +59,7 @@ export function ConnectForm() {
 
   function loadSampleCatalog() {
     setRows(SAMPLE_CATALOG);
+    setSkipped([]);
     setFile(null);
     setFileName("namuna katalog");
     setErrors((e) => ({ ...e, catalog: undefined }));
@@ -82,11 +86,11 @@ export function ConnectForm() {
         maxDiscountPct: discount,
         lang: "uz",
       });
-      await importCatalog(biz.id, file, rows);
+      const result = await importCatalog(biz.id, file, rows);
       try {
         localStorage.setItem("botir.businessId", biz.id);
       } catch {}
-      setReady(biz);
+      setReady({ biz, result: { ...result, errors: [...result.errors, ...skipped.map((n) => `${n}-qator: nomi yoki narxi noto'g'ri`)] } });
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Ulab bo'lmadi, qayta urinib ko'ring" });
     } finally {
@@ -94,11 +98,11 @@ export function ConnectForm() {
     }
   }
 
-  if (ready) return <AgentReady business={ready} count={rows.length} />;
+  if (ready) return <AgentReady business={ready.biz} result={ready.result} />;
 
   return (
     <form onSubmit={submit} noValidate className="mt-8 space-y-8">
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card/60 p-4 sm:p-6">
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
         <legend className="px-2 font-display text-lg font-bold">1. Biznes haqida</legend>
         <Field id="name" label="Biznes nomi" error={errors.name}>
           <Input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" aria-invalid={!!errors.name} aria-describedby={errors.name ? "name-err" : undefined} placeholder="Masalan: Chilonzor Osh Markazi" />
@@ -129,26 +133,47 @@ export function ConnectForm() {
             </div>
           </Field>
           <Field id="discount" label={`Maksimal chegirma: ${discount}%`} hint="Agent bu chegaradan oshib chegirma bera olmaydi.">
-            <input id="discount" type="range" min={0} max={30} step={1} value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="h-11 w-full accent-[var(--biz)]" />
+            <input id="discount" type="range" min={0} max={30} step={1} value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="h-11 w-full accent-[var(--primary-strong)]" />
           </Field>
         </div>
       </fieldset>
 
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card/60 p-4 sm:p-6">
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
         <legend className="px-2 font-display text-lg font-bold">2. Katalog</legend>
         <p className="text-sm text-muted-foreground">Excel (.xlsx) yoki CSV: ustunlar <code>nomi, narx, birlik</code>.</p>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDrag(true);
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDrag(false);
+            void onFile(e.dataTransfer.files?.[0]);
+          }}
+          className={cn(
+            "rounded-2xl border-2 border-dashed p-5 text-center transition-colors sm:p-8",
+            drag ? "border-primary bg-tint-2" : "border-tint-3 bg-tint-1/60",
+          )}
+        >
           <input ref={fileRef} id="catalog" type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={(e) => void onFile(e.target.files?.[0])} />
-          <Button type="button" variant="outline" className="h-11 px-4" onClick={() => fileRef.current?.click()} disabled={parsing}>
-            {parsing ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Upload className="size-4" aria-hidden="true" />}
-            Fayl tanlash
-          </Button>
-          <Button type="button" variant="ghost" className="h-11 px-4" onClick={loadSampleCatalog}>
-            <FileSpreadsheet className="size-4" aria-hidden="true" /> Namuna katalog
-          </Button>
-          <a download="katalog-namuna.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE_CSV)}`} className={cn(buttonVariants({ variant: "ghost" }), "h-11 px-4")}>
-            CSV shablon
-          </a>
+          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-card text-green-800 shadow-sm">
+            {parsing ? <Loader2 className="size-6 animate-spin" aria-hidden="true" /> : <Upload className="size-6" aria-hidden="true" />}
+          </span>
+          <p className="mt-3 font-semibold">{drag ? "Faylni qo'yib yuboring" : "Faylni shu yerga tashlang"}</p>
+          <p className="text-sm text-muted-foreground">.xlsx yoki .csv, 5 MB gacha</p>
+          <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+            <Button type="button" variant="outline" className="h-11 px-4" onClick={() => fileRef.current?.click()} disabled={parsing}>
+              Fayl tanlash
+            </Button>
+            <Button type="button" variant="ghost" className="h-11 px-4" onClick={loadSampleCatalog}>
+              <FileSpreadsheet className="size-4" aria-hidden="true" /> Namuna katalog
+            </Button>
+            <a download="katalog-namuna.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE_CSV)}`} className={cn(buttonVariants({ variant: "ghost" }), "h-11 px-4")}>
+              CSV shablon
+            </a>
+          </div>
         </div>
         {errors.catalog && (
           <p role="alert" className="text-sm text-destructive">
@@ -157,9 +182,16 @@ export function ConnectForm() {
         )}
         {rows.length > 0 && (
           <div>
-            <p className="mb-2 text-sm text-agent">
+            <p className="mb-2 text-sm font-medium text-green-800">
               {fileName}: {rows.length} ta mahsulot
             </p>
+            {skipped.length > 0 && (
+              <p role="status" className="mb-2 flex items-start gap-2 rounded-lg bg-biz-soft px-3 py-2 text-sm text-biz">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                {skipped.length} ta qator o&apos;tkazib yuboriladi (qator: {skipped.slice(0, 8).join(", ")}
+                {skipped.length > 8 ? "..." : ""}): nomi yoki narxi noto&apos;g&apos;ri.
+              </p>
+            )}
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full min-w-[420px] text-left text-sm">
                 <caption className="sr-only">Katalog ko'rinishi</caption>
@@ -199,21 +231,39 @@ export function ConnectForm() {
   );
 }
 
-function AgentReady({ business, count }: { business: Business; count: number }) {
+function AgentReady({ business, result }: { business: Business; result: CatalogImportResult }) {
+  const errs = result.errors;
   return (
-    <div className="rise-in mt-8 rounded-2xl border border-agent/40 bg-agent/10 p-5">
-      <p className="flex items-center gap-2 font-display text-xl font-bold text-agent">
-        <CheckCircle2 className="size-6" aria-hidden="true" /> Agent tayyor
+    <div className="rise-in mt-8 rounded-3xl border border-green-500/40 bg-tint-1 p-5 shadow-soft sm:p-8">
+      <p className="flex items-center gap-2 font-display text-2xl font-bold text-green-900">
+        <CheckCircle2 className="size-7 text-green-600" aria-hidden="true" /> Agentingiz tayyor ✅
       </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {business.name}: {count} ta mahsulot yuklandi, maksimal chegirma {business.maxDiscountPct}%.
+      <p className="mt-2 text-sm text-green-900/80">
+        {business.name}: maksimal chegirma {business.maxDiscountPct}%. Agent endi mijozlar bilan gaplasha oladi.
       </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <Link href="/dashboard" className={cn(buttonVariants(), "h-11 px-4")}>
-          Panelga o'tish
-        </Link>
-        <Link href="/connect/telegram" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-4")}>
+      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded-xl border border-tint-3 bg-card p-3">
+          <dt className="text-muted-foreground">Qo&apos;shildi</dt>
+          <dd className="font-display text-2xl font-bold tabular-nums text-green-800">{result.imported} ta</dd>
+        </div>
+        <div className="rounded-xl border border-tint-3 bg-card p-3">
+          <dt className="text-muted-foreground">Xato</dt>
+          <dd className={cn("font-display text-2xl font-bold tabular-nums", errs.length ? "text-biz" : "text-green-800")}>{errs.length} ta</dd>
+        </div>
+      </dl>
+      {errs.length > 0 && (
+        <ul className="mt-3 list-inside list-disc rounded-xl bg-biz-soft p-3 text-sm text-biz">
+          {errs.slice(0, 6).map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <Link href="/connect/telegram" className={cn(buttonVariants(), "h-12 px-5 font-semibold")}>
           Telegramni ulash
+        </Link>
+        <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline" }), "h-12 px-5 font-semibold")}>
+          Panelga o&apos;tish
         </Link>
       </div>
     </div>

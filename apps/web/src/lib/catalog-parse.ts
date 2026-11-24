@@ -16,19 +16,29 @@ function pick(row: Record<string, unknown>, keys: string[]): unknown {
   return undefined;
 }
 
-function normalize(rows: Record<string, unknown>[]): CatalogRow[] {
+export interface ParsedCatalog {
+  rows: CatalogRow[];
+  /** Noto'g'ri qatorlar raqami (faylda, sarlavha 1-qator) */
+  skipped: number[];
+}
+
+function normalize(rows: Record<string, unknown>[]): ParsedCatalog {
   const out: CatalogRow[] = [];
-  for (const r of rows) {
+  const skipped: number[] = [];
+  for (const [idx, r] of rows.entries()) {
     const name = String(pick(r, NAME_KEYS) ?? "").trim();
     const price = Number(String(pick(r, PRICE_KEYS) ?? "").replace(/[^\d.]/g, ""));
-    if (!name || !Number.isFinite(price) || price <= 0) continue;
+    if (!name || !Number.isFinite(price) || price <= 0) {
+      skipped.push(idx + 2);
+      continue;
+    }
     out.push({ name, price, unit: String(pick(r, UNIT_KEYS) ?? "dona").trim() || "dona" });
   }
-  return out;
+  return { rows: out, skipped };
 }
 
 /** CSV (papaparse) va Excel (xlsx, faqat kerak bo'lganda yuklanadi) fayllarini brauzerda o'qiydi. */
-export async function parseCatalogFile(file: File): Promise<CatalogRow[]> {
+export async function parseCatalogFile(file: File): Promise<ParsedCatalog> {
   const ext = file.name.split(".").pop()?.toLowerCase();
   if (ext === "xlsx" || ext === "xls") {
     const XLSX = await import("xlsx");

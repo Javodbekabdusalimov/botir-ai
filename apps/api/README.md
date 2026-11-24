@@ -24,6 +24,7 @@ pnpm dev:api                                   # prisma db push + seed + tsx wat
 | `PUBLIC_API_URL` | TEST to'lov havolasi bazasi | `http://localhost:4000` |
 | `TEZCHECK_API_KEY`, `TEZCHECK_CASH_DESK_CODE`, `TEZCHECK_API_URL` | haqiqiy TezCheck hisob (bill) | TEST havola (`/pay/test`) |
 | `PLAN_PRO_PRICE`, `PLAN_PRO_CREDITS` | Pro obuna narxi (so'm/oy) va AI kvota | 1000, 1000 |
+| `STT_CMD` | audio fayl → matn: bajariladigan fayl yo'li (audio yo'lini argument qilib oladi, matnni stdout'ga yozadi; shell yo'q) | audio yuklash → 503, brauzer diktovkasi taklif qilinadi |
 | `AUTH_SECRET` | `/auth` JWT (HS256) imzosi | har boot'da random (warn log), tokenlar restartda o'ladi |
 
 ## Demo / test account
@@ -67,6 +68,25 @@ curl -X POST localhost:4000/negotiations/<id>/confirm -H 'Content-Type: applicat
 - `GET /inbox?businessId=`, `GET /inbox/:chatId/messages`, `POST /inbox/:chatId/send|draft`, `PATCH /inbox/:chatId/mode`
 - `POST /loop/run {businessId}` (~90 s, golden-set eval), `GET /loop/proposals?businessId=`,
   `POST /loop/proposals/:id/approve|reject`, `POST /loop/rollback {businessId}`
+
+## Biznes bilimi (`src/knowledge/`)
+Manba → AI **qoralama** faktlar → egasi tasdiqlaydi → faqat tasdiqlangani agentga yetadi. Hammasi `@Auth()` + egasi (401/403; begona id → 404).
+- `GET /businesses/:id/knowledge` → `{sources, facts, questions, metrics}`
+- `POST /businesses/:id/knowledge/sources/text {text, kind?:'text'|'voice'}` · `/url {url}` · `/telegram {chatIds}` · `/file` (multipart `file`, 10 MB:
+  JPG/PNG/WEBP/PDF, audio — `STT_CMD` bo'lsa). Darhol `processing`, natija fonda `ready|failed` (`error` — o'zbekcha). Bir biznesda bir vaqtda 5 ta, ortig'i 429.
+- `PATCH /businesses/:id/knowledge/facts/:factId`, `POST .../facts/confirm {ids}` (idempotent). Katalog fakti tasdiqlansa `CatalogItem` yaratiladi yoki
+  nomi bo'yicha yangilanadi. Katalogdagi tasdiqlangan narxni rad etish → 409 (avval katalogdan o'chiriladi).
+- `POST .../questions/:qid/answer {answer}`, `POST .../questions/:qid/dismiss`
+- `POST /businesses/:id/sync-key` → `{key}` (bir marta ko'rinadi, bazada faqat sha256; yangisi eskisini bekor qiladi)
+- `POST /sync/catalog` (`X-Sync-Key`) `{items:[{name, price, unit?, inStock?}]}` — 500 tagacha, nomi bo'yicha upsert, xato qatorlar `errors` da.
+  Bu **umumiy push API**: iiko/1C bilan tayyor integratsiya EMAS va ular bilan sinalmagan; kassa tomonda skript/webhook kerak.
+
+Xavfsizlik: manba matni LLM uchun data (ko'rsatma emas), har maydon kodda tekshiriladi (`fact-validation.ts`), narx — butun son ≥ 0.
+Telegram matnidan telefon/karta/email LLM'gacha olib tashlanadi, iqtibosdan (`evidence`) har doim. AI yozgan xabarlar o'qilmaydi.
+URL: faqat http/https 80/443, ochiq IP (tekshirilgan IP'ga ulanadi, har redirect qayta tekshiriladi), 3 redirect, 10 s, 2 MB, `text/html`.
+JavaScript bilan chiziladigan yoki login so'raydigan sahifa (ko'pincha Instagram) o'qilmaydi — chetlab o'tilmaydi, `failed` bo'ladi.
+Rasm/PDF uchun `LLM_MODE=sdk` kerak. Server qayta ishga tushsa `processing` manbalar `failed` bo'ladi (qayta yuboriladi).
+Testlar: `pnpm exec tsx apps/api/src/knowledge/{url-guard,text-utils,fact-validation}.test.ts`.
 
 ## To'lov (faqat KIRIM)
 `confirm` va obuna faqat `PaymentLinkProvider.createPaymentLink()` ni chaqiradi (`src/payments/payment-link.ts`, token `PAYMENT_LINK`).

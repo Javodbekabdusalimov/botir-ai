@@ -9,6 +9,14 @@ import { PrismaActionStore } from './db/prisma-action-store';
 import { PrismaAgentStore } from './db/prisma-agent-store';
 import { PrismaTgStore } from './db/prisma-tg-store';
 import { PrismaService } from './db/prisma.service';
+import { CatalogWriter } from './knowledge/catalog-writer.service';
+import { KnowledgeFactsService } from './knowledge/facts.service';
+import { KnowledgeController, SyncController } from './knowledge/knowledge.controller';
+import { MetricsService } from './knowledge/metrics.service';
+import { QuestionsService } from './knowledge/questions.service';
+import { KnowledgeSourcesService } from './knowledge/sources.service';
+import { SyncService } from './knowledge/sync.service';
+import { TurnRecorder } from './knowledge/turn-recorder.service';
 import { LoopController } from './loop/loop.controller';
 import { agentsProvider } from './negotiations/agents.provider';
 import { NegotiationsController } from './negotiations/negotiations.controller';
@@ -44,10 +52,11 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, KnowledgeController, SyncController],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
-    PrismaActionStore, TgUserService,
+    PrismaActionStore, TgUserService, MetricsService, QuestionsService, TurnRecorder,
+    CatalogWriter, KnowledgeSourcesService, KnowledgeFactsService, SyncService,
     TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller,
     // Real TezCheck bills when the key is configured; otherwise clearly-labeled TEST links.
     {

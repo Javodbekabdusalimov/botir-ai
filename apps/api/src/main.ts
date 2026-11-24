@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { existsSync } from 'node:fs';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/http';
 import { startKeepWarm } from './keep-warm';
@@ -10,7 +11,8 @@ import { startKeepWarm } from './keep-warm';
 if (existsSync('.env')) process.loadEnvFile('.env');
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { rawBody: true }); // rawBody: webhook signature checks
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true }); // rawBody: webhook signature checks
+  app.useBodyParser('json', { limit: '1mb' }); // 40k-char knowledge texts, 500-item catalog sync
   const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',').map((s) => s.trim());
   app.enableCors({ origin: origins });
   app.useGlobalFilters(new ApiExceptionFilter());

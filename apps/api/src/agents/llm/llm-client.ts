@@ -1,9 +1,14 @@
 import { spawn } from 'node:child_process';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { AgentStore } from '../store/agent-store';
 import type { AgentLogger } from '../logger';
 import { silentLogger } from '../logger';
 import type { LlmModel } from '../types';
+
+export interface LlmAttachment {
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
+  base64: string;
+}
 
 export interface CompleteInput {
   system: string;
@@ -11,6 +16,7 @@ export interface CompleteInput {
   model: LlmModel;
   json?: boolean;
   purpose?: string; // for LlmCall log ("business_agent", "parser", ...)
+  attachments?: LlmAttachment[]; // images / PDFs, sdk mode only
 }
 
 export interface CompleteOutput {
@@ -83,7 +89,7 @@ export class LlmClient {
     const timer = setTimeout(() => abort.abort(), this.timeoutMs);
     try {
       const q = query({
-        prompt: input.prompt,
+        prompt: input.attachments?.length ? userMessage(input.prompt, input.attachments) : input.prompt,
         options: {
           model: input.model,
           systemPrompt: system,
@@ -108,6 +114,7 @@ export class LlmClient {
   }
 
   private viaCli(system: string, input: CompleteInput): Promise<string> {
+    if (input.attachments?.length) return Promise.reject(new Error('LLM attachments need LLM_MODE=sdk (cli mode is text only)'));
     const args = [
       '-p',
       '--model', input.model,
@@ -142,6 +149,20 @@ export class LlmClient {
       child.stdin.end(input.prompt);
     });
   }
+}
+
+/** One user turn with image/document blocks (a plain string prompt cannot carry files). */
+async function* userMessage(prompt: string, attachments: LlmAttachment[]): AsyncGenerator<SDKUserMessage> {
+  const files = attachments.map(({ mediaType, base64 }) =>
+    mediaType === 'application/pdf'
+      ? { type: 'document' as const, source: { type: 'base64' as const, media_type: mediaType, data: base64 } }
+      : { type: 'image' as const, source: { type: 'base64' as const, media_type: mediaType, data: base64 } },
+  );
+  yield {
+    type: 'user',
+    message: { role: 'user', content: [...files, { type: 'text', text: prompt }] },
+    parent_tool_use_id: null,
+  };
 }
 
 export function parseJsonLoose<T>(text: string): T {

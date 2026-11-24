@@ -6,7 +6,7 @@
     "start:dev": "prisma generate && prisma db push --skip-generate && tsx src/seed.ts && tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "db:push": "prisma db push",
-    "db:seed": "tsx src/seed.ts",
+    "db:seed": "prisma generate && tsx src/seed.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

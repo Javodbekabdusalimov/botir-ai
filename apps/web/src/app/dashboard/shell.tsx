@@ -104,7 +104,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-3 text-xs font-bold text-green-900">
-                  <span className="size-2 animate-pulse rounded-full bg-green-500 motion-reduce:animate-none" /> Jonli agent
+                  <span className="size-2 animate-pulse rounded-full bg-green-500 motion-reduce:animate-none" /> Agent faol
                 </span>
                 <span className={cn("flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold", plan === "pro" ? "bg-amber-300 text-amber-950" : "bg-white/20 text-white backdrop-blur-md")}>
                   <Crown className="size-3.5" aria-hidden="true" /> {plan === "pro" ? "Pro" : "Start"} tarif

@@ -149,12 +149,12 @@ export function NegotiationStage({
           {state.status === "running" && "Muzokara ketmoqda"}
           {state.status === "agreed" && "Kelishildi"}
           {state.status === "confirmed" && "Tasdiqlandi"}
-          {state.status === "rejected" && "Rad etildi"}
-          {state.status === "failed" && "Xatolik"}
+          {state.status === "rejected" && "Kelishilmadi"}
+          {state.status === "failed" && "Javob kechikdi"}
         </span>
       </div>
       <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3" aria-live="polite">
-        {!lane && !state.error && <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">Agentlar ulanmoqda...</p>}
+        {!lane && !state.error && state.status === "running" && <p role="status" className="col-span-2 py-8 text-center text-sm text-muted-foreground">Ulanmoqda… agentlar so&apos;rovni o&apos;qimoqda</p>}
         {lane?.messages.map((m) => (
           <Bubble key={m.id} biz={m.fromAgent === "business"} type={m.payload.type} text={m.text.slice(0, m.shown)} />
         ))}

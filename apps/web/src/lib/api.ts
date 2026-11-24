@@ -53,6 +53,7 @@ export const modeStore = {
 };
 
 export class ApiError extends Error {}
+export class NotFoundError extends ApiError {}
 
 /* ---- Token (localStorage 'botir_token') ---- */
 export const TOKEN_KEY = "botir_token";
@@ -80,6 +81,7 @@ async function request<T>(
   init: RequestInit | undefined,
   fallback: () => T | Promise<T>,
   timeoutMs: number = TIMEOUT_MS,
+  opts: { notFoundError?: boolean } = {},
 ): Promise<T> {
   if (FORCE_DEMO) return fallback();
   const ctrl = new AbortController();
@@ -102,7 +104,13 @@ async function request<T>(
   } finally {
     clearTimeout(timer);
   }
-  if (res.status === 404 || res.status >= 500) {
+  if (res.status === 404) {
+    // Server javob berdi = backend tirik. "Demo"ga o'tmaymiz (aks holda belgi Jonli/Demo o'rtasida sakraydi).
+    setDemo(false);
+    if (opts.notFoundError) throw new NotFoundError("Topilmadi");
+    return fallback();
+  }
+  if (res.status >= 500) {
     setDemo(true);
     return fallback();
   }
@@ -176,9 +184,19 @@ export async function agentRequest(text: string): Promise<AgentRequestResult> {
       const key = t.category === "autoservice" ? "chilonzor" : t.category === "shop" ? "malika" : "chorsu";
       needs[key] = t.need;
     });
-    sessionStorage.setItem(NEG_KEY + r.negotiationId, JSON.stringify({ needs }));
+    sessionStorage.setItem(NEG_KEY + r.negotiationId, JSON.stringify({ needs, text }));
   } catch {}
   return r;
+}
+
+/** /live "Qayta urinish" uchun asl so'rov matni. */
+export function recallRequestText(id: string): string | undefined {
+  try {
+    const raw = sessionStorage.getItem(NEG_KEY + id);
+    return raw ? ((JSON.parse(raw).text as string | undefined) ?? undefined) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function recallNeeds(id: string): Record<string, string> | undefined {
@@ -208,11 +226,17 @@ export function streamNegotiation(
   if (FORCE_DEMO || id.startsWith("demo")) {
     startMock();
   } else {
-    es = new EventSource(`${API_URL}/negotiations/${encodeURIComponent(id)}/stream`);
-    // Kontrakt: har SSE data = JSON.stringify(NegotiationEvent). Nomsiz event ham "message" listeneriga keladi — onmessage qo'shilmaydi, aks holda har xabar 2 marta chiqadi.
+    // Server qayta ulanishda o'tgan eventlarni replay qiladi: takrorlarni tashlab yuboramiz.
+    const seen = new Set<string>();
+    let attempts = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let stopped = false;
     const handle = (ev: MessageEvent<string>) => {
       if (typeof ev.data !== "string") return; // EventSource ulanish "error" hodisasi (ma'lumotsiz) onerror'da hal qilinadi
       received = true;
+      attempts = 0;
+      if (seen.has(ev.data)) return;
+      seen.add(ev.data);
       try {
         const parsed = JSON.parse(ev.data) as NegotiationEvent;
         if (parsed.type === "status" && parsed.status !== "running") finished = true;
@@ -221,13 +245,35 @@ export function streamNegotiation(
         onFail?.("Oqimdan noto'g'ri ma'lumot keldi");
       }
     };
-    (["message", "best_offer", "status", "error"] as const).forEach((t) => es!.addEventListener(t, handle as EventListener));
-    es.onerror = () => {
+    const connect = () => {
+      if (stopped) return;
+      es = new EventSource(`${API_URL}/negotiations/${encodeURIComponent(id)}/stream`);
+      // Kontrakt: har SSE data = JSON.stringify(NegotiationEvent). onmessage qo'shilmaydi, aks holda har xabar 2 marta chiqadi.
+      (["message", "best_offer", "status", "error"] as const).forEach((t) => es!.addEventListener(t, handle as EventListener));
+      es.onerror = () => {
+        es?.close();
+        es = null;
+        if (finished || stopped) return; // server tugaganda oqimni yopadi: bu xato emas
+        // Avto-qayta ulanish ("Ulanmoqda…" holati UI'da qoladi): 1s, 2s, 4s, 4s, 4s
+        if (attempts < 5) {
+          const wait = Math.min(1000 * 2 ** attempts, 4000);
+          attempts += 1;
+          retryTimer = setTimeout(connect, wait);
+          return;
+        }
+        if (!received) startMock();
+        else onFail?.("Aloqa uzildi. Qayta ulanish tugmasini bosing.");
+      };
+    };
+    connect();
+    const prevStop = () => {
+      stopped = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+    return () => {
+      prevStop();
+      stopMock?.();
       es?.close();
-      es = null;
-      if (finished) return; // server tugaganda oqimni yopadi: bu xato emas
-      if (!received) startMock();
-      else onFail?.("Ulanish uzildi");
     };
   }
   return () => {
@@ -319,7 +365,11 @@ export const getMe = (token: string) =>
 
 /* ---- To'lov holati (3s polling) ---- */
 export const getPaymentStatus = (orderId: string) =>
-  request<PaymentStatus>(`/payments/${encodeURIComponent(orderId)}/status`, undefined, () => mock.mockPaymentStatus(orderId));
+  orderId.startsWith("demo")
+    ? Promise.resolve(mock.mockPaymentStatus(orderId))
+    : request<PaymentStatus>(`/payments/${encodeURIComponent(orderId)}/status`, undefined, () => mock.mockPaymentStatus(orderId), TIMEOUT_MS, {
+        notFoundError: true,
+      });
 
 /* ---- Rollback ---- */
 export const rollbackLoop = (businessId: string) =>

@@ -1,4 +1,7 @@
 import { Controller, Get, Inject, Module } from '@nestjs/common';
+import { AuthController } from './auth/auth.controller';
+import { AuthGuard } from './auth/auth.guard';
+import { AuthService } from './auth/auth.service';
 import { BusinessesController } from './businesses/businesses.controller';
 import { AnalyticsService } from './businesses/analytics.service';
 import { ok } from './common/http';
@@ -34,9 +37,9 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, BusinessesController, NegotiationsController, TestPayController, TgController, LoopController],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, TestPayController, TgController, LoopController],
   providers: [
-    PrismaService, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
+    PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
     TestPaymentLinkProvider,
     // Swap point for the real TezCheck module: { provide: PAYMENT_LINK, useExisting: TezcheckPaymentLinkProvider }
     { provide: PAYMENT_LINK, useExisting: TestPaymentLinkProvider },

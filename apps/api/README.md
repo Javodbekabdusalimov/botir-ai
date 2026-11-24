@@ -22,10 +22,23 @@ pnpm dev:api                                   # prisma db push + seed + tsx wat
 | `TELEGRAM_BOT_TOKEN` | grammY bot | bot o'chiq (warn log) |
 | `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_KEY` | userbot login / inbox | `/tg-connect/*` → 503 |
 | `PUBLIC_API_URL` | TEST to'lov havolasi bazasi | `http://localhost:4000` |
+| `AUTH_SECRET` | `/auth` JWT (HS256) imzosi | har boot'da random (warn log), tokenlar restartda o'ladi |
 
 ## Demo / test account
 Seed: 3 demo biznes (`isDemo: true`) — `biz-osh` (Chilonzor Osh Markazi), `biz-auto` (Chilonzor AutoService),
-`biz-shop` (Mini Market) + katalog + 24 golden case. Auth hali yo'q: `userId` body'da keladi (web `localStorage`).
+`biz-shop` (Mini Market) + katalog + 24 golden case. `/agent/request` va GET endpointlar ochiq (login shart emas): `userId` body'da keladi (web `localStorage`).
+
+### Test akkauntlar (seed, idempotent)
+| Rol | Telefon | Parol | Biznes |
+|---|---|---|---|
+| `business` | `+998900000001` | `botir123` | `biz-osh` (Chilonzor Osh Markazi) |
+| `user` | `+998900000002` | `botir123` | — (id `demo-user`) |
+
+```bash
+TOKEN=$(curl -s -X POST localhost:4000/auth/login -H 'Content-Type: application/json' \
+  -d '{"phone":"+998900000001","password":"botir123"}' | jq -r .data.token)
+curl localhost:4000/auth/me -H "Authorization: Bearer $TOKEN"     # {user, businessId}
+```
 
 ```bash
 curl localhost:4000/health
@@ -37,6 +50,9 @@ curl -X POST localhost:4000/negotiations/<id>/confirm -H 'Content-Type: applicat
 
 ## Endpoints
 - `GET /health`
+- `POST /auth/register {name, phone, password, role:'business'|'user'}`, `POST /auth/login {phone, password}` → `{token, user}`;
+  `GET /auth/me` (Bearer) → `{user, businessId?}`. Telefon → `+998XXXXXXXXX`. Parol: scrypt, token: JWT HS256 (7 kun).
+  Login talab qiladi (`@Auth()`): `POST /businesses`, `PATCH|DELETE /businesses/:id` (faqat egasi). Qolganlari ochiq.
 - `GET|POST /businesses`, `GET|PATCH|DELETE /businesses/:id` (soft delete)
 - `GET|POST|PATCH /businesses/:id/catalog`, `PATCH|DELETE /businesses/:id/catalog/:itemId`,
   `POST /businesses/:id/catalog/import` (multipart `file` CSV/XLSX yoki JSON `{rows}`; ustunlar: name/nomi/название, price/narx/цена, unit/birlik)
@@ -56,7 +72,7 @@ Hozir `TestPaymentLinkProvider` (TEST havola). Haqiqiy TezCheck moduli (Ibrat, `
 `{ provide: PAYMENT_LINK, useExisting: <TezcheckProvider> }` bilan almashtiradi. Refund/payout/withdraw kodi yo'q.
 
 ## Tuzilma
-`db/` Prisma + `PrismaAgentStore` (agents `AgentStore`) + `PrismaTgStore` (tg-connect `TgStore`) ·
+`auth/` register/login/me, `AuthGuard` + `@Auth()`/`@CurrentUser()` · `db/` Prisma + `PrismaAgentStore` (agents `AgentStore`) + `PrismaTgStore` (tg-connect `TgStore`) ·
 `negotiations/` agent request, SSE, confirm, agent→shared event mapper · `businesses/` CRUD, import, analytics ·
 `tg/` tg-connect + inbox + bot · `loop/` LoopEngine · `payments/` link port + TEST provider.
 Agent qatlami (`src/agents`) ichki tiplari `src/agents/shared.ts` da (PR#1 dan oldingi shakl); web'ga faqat `@botir/shared` chiqadi.

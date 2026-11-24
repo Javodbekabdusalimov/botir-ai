@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type { WorkHours } from '@botir/shared';
 import { DEMO_BUSINESSES, DEMO_GOLDEN_CASES, DEMO_PRODUCTS } from './agents';
+import { hashPassword } from './auth/auth.util';
 
 const ADDRESS: Record<string, string> = {
   'biz-osh': 'Chilonzor tumani, Bunyodkor shoh ko‘chasi',
@@ -30,7 +31,16 @@ async function main(): Promise<void> {
     const data = { businessId: g.businessId, question: g.question, expected: JSON.stringify(g.expected), forbidden: g.forbidden ? JSON.stringify(g.forbidden) : null };
     await db.goldenCase.upsert({ where: { id: g.id }, create: { id: g.id, ...data }, update: data });
   }
-  logger.log(`seeded ${DEMO_BUSINESSES.length} businesses, ${DEMO_PRODUCTS.length} catalog items, ${DEMO_GOLDEN_CASES.length} golden cases`);
+  // Test accounts (README): business owner of biz-osh + a plain user ("demo-user" = web's default userId).
+  const TEST_USERS = [
+    { id: 'owner-biz-osh', name: 'Chilonzor Osh Markazi egasi', phone: '+998900000001', role: 'business', businessId: 'biz-osh' },
+    { id: 'demo-user', name: 'Demo foydalanuvchi', phone: '+998900000002', role: 'user', businessId: null },
+  ];
+  for (const u of TEST_USERS) {
+    const data = { name: u.name, role: u.role, businessId: u.businessId, passwordHash: hashPassword('botir123'), deletedAt: null };
+    await db.user.upsert({ where: { phone: u.phone }, create: { id: u.id, phone: u.phone, ...data }, update: data });
+  }
+  logger.log(`seeded ${TEST_USERS.length} test users, ${DEMO_BUSINESSES.length} businesses, ${DEMO_PRODUCTS.length} catalog items, ${DEMO_GOLDEN_CASES.length} golden cases`);
   await db.$disconnect();
 }
 

@@ -13,6 +13,38 @@ interface Base {
   updatedAt: ISODate;
 }
 
+// ---------- Auth (telefon + parol, JWT Bearer) ----------
+export type UserRole = 'business' | 'user';
+
+export interface AuthUser {
+  id: UUID;
+  name: string;
+  phone: string; // +998XXXXXXXXX
+  role: UserRole;
+  businessId?: UUID;
+}
+
+export interface RegisterDto {
+  name: string;
+  phone: string;
+  password: string;
+  role: UserRole;
+}
+export interface LoginDto {
+  phone: string;
+  password: string;
+}
+/** POST /auth/register, POST /auth/login */
+export interface AuthResponse {
+  token: string; // Authorization: Bearer <token>
+  user: AuthUser;
+}
+/** GET /auth/me */
+export interface MeResponse {
+  user: AuthUser;
+  businessId?: UUID;
+}
+
 // ---------- Biznes va katalog ----------
 export type BusinessCategory = 'restaurant' | 'shop' | 'autoservice' | 'clinic' | 'beauty' | 'other';
 
@@ -247,6 +279,9 @@ export interface MemoryFact {
 // ---------- Endpointlar ro'yxati (§6) ----------
 export const API = {
   authTelegram: 'POST /auth/telegram',
+  authRegister: 'POST /auth/register',
+  authLogin: 'POST /auth/login',
+  authMe: 'GET /auth/me',
   businesses: 'GET /businesses',
   createBusiness: 'POST /businesses',
   catalogImport: 'POST /businesses/:id/catalog/import',

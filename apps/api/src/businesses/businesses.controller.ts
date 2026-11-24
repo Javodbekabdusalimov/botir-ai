@@ -1,8 +1,11 @@
 import {
-  BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, UploadedFile, UseInterceptors,
+  BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Inject, NotFoundException, Param, Patch, Post, UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Business as DbBusiness, User as DbUser } from '@prisma/client';
 import type { CatalogImportResult, CatalogItemDto, CreateBusinessDto, MemoryFact } from '@botir/shared';
+import { Auth, CurrentUser } from '../auth/auth.guard';
 import { ok } from '../common/http';
 import { toBusiness, toCatalogItem, toOrder } from '../db/mappers';
 import { PrismaService } from '../db/prisma.service';
@@ -29,24 +32,32 @@ export class BusinessesController {
     return ok(toBusiness(await this.business(id)));
   }
 
+  /** Login required; the creator becomes the owner (a business user without a business gets linked to it). */
   @Post()
-  async create(@Body() dto: CreateBusinessDto) {
+  @Auth()
+  async create(@Body() dto: CreateBusinessDto, @CurrentUser() user: DbUser) {
     if (!dto?.name || !dto.category) throw new BadRequestException('name and category are required');
     const row = await this.db.business.create({
-      data: { ...this.businessData(dto), name: dto.name, category: dto.category, workHours: dto.workHours ? JSON.stringify(dto.workHours) : '' },
+      data: {
+        ...this.businessData(dto), name: dto.name, category: dto.category, workHours: dto.workHours ? JSON.stringify(dto.workHours) : '',
+        ownerUserId: user.id,
+      },
     });
+    if (user.role === 'business' && !user.businessId) await this.db.user.update({ where: { id: user.id }, data: { businessId: row.id } });
     return ok(toBusiness(row));
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: Partial<CreateBusinessDto>) {
-    await this.business(id);
+  @Auth()
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateBusinessDto>, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     return ok(toBusiness(await this.db.business.update({ where: { id }, data: this.businessData(dto) })));
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.business(id);
+  @Auth()
+  async remove(@Param('id') id: string, @CurrentUser() user: DbUser) {
+    this.assertOwner(await this.business(id), user);
     await this.db.business.update({ where: { id }, data: { deletedAt: new Date() } });
     return ok({ id });
   }
@@ -128,6 +139,10 @@ export class BusinessesController {
     const b = await this.db.business.findFirst({ where: { id, deletedAt: null } });
     if (!b) throw new NotFoundException('business not found');
     return b;
+  }
+
+  private assertOwner(b: DbBusiness, user: DbUser): void {
+    if (b.ownerUserId !== user.id && user.businessId !== b.id) throw new ForbiddenException('Bu biznesni o‘zgartirishga ruxsat yo‘q');
   }
 
   private businessData(dto: Partial<CreateBusinessDto>) {

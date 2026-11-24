@@ -18,11 +18,11 @@ services:
       - key: DATABASE_URL
         value: file:./dev.db
       - key: CORS_ORIGINS
-        value: https://ai-assistant.onrender.com,http://localhost:3000
+        value: https://ai-assistant-f16u.onrender.com,http://localhost:3000
       - key: WEB_URL
-        value: https://ai-assistant.onrender.com
+        value: https://ai-assistant-f16u.onrender.com
       - key: PUBLIC_API_URL
-        value: https://ai-assistant-api.onrender.com
+        value: https://ai-assistant-api-u384.onrender.com
       - key: LLM_MODE
         value: sdk
       - key: AUTH_SECRET
@@ -49,4 +49,4 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: NEXT_PUBLIC_API_URL
-        value: https://ai-assistant-api.onrender.com
+        value: https://ai-assistant-api-u384.onrender.com

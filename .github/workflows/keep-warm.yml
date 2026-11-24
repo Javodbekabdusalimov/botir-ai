@@ -1,0 +1,19 @@
+# Render free plan servislarni ~15 daqiqa so'rovsiz qolsa uxlatadi (birinchi ochilish ~60-90 s).
+# Har 10 daqiqada web va API'ni ping qiladi. Public repo: GitHub Actions bepul.
+name: keep-warm
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping web + API
+        run: |
+          for url in https://ai-assistant-f16u.onrender.com/robots.txt https://ai-assistant-api-u384.onrender.com/health; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 "$url" || true)
+            echo "$code $url"
+          done

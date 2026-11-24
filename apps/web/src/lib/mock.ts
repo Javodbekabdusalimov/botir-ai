@@ -19,6 +19,15 @@ import type {
   NegotiationTask,
   Order,
   OrderItem,
+  AuthResult,
+  AuthUser,
+  MeResponse,
+  MeTgStatus,
+  PaymentStatus,
+  Plan as BillingPlan,
+  RegisterDto,
+  SubscriptionResult,
+  UserAction,
 } from "./types";
 import { formatSom } from "./format";
 
@@ -32,7 +41,7 @@ function biz(id: string, name: string, category: BusinessCategory, district: str
 
 /** Panelda tanlanadigan 3 ta demo biznes */
 export const DEMO_BUSINESSES: Business[] = [
-  biz("chorsu", "Chorsu Osh Markazi", "restaurant", "Shayxontohur", "Chorsu bozori yonida", 10),
+  biz("chorsu", "Chilonzor Osh Markazi", "restaurant", "Chilonzor", "Chilonzor, 9-kvartal", 10),
   biz("chilonzor", "Chilonzor AutoServis", "autoservice", "Chilonzor", "9-kvartal", 12),
   biz("malika", "Malika Do'kon", "shop", "Yunusobod", "4-kvartal", 7),
 ];
@@ -72,7 +81,11 @@ const MULTI = ["chorsu", "besh", "samarqand"];
 
 /** negotiationId ichidan biznes chiziqlari: "demo-chorsu+chilonzor-ab12" yoki "demo-multi-ab12" */
 export function laneKeys(id: string): string[] {
-  const seg = /^demo-([a-z+]+)/.exec(id)?.[1] ?? "multi";
+  let raw = id;
+  try {
+    raw = decodeURIComponent(id); // "%2B" -> "+"
+  } catch {}
+  const seg = /^demo-([a-z+]+)/.exec(raw)?.[1] ?? "multi";
   if (seg === "multi") return MULTI;
   const keys = seg.split("+").filter((k) => PLANS[k]).slice(0, 3);
   return keys.length ? keys : ["chorsu"];
@@ -155,7 +168,7 @@ export function runMockStream(negId: string, needs: Record<string, string> | und
 
 export function mockConfirm(): ConfirmResult {
   const orderId = `ord-${rid()}`;
-  return { orderId, paymentLink: `https://pay.tezcheck.uz/demo/${orderId}` };
+  return { orderId, paymentLink: `/pay/${orderId}` };
 }
 
 /* ---------- Shaxsiy agent rejasi ---------- */
@@ -208,9 +221,14 @@ export function mockCreateBusiness(dto: CreateBusinessDto): Business {
   return { ...dto, id: `demo-${rid()}`, ownerUserId: "demo-owner", isDemo: true, createdAt: now, updatedAt: now };
 }
 
+/** Jonli API id'lari -> mock id'lari (demo rejimda ham biz-osh ishlasin) */
+export const ALIAS: Record<string, string> = { "biz-osh": "chorsu", "biz-auto": "chilonzor", "biz-shop": "malika" };
+const canon = (id: string) => ALIAS[id] ?? id;
+
 export const mockImport = (rows: CatalogRowInput[]): CatalogImportResult => ({ imported: rows.length, skipped: 0, errors: [] });
 
-export function mockOrders(businessId: string): Order[] {
+export function mockOrders(rawId: string): Order[] {
+  const businessId = canon(rawId);
   const it = (name: string, qty: number, price: number): OrderItem => ({ catalogItemId: `${businessId}-${name}`, name, qty, price });
   const sets: Record<string, [OrderItem[], number, number, Order["status"], number][]> = {
     chorsu: [
@@ -244,7 +262,8 @@ export function mockOrders(businessId: string): Order[] {
   }));
 }
 
-export function mockAnalytics(businessId: string): Analytics {
+export function mockAnalytics(rawId: string): Analytics {
+  const businessId = canon(rawId);
   const sets: Record<string, Analytics> = {
     chorsu: {
       topRequests: [{ query: "Stol band qilish (guruh)", count: 42 }, { query: "Osh narxi", count: 31 }, { query: "Olib ketish", count: 19 }],
@@ -272,7 +291,8 @@ export function mockAnalytics(businessId: string): Analytics {
 
 const chatMode = new Map<string, ChatMode>();
 
-export function mockChats(businessId: string): Chat[] {
+export function mockChats(rawId: string): Chat[] {
+  const businessId = canon(rawId);
   const rows: [string, string, ChatMode, boolean, number, number][] = [
     ["Aziz R.", "Ertaga 6 kishilik stol bormi?", "copilot", false, 6, 2],
     ["Nodira S.", "Chegirma qilsangiz 10 kishi kelamiz", "copilot", false, 21, 1],
@@ -325,7 +345,8 @@ export function mockMessages(chatId: string): InboxMessage[] {
 
 /* ---------- Loop (o'z-o'zini yaxshilash) ---------- */
 
-export function mockLoop(businessId: string): LoopProposal[] {
+export function mockLoop(rawId: string): LoopProposal[] {
+  const businessId = canon(rawId);
   const base = { businessId, status: "pending" as const, createdAt: new Date().toISOString() };
   return [
     { ...base, id: `p1-${rid()}`, kind: "catalog_item", title: "Katalogga \"Bolalar menyusi\" qo'shish", diff: "+ Bolalar menyusi: sho'rva, kotlet, kompot (35 000 so'm)\n+ tags: [bolalar, menyu]", reason: "So'nggi 7 kunda 5 marta so'ralgan, katalogda topilmagan", evalBefore: 72, evalAfter: 81 },
@@ -334,7 +355,8 @@ export function mockLoop(businessId: string): LoopProposal[] {
   ];
 }
 
-export function mockFacts(businessId: string): MemoryFact[] {
+export function mockFacts(rawId: string): MemoryFact[] {
+  const businessId = canon(rawId);
   return [
     ["Mijozlar ko'pincha 19:00 dan keyin stol so'raydi", "Suhbatlar tahlili", 0.86],
     ["Juma kuni guruh buyurtmalari 2 barobar ko'p", "Buyurtmalar tarixi", 0.9],
@@ -349,4 +371,114 @@ export function mockFacts(businessId: string): MemoryFact[] {
     confidence: confidence as number,
     createdAt: iso(60 * (i + 1) * 5),
   }));
+}
+
+/* ---------- Auth (demo): test akkauntlar + brauzerda saqlanadigan ro'yxatdan o'tganlar ---------- */
+// Faqat demo rejim uchun: parol brauzer localStorage'ida ochiq turadi. Haqiqiy backend ulanganda ishlatilmaydi.
+
+export const TEST_ACCOUNTS = {
+  business: { phone: "+998900000001", password: "botir123" },
+  user: { phone: "+998900000002", password: "botir123" },
+} as const;
+
+const SEED: (AuthUser & { password: string })[] = [
+  { id: "u-biz", name: "Chilonzor Osh Markazi", phone: TEST_ACCOUNTS.business.phone, password: TEST_ACCOUNTS.business.password, role: "business", businessId: "chorsu" },
+  { id: "u-client", name: "Test Mijoz", phone: TEST_ACCOUNTS.user.phone, password: TEST_ACCOUNTS.user.password, role: "user" },
+];
+const USERS_KEY = "botir.mockUsers";
+
+function loadUsers(): (AuthUser & { password: string })[] {
+  try {
+    const extra = JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]") as (AuthUser & { password: string })[];
+    return [...SEED, ...extra];
+  } catch {
+    return SEED;
+  }
+}
+const strip = (u: AuthUser & { password: string }): AuthUser => ({ id: u.id, name: u.name, phone: u.phone, role: u.role, businessId: u.businessId });
+
+export function mockLogin(phone: string, password: string): AuthResult | null {
+  const u = loadUsers().find((x) => x.phone === phone && x.password === password);
+  return u ? { token: `mock.${u.id}`, user: strip(u) } : null;
+}
+export function mockRegister(dto: RegisterDto): AuthResult | "exists" {
+  if (loadUsers().some((x) => x.phone === dto.phone)) return "exists";
+  const u = { id: `u-${rid()}`, name: dto.name, phone: dto.phone, password: dto.password, role: dto.role };
+  try {
+    const extra = JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]");
+    localStorage.setItem(USERS_KEY, JSON.stringify([...extra, u]));
+  } catch {}
+  return { token: `mock.${u.id}`, user: strip(u) };
+}
+export function mockMe(token: string): MeResponse | null {
+  const u = loadUsers().find((x) => `mock.${x.id}` === token);
+  if (!u) return null;
+  const user = strip(u);
+  if (u.role !== "business" || !u.businessId) return { user };
+  let plan: "start" | "pro" = "start";
+  let planUntil: string | null = null;
+  try {
+    const saved = JSON.parse(localStorage.getItem(`botir.plan.${u.businessId}`) ?? "null") as { until: string } | null;
+    if (saved && new Date(saved.until) > new Date()) {
+      plan = "pro";
+      planUntil = saved.until;
+    }
+  } catch {}
+  return { user, businessId: u.businessId, business: { id: u.businessId, name: u.name, plan, planUntil, aiCredits: plan === "pro" ? 1000 : 100 } };
+}
+
+export const MOCK_PLANS: BillingPlan[] = [
+  { id: "start", name: "Start", price: 0, aiCredits: 100, periodDays: 30 },
+  { id: "pro", name: "Pro", price: 1000, aiCredits: 1000, periodDays: 30 },
+];
+export function mockSubscribe(): SubscriptionResult {
+  const ref = `sub-${rid()}`;
+  return { paymentRef: ref, payUrl: `/pay/${ref}`, amount: 1000 };
+}
+/** Pro faollashganda demo rejimda 30 kunlik muddat saqlanadi */
+export function mockActivatePro(businessId: string) {
+  try {
+    localStorage.setItem(`botir.plan.${businessId}`, JSON.stringify({ until: new Date(Date.now() + 30 * 86400_000).toISOString() }));
+  } catch {}
+}
+
+/* ---------- Mijozning shaxsiy Telegrami va AI ruxsat so'ragan amallar (demo) ---------- */
+const ME_TG = "botir.meTg";
+export function mockMeTg(): MeTgStatus {
+  try {
+    const on = localStorage.getItem(ME_TG) === "1";
+    return { available: true, connected: on, username: on ? "demo_user" : undefined, connectedAt: on ? new Date().toISOString() : undefined };
+  } catch {
+    return { available: true, connected: false };
+  }
+}
+export function setMockMeTg(on: boolean) {
+  try {
+    if (on) localStorage.setItem(ME_TG, "1");
+    else localStorage.removeItem(ME_TG);
+  } catch {}
+}
+let actions: UserAction[] | null = null;
+export function mockActions(): UserAction[] {
+  actions ??= [
+    { id: "a1", chatId: "c1", peerTitle: "Chilonzor Osh Markazi", text: "Assalomu alaykum! Ertaga 19:00 ga 6 kishilik joy band qilmoqchiman. Bo'shmi?", status: "pending", reason: "Siz: \"Botir, ertaga osh joy band qil\"", createdAt: iso(4) },
+    { id: "a2", chatId: "c2", peerTitle: "Chilonzor AutoServis", text: "Salom, shanba kuni Cobalt uchun moy almashtirish mumkinmi? Narxi qancha?", status: "pending", reason: "Siz: \"Botir, moy almashtirishga yoz\"", createdAt: iso(11) },
+    { id: "a3", chatId: "c3", peerTitle: "Malika Do'kon", text: "Salom! 10 kg guruch va 2 litr yog' yetkazib bera olasizmi?", status: "sent", createdAt: iso(95) },
+  ];
+  return actions.map((a) => ({ ...a }));
+}
+export function mockDecideAction(id: string, d: "approve" | "reject") {
+  mockActions();
+  actions = actions!.map((a) => (a.id === id ? { ...a, status: d === "approve" ? "sent" : "rejected" } : a));
+}
+/** To'lov holati: tasdiqdan ~5s keyin "paid". */
+export function mockPaymentStatus(orderId: string): PaymentStatus {
+  const key = `botir.pay.${orderId}`;
+  let started = Date.now();
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (saved) started = Number(saved);
+    else sessionStorage.setItem(key, String(started));
+  } catch {}
+  return { status: Date.now() - started >= 5000 ? "paid" : "pending" };
 }

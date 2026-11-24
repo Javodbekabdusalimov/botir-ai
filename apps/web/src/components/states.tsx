@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 
 export function Loading({ label = "Yuklanmoqda..." }: { label?: string }) {
   return (
-    <div role="status" className="animate-pulse space-y-2" aria-label={label}>
-      <div className="h-4 w-2/3 rounded bg-muted" />
-      <div className="h-4 w-1/2 rounded bg-muted" />
-      <div className="h-4 w-3/5 rounded bg-muted" />
+    <div role="status" className="space-y-2" aria-label={label}>
+      <div className="shimmer h-4 w-2/3 rounded" />
+      <div className="shimmer h-4 w-1/2 rounded" />
+      <div className="shimmer h-4 w-3/5 rounded" />
     </div>
   );
 }
@@ -27,12 +27,12 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">{children}</p>;
+  return <p className="rounded-xl border border-dashed border-tint-3 bg-tint-1/50 p-5 text-center text-sm text-muted-foreground">{children}</p>;
 }
 
 export function Panel({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={cn("rounded-2xl border border-border bg-card/60 p-4 sm:p-5", className)}>
+    <section className={cn("min-w-0 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5", className)}>
       <h2 className="mb-3 font-display text-lg font-bold">{title}</h2>
       {children}
     </section>

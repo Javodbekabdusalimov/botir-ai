@@ -541,7 +541,7 @@ export interface SyncCatalogResult {
 }
 
 // ---------- Tariflar va tokenlar (billing) ----------
-/** 1 token = $0.001 haqiqiy AI xarajati (yuqoriga yaxlitlanadi). Pro/Max tokenlari KUNLIK, 00:00 (Asia/Tashkent) da yangilanadi. */
+/** Token = haqiqiy Claude tokeni (kirish + chiqish). Pro/Max tokenlari KUNLIK, 00:00 (Asia/Tashkent) da yangilanadi. */
 export type BillingOwnerType = 'user' | 'business';
 export interface BillingPrices {
   pro: { price: number; introPrice: number; dailyTokens: number };

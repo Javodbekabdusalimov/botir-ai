@@ -417,7 +417,7 @@ model PlanAccount {
   @@unique([ownerType, ownerId])
 }
 
-/// Per owner and Asia/Tashkent day: FREE search requests used and tokens debited (1 token = $0.001 of AI cost, rounded up).
+/// Per owner and Asia/Tashkent day: FREE search requests used and tokens debited (real Claude input + output tokens).
 model DailyUsage {
   id         String    @id @default(uuid())
   ownerType  String

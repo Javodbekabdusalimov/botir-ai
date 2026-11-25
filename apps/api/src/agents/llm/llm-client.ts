@@ -57,11 +57,11 @@ export interface LlmClientOptions {
   queueTimeoutMs?: number;
   sdkQuery?: SdkQuery;
   cliRunner?: CliRunner;
-  /** Billing hook: called after every logged call that has a cost and a billing owner. Failures are swallowed. */
+  /** Billing hook: called after every logged call that has token usage and a billing owner. Failures are swallowed. */
   onCost?: OnCost;
 }
 
-export type OnCost = (owner: BillingOwner, costUsd: number) => Promise<void> | void;
+export type OnCost = (owner: BillingOwner, usage: { inputTokens?: number; outputTokens?: number; costUsd?: number }) => Promise<void> | void;
 
 export type AiHealth = 'ok' | 'limited' | 'down' | 'unknown';
 
@@ -219,9 +219,9 @@ export class LlmClient {
     } catch (e) {
       this.logger.warn(`[llm] saveLlmCall failed: ${errMsg(e).slice(0, 200)}`);
     }
-    if (owner && this.onCost && usage.costUsd) {
+    if (owner && this.onCost && (usage.inputTokens || usage.outputTokens)) {
       try {
-        await this.onCost(owner, usage.costUsd);
+        await this.onCost(owner, usage);
       } catch (e) {
         this.logger.warn(`[llm] onCost failed: ${errMsg(e).slice(0, 200)}`);
       }

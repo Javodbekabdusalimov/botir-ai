@@ -12,7 +12,7 @@ import { startOfTashkentDay } from '../negotiations/request-limits';
 import { PAYMENT_LINK, type PaymentLinkProvider } from '../payments/payment-link';
 import { dailyTokens, isPaidPlan, type EffectivePlan, type PaidPlan } from '../payments/plans';
 import type { BillingOwner } from './billing-context';
-import { billingPrices, freeDailyRequests, PLAN_PERIOD_DAYS, planPrice, tokensForCost } from './billing-plans';
+import { billingPrices, freeDailyRequests, llmTokens, PLAN_PERIOD_DAYS, planPrice } from './billing-plans';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -45,7 +45,7 @@ export class BillingService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.agents.llm.setOnCost((owner, costUsd) => this.debit(owner, costUsd));
+    this.agents.llm.setOnCost((owner, usage) => this.debit(owner, llmTokens(usage)));
   }
 
   /** Bearer user (business role → their business) or the guest id from the body. Never throws: a bad token is a guest. */
@@ -102,10 +102,9 @@ export class BillingService implements OnModuleInit {
     return s.tokensLeftToday > 0 ? null : MSG.tokensOut;
   }
 
-  /** Records the AI cost of a call: tokens = ceil(costUsd / $0.001). Never throws. */
-  async debit(owner: BillingOwner, costUsd: number, now = new Date()): Promise<void> {
-    const tokens = tokensForCost(costUsd);
-    if (tokens === 0) return;
+  /** Records the Claude tokens (input + output) of a call against today's allowance. Never throws. */
+  async debit(owner: BillingOwner, tokens: number, now = new Date()): Promise<void> {
+    if (!(tokens > 0)) return;
     try {
       await this.db.dailyUsage.upsert({
         where: { ownerType_ownerId_day: { ...owner, day: dayKey(now) } },
@@ -179,7 +178,7 @@ export class BillingService implements OnModuleInit {
     const ref = pending?.orderId ?? `sub-${randomUUID()}`;
     const link = await this.payments.createPaymentLink({
       id: ref, businessId: owner.ownerType === 'business' ? owner.ownerId : '', total: price, kind: 'subscription',
-      title: `Botir ${plan.toUpperCase()} — ${intro ? 'birinchi oy' : '30 kun'}`,
+      title: `Life Assistant ${plan.toUpperCase()} — ${intro ? 'birinchi oy' : '30 kun'}`,
     });
     await this.db.payment.updateMany({
       where: { billId: link.billId },

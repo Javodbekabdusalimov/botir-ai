@@ -39,17 +39,17 @@ services:
       - key: TEZCHECK_CASH_DESK_CODE
         sync: false
       # Plans: first PRO month PLAN_PRO_INTRO_PRICE (once per account), then PLAN_PRO_PRICE / PLAN_MAX_PRICE per 30 days.
-      # Tokens (1 = $0.001 of AI cost) are a daily allowance, reset 00:00 Asia/Tashkent. BILLING_ENFORCE=1 turns the 402 gates on.
+      # Tokens (real Claude input+output tokens) are a daily allowance, reset 00:00 Asia/Tashkent. BILLING_ENFORCE=1 turns the 402 gates on.
       - key: PLAN_PRO_INTRO_PRICE
         value: "1000"
       - key: PLAN_PRO_PRICE
-        value: "65000"
+        value: "82000"
       - key: PLAN_MAX_PRICE
-        value: "219000"
+        value: "163000"
       - key: PLAN_PRO_DAILY_TOKENS
-        value: "150"
+        value: "100000"
       - key: PLAN_MAX_DAILY_TOKENS
-        value: "500"
+        value: "200000"
       - key: BILLING_ENFORCE
         value: "0"
       - key: KNOWLEDGE_DAILY_CAP

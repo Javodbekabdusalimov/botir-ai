@@ -14,20 +14,21 @@ export type PaidPlan = (typeof PAID_PLANS)[number];
 export type EffectivePlan = 'free' | PaidPlan;
 export const isPaidPlan = (v: unknown): v is PaidPlan => v === 'pro' || v === 'max';
 
-// Tokens: 1 token = $0.001 of real AI cost, a DAILY allowance (resets 00:00 Asia/Tashkent). Plans last 30 days per payment.
-// Price = worst-case monthly AI cost + 20%, at ~12 000 so'm per $:
-//   PRO: 150 tokens/day x 30 = 4 500 tokens = $4.5 -> ~54 000 so'm x 1.2 = ~65 000 so'm   (PLAN_PRO_PRICE)
-//   MAX: 500 tokens/day x 30 = 15 000 tokens = $15 -> ~180 000 so'm x 1.2 = ~216 000, set to 219 000 (PLAN_MAX_PRICE)
+// Tokens = real Claude tokens (input + output), a DAILY allowance (resets 00:00 Asia/Tashkent). Plans last 30 days per payment.
+// Measured 25.11.2026: one full negotiation (osh for 6, 3 businesses) = 43 486 tokens, $0.0701 -> ~$1.61 per 1M tokens.
+// Price = worst-case monthly AI cost (every token used every day) + 40%, at ~12 000 so'm per $:
+//   PRO: 100 000/day x 30 = 3M tokens = ~$4.84 -> ~58 000 so'm x 1.4 = ~81 300 -> 82 000 so'm   (PLAN_PRO_PRICE)  ~2 negotiations/day
+//   MAX: 200 000/day x 30 = 6M tokens = ~$9.68 -> ~116 000 so'm x 1.4 = ~162 600 -> 163 000 so'm (PLAN_MAX_PRICE)  ~4-5 negotiations/day
 // The first PRO month per account costs PLAN_PRO_INTRO_PRICE (1 000 so'm, TezCheck minimum).
 export const dailyTokens = (plan: EffectivePlan): number =>
-  plan === 'pro' ? envInt('PLAN_PRO_DAILY_TOKENS', 150) : plan === 'max' ? envInt('PLAN_MAX_DAILY_TOKENS', 500) : 0;
+  plan === 'pro' ? envInt('PLAN_PRO_DAILY_TOKENS', 100000) : plan === 'max' ? envInt('PLAN_MAX_DAILY_TOKENS', 200000) : 0;
 
-export const maxPrice = (): number => envInt('PLAN_MAX_PRICE', 219000);
+export const maxPrice = (): number => envInt('PLAN_MAX_PRICE', 163000);
 
 /** Pro: the first paid month costs `intro` (once per account), every next 30 days cost `full`. */
 export const proPrices = (): { intro: number; full: number } => ({
   intro: envInt('PLAN_PRO_INTRO_PRICE', 1000), // TezCheck minimum
-  full: envInt('PLAN_PRO_PRICE', 65000),
+  full: envInt('PLAN_PRO_PRICE', 82000),
 });
 
 export const plans = (): Plan[] => [

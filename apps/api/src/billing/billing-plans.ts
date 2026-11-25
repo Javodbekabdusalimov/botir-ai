@@ -1,15 +1,15 @@
 // Billing helpers on top of payments/plans.ts (prices, daily tokens: see the cost math there).
-// 1 token = $0.001 of REAL AI cost (LlmCall.costUsd, rounded up).
+// 1 token = 1 real Claude token of a call: input (fresh + cache read + cache write) + output, as logged on LlmCall.
 import type { BillingPrices } from '@botir/shared';
 import { envInt } from '../negotiations/request-limits';
 import { dailyTokens, maxPrice, PLAN_PERIOD_DAYS, proPrices, type PaidPlan } from '../payments/plans';
 
 export { PLAN_PERIOD_DAYS };
-export const USD_PER_TOKEN = 0.001;
 
-/** Floating-point noise (0.003 / 0.001 = 3.0000000000000004) must not cost an extra token. */
-export const tokensForCost = (costUsd: number): number =>
-  Number.isFinite(costUsd) && costUsd > 0 ? Math.ceil(costUsd / USD_PER_TOKEN - 1e-9) : 0;
+const count = (n: number | undefined): number => (n !== undefined && Number.isFinite(n) && n > 0 ? Math.ceil(n) : 0);
+
+/** Tokens debited for one call = Claude input + output tokens. */
+export const llmTokens = (u: { inputTokens?: number; outputTokens?: number }): number => count(u.inputTokens) + count(u.outputTokens);
 
 export const freeDailyRequests = (): number => envInt('PLAN_FREE_DAILY_REQUESTS', 3);
 

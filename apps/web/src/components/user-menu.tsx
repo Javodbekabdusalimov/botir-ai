@@ -53,7 +53,7 @@ export function UserMenu() {
         <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden="true" />
       </button>
       {open && (
-        <div role="menu" className="slide-up absolute right-0 top-[calc(100%+8px)] z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-lift">
+        <div role="menu" className="slide-up absolute right-0 top-[calc(100%+8px)] z-50 w-64 rounded-2xl border border-border bg-popover p-2 shadow-lift backdrop-blur-xl">
           <div className="px-2.5 pb-2 pt-1.5">
             <p className="truncate text-sm font-bold">{user.name}</p>
             {user.phone && <p className="text-xs text-muted-foreground">{user.phone}</p>}

@@ -230,7 +230,7 @@ export function OfferCard({
   }, [focusConfirm, ready, result]);
   return (
     <div className="slide-up overflow-hidden rounded-2xl border border-primary/50 bg-card shadow-lift">
-      <div className="relative isolate overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5">
+      <div className="tg-keep relative isolate overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5">
         <Image src={bizPhoto(best.businessId)} alt="" fill sizes="400px" className="-z-10 object-cover" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/90 via-green-950/60 to-green-900/40" aria-hidden="true" />
         <div className="flex items-center justify-between gap-2">

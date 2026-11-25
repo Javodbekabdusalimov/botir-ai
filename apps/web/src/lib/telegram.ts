@@ -20,6 +20,8 @@ export interface TgWebApp {
   setHeaderColor(color: string): void;
   setBackgroundColor(color: string): void;
   BackButton: TgButton;
+  onEvent?(event: "themeChanged", cb: () => void): void;
+  offEvent?(event: "themeChanged", cb: () => void): void;
   HapticFeedback?: { notificationOccurred(type: "success" | "error" | "warning"): void };
 }
 

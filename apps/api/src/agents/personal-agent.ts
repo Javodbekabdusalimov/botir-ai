@@ -37,13 +37,17 @@ export class PersonalAgent {
     return (data.tasks ?? []).filter((t) => CATEGORIES.includes(t.category));
   }
 
-  /** All businesses of the category (they compete); those in the requested area and demo ones first. */
+  /** Businesses of the category with something to sell, real before demo. Only the requested area, unless nobody there matches. */
   async findBusinesses(task: UserTask): Promise<AgentBusiness[]> {
-    const all = await this.store.getBusinesses({ category: task.category });
-    const area = task.area?.toLowerCase();
-    const rank = (b: AgentBusiness): number =>
-      (area && b.area.toLowerCase().includes(area) ? 0 : 2) + (b.isDemo ? 0 : 1);
-    return all.map((b, i) => ({ b, i })).sort((x, y) => rank(x.b) - rank(y.b) || x.i - y.i).map((x) => x.b);
+    const found = await this.store.getBusinesses({ category: task.category });
+    const stocked = await Promise.all(found.map(async (b) => (await this.store.getProducts(b.id)).length > 0));
+    const all = found.filter((_, i) => stocked[i]);
+    const area = task.area?.trim().toLowerCase();
+    // Both ways: "Chilonzor tumani" ↔ "Chilonzor".
+    const matches = (district: string): boolean => Boolean(area && district && (district.includes(area) || area.includes(district)));
+    const inArea = all.filter((b) => matches(b.area.trim().toLowerCase()));
+    const pool = inArea.length > 0 ? inArea : all;
+    return [...pool].sort((x, y) => Number(x.isDemo) - Number(y.isDemo));
   }
 
   /** First message to the business agent (template, no LLM — fast and predictable). */

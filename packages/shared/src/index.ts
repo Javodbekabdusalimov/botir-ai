@@ -211,15 +211,12 @@ export interface UpsellSuggestion {
   price: number; // catalog price, computed by code
 }
 
-/** One competitor in a task's competition (sorted best first). score = 0.6 price + 0.25 rating + 0.15 distance. */
+/** One competitor in a task's competition (sorted best first): lowest price, then higher discount. */
 export interface CompetitionEntry {
   businessId: UUID;
   businessName: string;
   price: number;
   discountPct: number;
-  rating: number;
-  distanceKm: number;
-  score: number; // 0..1
 }
 
 export interface NegotiationMessage {
@@ -252,7 +249,7 @@ export type NegotiationEvent =
       /** true = winner of the task's competition (emitted after all lanes of the task finished). */
       winner?: boolean;
       ranking?: CompetitionEntry[];
-      reason?: string; // e.g. "eng arzon + reyting 4.8"
+      reason?: string; // e.g. "3 ta joy raqobatlashdi → eng arzon"
       appliedMemory?: string[];
     }
   | { type: 'status'; status: NegotiationStatus }

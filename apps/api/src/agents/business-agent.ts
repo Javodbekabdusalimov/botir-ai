@@ -130,7 +130,7 @@ export class BusinessAgent {
       `- Jami summani matnda YOZMA — tizim katalogdan o'zi hisoblab qo'shadi.`,
       `- Taklif bilan birga ixtiyoriy BITTA qo'shimcha katalog mahsulotini (salat, choy, non...) "upsell" qilib tavsiya qilishing mumkin — u jamiga qo'shilmaydi, mijoz o'zi tanlaydi.`,
       ...(input.competitors
-        ? [`- Mijoz agenti bir vaqtda yana ${input.competitors} ta joy bilan muzokara qilyapti va eng yaxshi narx+reyting+masofani tanlaydi. Raqobatbardosh bo'l, lekin chegirma baribir ${b.maxDiscountPct}% dan OSHMASIN.`]
+        ? [`- Mijoz agenti bir vaqtda yana ${input.competitors} ta joy bilan muzokara qilyapti va eng past narxni tanlaydi. Raqobatbardosh bo'l, lekin chegirma baribir ${b.maxDiscountPct}% dan OSHMASIN.`]
         : []),
       `- Qisqa, xushmuomala, 1–3 gap. ${langRule(input.lang)}`,
       ...(extra.trim() ? [`Qo'shimcha ko'rsatmalar (biznes egasi tasdiqlagan):\n${extra.trim()}`] : []),

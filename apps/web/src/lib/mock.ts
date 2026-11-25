@@ -53,7 +53,7 @@ export const DEMO_BUSINESSES: Business[] = [
 ];
 /** Parallel muzokarada raqobatchi sifatida ishtirok etadi */
 const COMPETITORS: Business[] = [
-  biz("besh", "Besh Qozon Osh Markazi", "restaurant", "Yunusobod", "Amir Temur shoh ko'chasi", 8),
+  biz("besh", "Namuna Osh Yunusobod", "restaurant", "Yunusobod", "Amir Temur shoh ko'chasi", 8),
   biz("samarqand", "Samarqand Oshxonasi", "restaurant", "Mirzo Ulug'bek", "Mustaqillik ko'chasi", 12),
 ];
 export const ALL_MOCK_BUSINESSES = [...DEMO_BUSINESSES, ...COMPETITORS];

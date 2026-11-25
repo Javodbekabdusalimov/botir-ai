@@ -32,8 +32,8 @@ model Business {
   geoLng         Float?
   workHours      String // JSON WorkHours
   maxDiscountPct Int       @default(0)
-  rating         Float     @default(4.5)
-  distanceKm     Float     @default(3)
+  rating         Float     @default(4.5) // unused: kept so plain `prisma db push` works on existing DBs
+  distanceKm     Float     @default(3) // unused, same reason
   lang           String    @default("uz")
   ownerUserId    String    @default("demo-owner")
   isDemo         Boolean   @default(false)

@@ -43,8 +43,6 @@ export function toAgentBusiness(b: DbBusiness): AgentBusiness {
     hours: { open: first[0], close: first[1] },
     isDemo: b.isDemo,
     notes: b.notes ?? undefined,
-    rating: b.rating,
-    distanceKm: b.distanceKm,
   };
 }
 

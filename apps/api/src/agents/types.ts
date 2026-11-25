@@ -11,8 +11,6 @@ export interface AgentBusiness extends Business {
   hours: BusinessHours;
   isDemo: boolean;
   notes?: string; // free text for the prompt (slots, tables, etc.)
-  rating?: number; // 0..5, used in competition scoring
-  distanceKm?: number; // from the user (demo: fixed per business)
 }
 
 export type LlmModel = 'sonnet' | 'haiku';

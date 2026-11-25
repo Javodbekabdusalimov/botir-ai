@@ -175,7 +175,6 @@ export class NegotiationsService {
       winner: true, reason: winnerReason(ranked, lang),
       ranking: ranked.map((r) => ({
         businessId: r.business.id, businessName: r.business.name, price: r.offer.total, discountPct: r.offer.discountPct,
-        rating: r.rating, distanceKm: r.distanceKm, score: r.score,
       })),
       ...(memory.length ? { appliedMemory: memory } : {}),
     });

@@ -22,7 +22,6 @@ async function main(): Promise<void> {
     const data = {
       name: b.name, category: b.category, district: b.area, address: ADDRESS[b.id] ?? b.area,
       workHours: JSON.stringify(workHours), maxDiscountPct: b.maxDiscountPct, lang: 'uz', isDemo: true, notes: b.notes ?? null,
-      rating: b.rating ?? 4.5, distanceKm: b.distanceKm ?? 3,
     };
     await db.business.upsert({ where: { id: b.id }, create: { id: b.id, ...data }, update: data });
   }

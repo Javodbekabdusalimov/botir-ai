@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { getMe, getToken, login as apiLogin, register as apiRegister, setToken } from "@/lib/api";
-import { setBusinessId } from "@/hooks/use-business";
+import { UnauthorizedError, getMe, getToken, login as apiLogin, register as apiRegister, setToken } from "@/lib/api";
+import { clearBusinessId, setBusinessId } from "@/hooks/use-business";
 import type { AuthResult, AuthUser, MeResponse, RegisterDto } from "@/lib/types";
 
 export interface AuthState {
@@ -11,6 +11,8 @@ export interface AuthState {
   user: AuthUser | null;
   /** Biznes egasining obuna holati (GET /auth/me) */
   business?: MeResponse["business"];
+  /** Token bor, lekin server javob bermayapti: sessiya saqlanadi, fonda qayta urinamiz. */
+  offline?: boolean;
 }
 
 const SERVER: AuthState = { status: "loading", user: null };
@@ -60,13 +62,22 @@ async function init() {
   started = true;
   const token = getToken();
   if (!token) return set({ status: "out", user: null });
-  try {
-    applyMe(await getMe(token));
-  } catch {
-    setToken(null);
-    set({ status: "out", user: null });
+  // Token faqat 401 da o'chadi. Server uxlayotgan/xato bo'lsa token saqlanadi va server javob berguncha qayta urinamiz.
+  for (let i = 0; ; i++) {
+    try {
+      return applyMe(await getMe(token));
+    } catch (e) {
+      if (e instanceof UnauthorizedError) {
+        setToken(null);
+        return set({ status: "out", user: null });
+      }
+      if (i >= 1 && !state.offline) set({ status: "loading", user: null, offline: true });
+      if (!getToken()) return; // kutish paytida chiqib ketgan
+      await new Promise((r) => setTimeout(r, INIT_RETRY_MS));
+    }
   }
 }
+const INIT_RETRY_MS = 4_000;
 
 export async function loginUser(phone: string, password: string) {
   await applySession(await apiLogin(phone, password));
@@ -76,6 +87,7 @@ export async function registerUser(dto: RegisterDto) {
 }
 export function logoutUser() {
   setToken(null);
+  clearBusinessId();
   // Mehmon sifatida ro'yxatdagi user id'si bilan /agent/request yuborilsa API 401 beradi: yangi mehmon id.
   try {
     localStorage.setItem("botir.userId", crypto.randomUUID());

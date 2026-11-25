@@ -1,17 +1,18 @@
 "use client";
 
-import { friendlyError, isAiUnavailable } from "@/lib/friendly-error";
+import { friendlyError } from "@/lib/friendly-error";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Check, MessageSquareText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { NegotiationStage, OfferCard } from "@/components/negotiation";
+import { NegotiationStage } from "@/components/negotiation";
+import { GroupOffer, groupOffers } from "./group-offer";
 import { useNegotiation } from "@/hooks/use-negotiation";
-import { agentRequest, confirmNegotiation, getBusinesses, recallRequestText } from "@/lib/api";
+import { agentRequest, getBusinesses, recallRequestText } from "@/lib/api";
+import { NEGOTIATION_NOT_FOUND } from "@/lib/api/stream";
 import { ALL_MOCK_BUSINESSES } from "@/lib/mock";
-import type { ConfirmResult } from "@/lib/types";
 
 /** Jarayon bosqichlari (so'rov, muzokara, taklif, to'lov): holatdan hosil qilinadi, alohida state yo'q. */
 const STEPS = ["So'rov", "Muzokara", "Taklif", "To'lov"] as const;
@@ -57,10 +58,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   const state = useNegotiation(id);
   const confirmFor = useSearchParams().get("confirm");
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(ALL_MOCK_BUSINESSES.map((b) => [b.id, b.name])));
-  const [skip, setSkip] = useState(0);
-  const [result, setResult] = useState<ConfirmResult | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [cats, setCats] = useState<Record<string, string>>(() => Object.fromEntries(ALL_MOCK_BUSINESSES.map((b) => [b.id, b.category])));
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
 
@@ -81,31 +79,21 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   useEffect(() => {
     let live = true;
     getBusinesses()
-      .then((list) => live && setNames((n) => ({ ...n, ...Object.fromEntries(list.map((b) => [b.id, b.name])) })))
+      .then((list) => {
+        if (!live) return;
+        setNames((n) => ({ ...n, ...Object.fromEntries(list.map((b) => [b.id, b.name])) }));
+        setCats((c) => ({ ...c, ...Object.fromEntries(list.map((b) => [b.id, b.category])) }));
+      })
       .catch(() => {});
     return () => {
       live = false;
     };
   }, []);
 
-  // Takliflar narx bo'yicha o'sish tartibida; "Boshqasi" keyingisiga o'tkazadi
-  const ranked = useMemo(() => Object.values(state.best).sort((a, b) => a.offer.price - b.offer.price), [state.best]);
-  const forced = confirmFor && skip === 0 ? ranked.find((b) => b.businessId === confirmFor) : undefined;
-  const current = forced ?? (ranked.length ? ranked[skip % ranked.length] : null);
+  // Takliflar vazifa (kategoriya) bo'yicha guruhlanadi; har guruh ichida narx o'sish tartibida
+  const groups = useMemo(() => groupOffers(state.best, (bid) => cats[bid] ?? "other"), [state.best, cats]);
   const ready = state.status === "agreed" || state.status === "confirmed";
-
-  async function onConfirm() {
-    if (!current || confirming) return;
-    setConfirming(true);
-    setConfirmError(null);
-    try {
-      setResult(await confirmNegotiation(id, current.businessId));
-    } catch (e) {
-      setConfirmError(e instanceof Error ? e.message : "Tasdiqlab bo'lmadi, qayta urinib ko'ring");
-    } finally {
-      setConfirming(false);
-    }
-  }
+  const notFound = state.error === NEGOTIATION_NOT_FOUND;
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col px-4 sm:px-6 lg:px-8 py-5 lg:h-[calc(100dvh-5.9rem)] lg:py-6">
@@ -114,28 +102,31 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
           <span className="size-1.5 rounded-full bg-green-500" aria-hidden="true" /> Agentlar muzokarasi
         </p>
         <h1 className="mt-3 text-balance text-2xl font-bold sm:text-4xl">
-          {state.status === "rejected" || state.status === "failed"
+          {notFound
+            ? "Muzokara topilmadi"
+            : state.status === "rejected" || state.status === "failed"
             ? "Muzokara yakunlandi"
             : state.order.length > 1
               ? `${state.order.length} ta biznes bilan parallel muzokara`
               : "Agentlar kelishmoqda"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Shaxsiy agentingiz sizning nomingizdan gaplashadi. Yakuniy qaror sizda.</p>
-        <Stepper active={stepIndex(state.status, !!result)} />
+        <Stepper active={stepIndex(state.status, false)} />
       </header>
 
       {state.error && (
         <div role="alert" className="mb-4 flex shrink-0 flex-wrap items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
           <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
           <span className="flex-1">{friendlyError(state.error)}</span>
-          {isAiUnavailable(state.error) && id !== "demo-chorsu" && (
-            <Link href="/live/demo-chorsu" className="inline-flex h-11 items-center rounded-lg bg-primary px-4 font-semibold text-white hover:opacity-90">
-              Namunani ko&apos;rish
+          {notFound ? (
+            <Link href="/assistant" className="inline-flex h-11 items-center rounded-lg bg-primary px-4 font-semibold text-white hover:opacity-90">
+              Yangi so&apos;rov
             </Link>
+          ) : (
+            <Button variant="outline" className="h-11 px-4" onClick={onRetry}>
+              <RotateCw className="size-4" aria-hidden="true" /> Qayta ulanish
+            </Button>
           )}
-          <Button variant="outline" className="h-11 px-4" onClick={onRetry}>
-            <RotateCw className="size-4" aria-hidden="true" /> Qayta ulanish
-          </Button>
         </div>
       )}
 
@@ -150,10 +141,10 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
         <div className="min-h-0 lg:overflow-y-auto lg:pb-2">
           {state.status === "rejected" || state.status === "failed" ? (
             <div role="status" className="rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm">
-              <p className="font-display text-base font-bold text-amber-900">Bu safar kelishuv bo&apos;lmadi</p>
+              <p className="font-display text-base font-bold text-amber-900">{state.status === "failed" ? "Texnik xato, qayta urinib ko'ring" : "Agentlar kelisha olmadi"}</p>
               <p className="mt-1.5 text-amber-900/80">
                 {state.status === "failed"
-                  ? "Agent javobi kechikdi yoki uzildi. Hech qanday pul yechilmadi. So'rovni qayta yuborsangiz, agentlar yangidan boshlaydi."
+                  ? "Server yoki AI javobida uzilish bo'ldi. Hech qanday pul yechilmadi. So'rovni qayta yuborsangiz, agentlar yangidan boshlaydi."
                   : "Biznes narx yoki vaqt bo'yicha shartlaringizga rozi bo'lmadi. Hech qanday pul yechilmadi. Qayta urinib ko'ring yoki so'rovni biroz o'zgartiring."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -166,20 +157,14 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
                 </Link>
               </div>
             </div>
-          ) : current ? (
-            <OfferCard
-              key={ready ? "final" : "live"}
-              focusConfirm={!!confirmFor}
-              best={current}
-              ready={ready}
-              confirming={confirming}
-              result={result}
-              error={confirmError}
-              onConfirm={onConfirm}
-              onOther={() => setSkip((s) => s + 1)}
-              othersLeft={ranked.length > 1}
-            />
-          ) : (
+          ) : groups.length ? (
+            <div className="space-y-4">
+              {groups.length > 1 && <p className="text-sm font-semibold text-muted-foreground">{groups.length} ta vazifa: har biri alohida tasdiqlanadi</p>}
+              {groups.map((g) => (
+                <GroupOffer key={g.map((b) => b.businessId).join(",")} negotiationId={id} offers={g} ready={ready} focusId={confirmFor} />
+              ))}
+            </div>
+          ) : notFound ? null : (
             <div className="rounded-2xl border border-dashed border-tint-3 bg-tint-1/50 p-5 text-center text-sm text-muted-foreground" role="status">
               <div className="shimmer mx-auto mb-3 h-5 w-1/2 rounded" />
               Agentlar taklif tayyorlamoqda…

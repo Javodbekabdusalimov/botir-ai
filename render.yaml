@@ -1,4 +1,4 @@
-# Render Blueprint — Botir AI (hackathon MVP)
+# Render Blueprint — Life Assistant (hackathon MVP)
 # Two separate services: web (ai-assistant) + backend API (ai-assistant-api).
 # Dashboard → New → Blueprint → this repo. Secrets marked `sync: false` are entered in the dashboard.
 services:

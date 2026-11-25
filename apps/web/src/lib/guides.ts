@@ -1,5 +1,6 @@
-import { FAQ, MAX_ROUNDS_COPY, PRO_PRICE_UZS, type FaqItem } from "./landing-content";
+import { BUSINESS_PRICE_COPY, FAQ, MAX_ROUNDS_COPY, PRO_PRICE_COPY, type FaqItem } from "./landing-content";
 import { SITE_NAME, SITE_URL } from "./seo";
+import { INTENT_GUIDES } from "./guides-intent";
 
 /**
  * Ommaviy SEO/GEO/AEO sahifalari (statik, server render). Har bo'lim: savol shaklidagi H2 + birinchi gap = to'g'ridan-to'g'ri javob
@@ -14,7 +15,7 @@ export interface GuideSection {
 
 export interface Guide {
   slug: string;
-  /** <title> (layout " — Botir AI" qo'shadi). */
+  /** <title> (layout " — Life Assistant" qo'shadi). */
   title: string;
   h1: string;
   description: string;
@@ -28,16 +29,15 @@ export interface Guide {
   updated: string;
 }
 
-const PRO = PRO_PRICE_UZS.toLocaleString("ru-RU").replace(/\s/g, " ");
 const UPDATED = "2026-11-24";
 
 export const GUIDES: Guide[] = [
   {
     slug: "qanday-ishlaydi",
-    title: "Botir AI qanday ishlaydi: 4 qadam",
-    h1: "Botir AI qanday ishlaydi?",
-    description: `Botir AI 4 qadamda ishlaydi: biznes katalogni yuklaydi, mijoz so'rov yozadi, agentlar ${MAX_ROUNDS_COPY} raundgacha muzokara qiladi, siz yakuniy taklifni tasdiqlaysiz.`,
-    answer: `Botir AI 4 qadamda ishlaydi: biznes katalogini (Excel/CSV) yuklaydi, mijoz so'rov yozadi, mijozning shaxsiy agenti biznes agenti bilan ko'pi bilan ${MAX_ROUNDS_COPY} raund muzokara qiladi, inson esa yakuniy taklifni bitta tugma bilan tasdiqlaydi. Pul faqat tasdiqdan keyin TezCheck orqali (Payme, Click, Uzum) qabul qilinadi.`,
+    title: "Life Assistant qanday ishlaydi: 4 qadam",
+    h1: "Life Assistant qanday ishlaydi?",
+    description: `Life Assistant 4 qadamda ishlaydi: biznes katalogni yuklaydi, mijoz so'rov yozadi, agentlar ${MAX_ROUNDS_COPY} raundgacha muzokara qiladi, siz yakuniy taklifni tasdiqlaysiz.`,
+    answer: `Life Assistant 4 qadamda ishlaydi: biznes katalogini (Excel/CSV) yuklaydi, mijoz so'rov yozadi, mijozning shaxsiy agenti biznes agenti bilan ko'pi bilan ${MAX_ROUNDS_COPY} raund muzokara qiladi, inson esa yakuniy taklifni bitta tugma bilan tasdiqlaydi. Pul faqat tasdiqdan keyin TezCheck orqali (Payme, Click, Uzum) qabul qilinadi.`,
     steps: [
       { name: "Biznesni ulang", text: "Biznes nomi, tuman, ish vaqti va maksimal chegirma foizini kiriting, katalogni Excel yoki CSV faylda yuklang. Telegram akkauntni SMS kod bilan ulang." },
       { name: "So'rov yozing", text: "Mijoz shaxsiy yordamchiga oddiy o'zbek tilida yozadi, masalan: \"Ertaga 18:00 ga 6 kishilik osh joy band qil, byudjet 600 ming\"." },
@@ -65,10 +65,10 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "telegram-ai-sotuvchi",
-    title: "Telegram uchun AI sotuvchi: o'zbekcha, 24/7",
-    h1: "Telegram uchun AI sotuvchi: mijozlarga o'zbek tilida 24/7 javob",
-    description: "Botir AI: Telegram mijozlariga o'zbek tilida 24/7 javob beradigan AI sotuvchi. Narx katalogdan, chegirma limitda, buyurtma sizning tasdig'ingiz bilan.",
-    answer: "Botir AI: Telegram akkauntingizga ulanadigan AI sotuvchi, u mijozlarga o'zbek tilida 24/7 javob beradi, narxni faqat katalogingizdan aytadi va chegirmani siz belgilagan limitdan oshirmaydi. Start tarifi bepul, Pro oyiga " + PRO + " so'm, sotuvdan komissiya olinmaydi.",
+    title: "Telegram uchun AI sotuvchi: o'zbekcha, darhol javob",
+    h1: "Telegram uchun AI sotuvchi: mijozlarga o'zbek tilida darhol javob",
+    description: "Life Assistant: Telegram mijozlariga o'zbek tilida darhol javob qoralamasini tayyorlaydigan AI sotuvchi. Narx katalogdan, chegirma limitda, buyurtma sizning tasdig'ingiz bilan.",
+    answer: "Life Assistant: Telegram akkauntingizga ulanadigan AI sotuvchi, u Telegram xabariga darhol javob qoralamasini tayyorlaydi (autopilot rejimida ish vaqtida o'zi javob beradi), narxni faqat katalogingizdan aytadi va chegirmani siz belgilagan limitdan oshirmaydi. Start tarifi bepul, Pro " + PRO_PRICE_COPY + ", hech qaysi tarifda komissiya yo'q.",
     sections: [
       {
         h: "AI sotuvchi qaysi bizneslarga mos?",
@@ -77,7 +77,7 @@ export const GUIDES: Guide[] = [
       },
       {
         h: "Oddiy chatbotdan farqi nima?",
-        p: ["Oddiy chatbot tugmalar va tayyor javoblar bilan ishlaydi, Botir AI esa erkin o'zbek tilidagi xabarni tushunadi va mijoz agenti bilan narx bo'yicha muzokara qiladi. Shu bilan birga u katalogdan tashqariga chiqmaydi va pulni inson tasdig'isiz qabul qilmaydi."],
+        p: ["Oddiy chatbot tugmalar va tayyor javoblar bilan ishlaydi, Life Assistant esa erkin o'zbek tilidagi xabarni tushunadi va mijoz agenti bilan narx bo'yicha muzokara qiladi. Shu bilan birga u katalogdan tashqariga chiqmaydi va pulni inson tasdig'isiz qabul qilmaydi."],
       },
       {
         h: "Ulash qancha vaqt oladi?",
@@ -85,7 +85,7 @@ export const GUIDES: Guide[] = [
       },
       {
         h: "To'lov qanday qabul qilinadi?",
-        p: ["To'lov TezCheck orqali Payme, Click yoki Uzum havolasi bilan qabul qilinadi va pul biznesning o'z kassasiga tushadi. Havola faqat mijoz yakuniy taklifni tasdiqlagandan keyin yuboriladi."],
+        p: ["To'lov TezCheck orqali Payme, Click yoki Uzum havolasi bilan qabul qilinadi Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi. Havola faqat mijoz yakuniy taklifni tasdiqlagandan keyin yuboriladi."],
       },
     ],
     faq: [FAQ[4], FAQ[5], FAQ[7]],
@@ -94,22 +94,22 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "narxlar",
-    title: "Narxlar: Start bepul, Pro " + PRO + " so'm/oy",
-    h1: "Botir AI narxlari",
-    description: `Botir AI narxi: Start tarifi bepul, Pro oyiga ${PRO} so'm, sotuvdan komissiya yo'q. Mijozlar uchun shaxsiy yordamchi bepul.`,
-    answer: `Botir AI Start tarifi bepul, Pro tarifi oyiga ${PRO} so'm turadi va sotuvdan komissiya olinmaydi. Mijozlar uchun shaxsiy AI yordamchi butunlay bepul.`,
+    title: "Narxlar: Start bepul, Pro " + PRO_PRICE_COPY,
+    h1: "Life Assistant narxlari",
+    description: `Life Assistant narxi: Start tarifi bepul, Pro ${PRO_PRICE_COPY}, komissiya yo'q. Mijozlar uchun shaxsiy yordamchi bepul.`,
+    answer: `Life Assistant Start tarifi bepul, Biznes ${BUSINESS_PRICE_COPY} (tez orada), Pro ${PRO_PRICE_COPY}. Hech qaysi tarifda komissiya yo'q. Mijozlar uchun shaxsiy AI yordamchi butunlay bepul.`,
     sections: [
       {
         h: "Start tarifida nima bor?",
-        p: ["Start tarifi bepul va boshlash uchun yetarli: 1 ta biznes agenti, katalog yuklash (Excel/CSV), Telegram ulash va oyiga 100 tagacha suhbat."],
+        p: ["Start tarifi bepul va boshlash uchun yetarli: 1 ta biznes agenti, katalog yuklash (Excel/CSV), Telegram ulash va agentlar muzokarasi."],
       },
       {
         h: "Pro tarifi nima qo'shadi?",
-        p: [`Pro tarifi oyiga ${PRO} so'm va Start'ga nisbatan 10 barobar ko'p AI kredit beradi. Qo'shimcha: autopilot rejimi, agentni avtomatik yaxshilash, analitika va buyurtmalar paneli.`],
+        p: [`Pro tarifi: ${PRO_PRICE_COPY}. Qo'shimcha: analitika va buyurtmalar paneli, agentni yaxshilash takliflari (o'zgarishni siz tasdiqlaysiz). Biznes tarifi (${BUSINESS_PRICE_COPY}) tez orada.`],
       },
       {
         h: "Yashirin to'lovlar bormi?",
-        p: ["Yo'q: sotuvdan foiz yoki komissiya olinmaydi. Mijozlardan tushgan to'lov TezCheck orqali to'g'ridan-to'g'ri biznes kassasiga tushadi, Botir AI faqat obuna narxini oladi."],
+        p: ["Yo'q: hech qaysi tarifda sotuvdan foiz yoki komissiya olinmaydi. To'lov TezCheck orqali qabul qilinadi. Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi."],
       },
     ],
     faq: [FAQ[6], FAQ[3]],
@@ -118,15 +118,16 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "savol-javob",
-    title: "Savol-javob: Botir AI haqida hammasi",
-    h1: "Botir AI haqida savol-javob",
-    description: "Botir AI haqida eng ko'p beriladigan savollar: agentlar qanday muzokara qiladi, narx qayerdan olinadi, pul qachon yechiladi, Telegram qanday ulanadi.",
-    answer: "Botir AI: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i, unda agent agent bilan gaplashadi va inson faqat yakuniy taklifni tasdiqlaydi. Quyida eng ko'p so'raladigan savollarga qisqa javoblar.",
+    title: "Savol-javob: Life Assistant haqida hammasi",
+    h1: "Life Assistant haqida savol-javob",
+    description: "Life Assistant haqida eng ko'p beriladigan savollar: agentlar qanday muzokara qiladi, narx qayerdan olinadi, pul qachon to'lanadi, Telegram qanday ulanadi.",
+    answer: "Life Assistant: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i, unda agent agent bilan gaplashadi va inson faqat yakuniy taklifni tasdiqlaydi. Quyida eng ko'p so'raladigan savollarga qisqa javoblar.",
     sections: [],
     faq: FAQ,
     cta: { href: "/assistant", label: "Yordamchini sinash" },
     updated: UPDATED,
   },
+  ...INTENT_GUIDES,
 ];
 
 export function getGuide(slug: string): Guide | undefined {

@@ -3,15 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, FlaskConical, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { AuthShell } from "@/components/auth-shell";
 import { Field, inputClass } from "@/components/field";
 import { PhoneField } from "@/components/phone-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loginUser, useAuth } from "@/hooks/use-auth";
-import { maskPhone } from "@/lib/phone";
-import { TEST_ACCOUNTS } from "@/lib/mock";
 import { ApiError } from "@/lib/api";
 
 export function landingFor(role: string) {
@@ -40,17 +38,11 @@ export function LoginForm() {
     try {
       await loginUser(p, pw);
     } catch (e) {
-      setError(e instanceof ApiError && e.message ? "Telefon yoki parol noto'g'ri" : "Ulanib bo'lmadi. Qayta urinib ko'ring");
+      // Serverning haqiqiy xatosi (parol noto'g'ri, server javob bermadi va h.k.)
+      setError(e instanceof ApiError && e.message ? e.message : "Ulanib bo'lmadi. Qayta urinib ko'ring");
       setBusy(false);
     }
   }
-
-  const fill = (acc: { phone: string; password: string }) => {
-    const p = maskPhone(acc.phone);
-    setPhone(p);
-    setPassword(acc.password);
-    void submit(acc.phone, acc.password);
-  };
 
   return (
     <AuthShell title="Kirish" subtitle="Telefon raqam va parol bilan akkauntingizga kiring.">
@@ -93,34 +85,6 @@ export function LoginForm() {
           {busy ? "Kirilmoqda..." : "Kirish"}
         </Button>
       </form>
-
-      <section aria-label="Test akkauntlar" className="mt-6 rounded-2xl border border-tint-3 bg-tint-1 p-4">
-        <h2 className="flex items-center gap-2 font-sans text-sm font-bold text-green-900">
-          <FlaskConical className="size-4" aria-hidden="true" /> Test akkaunt bilan kirish
-        </h2>
-        <p className="mt-1 text-xs text-green-900/80">Jyuri uchun: bir bosishda to&apos;ldiriladi va kiradi.</p>
-        <div className="mt-3 grid gap-2">
-          {(
-            [
-              ["Biznes: Chilonzor Osh Markazi", TEST_ACCOUNTS.business],
-              ["Mijoz", TEST_ACCOUNTS.user],
-            ] as const
-          ).map(([label, acc]) => (
-            <button
-              key={acc.phone}
-              type="button"
-              disabled={busy}
-              onClick={() => fill(acc)}
-              className="min-h-14 rounded-xl border border-tint-3 bg-card px-3 py-2 text-left transition-colors hover:border-primary hover:bg-white focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
-            >
-              <span className="block text-sm font-semibold">{label}</span>
-              <span className="block text-xs tabular-nums text-muted-foreground">
-                {maskPhone(acc.phone)} / {acc.password}
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Akkauntingiz yo&apos;qmi?{" "}

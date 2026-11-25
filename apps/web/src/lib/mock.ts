@@ -486,7 +486,7 @@ export function mockPaymentStatus(orderId: string): PaymentStatus {
     if (saved) started = Number(saved);
     else sessionStorage.setItem(key, String(started));
   } catch {}
-  return { status: Date.now() - started >= 5000 ? "paid" : "pending" };
+  return { status: Date.now() - started >= 5000 ? "paid" : "pending", isTest: true, payUrl: `/pay/${orderId}` };
 }
 
 /* ---- Biznes bilimi (demo) ---- */

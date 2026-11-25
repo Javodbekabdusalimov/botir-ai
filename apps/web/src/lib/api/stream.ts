@@ -1,12 +1,14 @@
 import * as mock from "../mock";
 import type { NegotiationEvent } from "../types";
-import { API_URL, FORCE_DEMO, setDemo } from "./config";
+import { API_URL, FORCE_DEMO } from "./config";
 import { recallNeeds } from "./negotiation-memory";
 
 /** Qayta ulanish oralig'i: 1s, 2s, 4s, 4s, 4s (eksponensial, yuqori chegara bilan). */
 const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 4_000;
 const MAX_RECONNECTS = 5;
+/** UI shu matnni ko'rsa "Yangi so'rov" tugmasini chiqaradi. */
+export const NEGOTIATION_NOT_FOUND = "Muzokara topilmadi";
 /** Backend yuboradigan SSE hodisa nomlari. */
 const SSE_EVENTS = ["message", "best_offer", "status", "error"] as const;
 
@@ -18,23 +20,15 @@ const SSE_EVENTS = ["message", "best_offer", "status", "error"] as const;
  * - har SSE `data` = `JSON.stringify(NegotiationEvent)`; `onmessage` ulanmaydi (aks holda xabar 2 marta chiqadi);
  * - server qayta ulanishda eski hodisalarni replay qiladi: bir xil `data` takrorlari tashlanadi;
  * - server oqimni tugatganda (yakuniy status) paydo bo'ladigan `onerror` xato emas;
- * - uzilishda 5 martagacha avto-qayta ulanish; hech narsa kelmagan bo'lsa mock'ga, aks holda `onFail` ga o'tadi.
+ * - server `error` "not found" yuborsa: oqim yopiladi, `onFail(NOT_FOUND)`;
+ * - uzilishda ko'pi bilan 5 qayta ulanish (hisoblagich faqat message/best_offer da nolga tushadi), keyin `onFail`.
  */
 export function streamNegotiation(
   id: string,
   onEvent: (e: NegotiationEvent) => void,
   onFail?: (msg: string) => void,
 ): () => void {
-  let stopMock: (() => void) | null = null;
-  const startMock = () => {
-    setDemo(true);
-    stopMock = mock.runMockStream(id, recallNeeds(id), onEvent);
-  };
-
-  if (FORCE_DEMO || id.startsWith("demo")) {
-    startMock();
-    return () => stopMock?.();
-  }
+  if (FORCE_DEMO || id.startsWith("demo")) return mock.runMockStream(id, recallNeeds(id), onEvent);
 
   let es: EventSource | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -47,11 +41,18 @@ export function streamNegotiation(
   const handle = (ev: MessageEvent<string>) => {
     if (typeof ev.data !== "string") return; // ma'lumotsiz ulanish xatosi: onerror hal qiladi
     received = true;
-    attempts = 0;
     if (seen.has(ev.data)) return;
     seen.add(ev.data);
     try {
       const parsed = JSON.parse(ev.data) as NegotiationEvent;
+      if (parsed.type === "message" || parsed.type === "best_offer") attempts = 0;
+      if (parsed.type === "error" && /not found/i.test(parsed.error)) {
+        finished = true;
+        es?.close();
+        es = null;
+        onFail?.(NEGOTIATION_NOT_FOUND);
+        return;
+      }
       if (parsed.type === "status" && parsed.status !== "running") finished = true;
       onEvent(parsed);
     } catch {
@@ -74,8 +75,8 @@ export function streamNegotiation(
         retryTimer = setTimeout(connect, wait);
         return;
       }
-      if (!received) startMock();
-      else onFail?.("Aloqa uzildi. Qayta ulanish tugmasini bosing.");
+      finished = true;
+      onFail?.(received ? "Aloqa uzildi. Qayta ulanish tugmasini bosing." : NEGOTIATION_NOT_FOUND);
     };
   };
   connect();
@@ -83,7 +84,6 @@ export function streamNegotiation(
   return () => {
     stopped = true;
     if (retryTimer) clearTimeout(retryTimer);
-    stopMock?.();
     es?.close();
   };
 }

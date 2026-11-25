@@ -6,16 +6,16 @@ export function NetworkDiagram() {
     <figure>
       <svg viewBox="0 0 640 300" role="img" aria-labelledby="net-t net-d" className="h-auto w-full">
         <title id="net-t">Tarmoq effekti sxemasi</title>
-        <desc id="net-d">Chapda mijozlar va ularning shaxsiy agentlari, o&apos;ngda bizneslar va ularning agentlari, o&apos;rtada Botir tarmog&apos;i. Ko&apos;proq biznes mijozlarga ko&apos;proq tanlov beradi, ko&apos;proq mijoz bizneslarga ko&apos;proq buyurtma beradi.</desc>
+        <desc id="net-d">Chapda mijozlar va ularning shaxsiy agentlari, o&apos;ngda bizneslar va ularning agentlari, o&apos;rtada Life Assistant tarmog&apos;i. Ko&apos;proq biznes mijozlarga ko&apos;proq tanlov beradi, ko&apos;proq mijoz bizneslarga ko&apos;proq buyurtma beradi.</desc>
         {clients.map((y) =>
-          biz.map((y2) => <line key={`${y}-${y2}`} x1="170" y1={y} x2="470" y2={y2} stroke="#86efac" strokeWidth="1.5" className="flow-line" />),
+          biz.map((y2) => <line key={`${y}-${y2}`} x1="170" y1={y} x2="470" y2={y2} stroke="#b2bdb4" strokeWidth="1.5" className="flow-line" />),
         )}
         {clients.map((y) => (
           <g key={`c${y}`}>
-            <line x1="70" y1={y} x2="170" y2={y} stroke="#16a34a" strokeWidth="2" />
-            <circle cx="50" cy={y} r="20" fill="#f0fdf4" stroke="#16a34a" strokeWidth="2" />
-            <text x="50" y={y + 5} textAnchor="middle" fontSize="15" fill="#15803d">👤</text>
-            <rect x="160" y={y - 14} width="22" height="28" rx="7" fill="#22c55e" />
+            <line x1="70" y1={y} x2="170" y2={y} stroke="#556158" strokeWidth="2" />
+            <circle cx="50" cy={y} r="20" fill="#f4f6f4" stroke="#556158" strokeWidth="2" />
+            <text x="50" y={y + 5} textAnchor="middle" fontSize="15" fill="#444e47">👤</text>
+            <rect x="160" y={y - 14} width="22" height="28" rx="7" fill="#6e7b71" />
           </g>
         ))}
         {biz.map((y) => (
@@ -26,10 +26,10 @@ export function NetworkDiagram() {
             <text x="590" y={y + 5} textAnchor="middle" fontSize="15">🏪</text>
           </g>
         ))}
-        <circle cx="320" cy="150" r="70" fill="#f0fdf4" />
-        <circle cx="320" cy="150" r="56" fill="#dcfce7" stroke="#16a34a" strokeWidth="2" className="node-pulse" />
-        <text x="320" y="146" textAnchor="middle" fontSize="15" fontWeight="700" fill="#14532d">Botir</text>
-        <text x="320" y="166" textAnchor="middle" fontSize="12" fill="#15803d">tarmog&apos;i</text>
+        <circle cx="320" cy="150" r="70" fill="#f4f6f4" />
+        <circle cx="320" cy="150" r="56" fill="#e8ece8" stroke="#556158" strokeWidth="2" className="node-pulse" />
+        <text x="320" y="146" textAnchor="middle" fontSize="13" fontWeight="700" fill="#2b312d">Life Assistant</text>
+        <text x="320" y="166" textAnchor="middle" fontSize="12" fill="#444e47">tarmog&apos;i</text>
         <text x="50" y="288" textAnchor="middle" fontSize="12" fill="#404040">Mijozlar</text>
         <text x="590" y="288" textAnchor="middle" fontSize="12" fill="#404040">Bizneslar</text>
       </svg>

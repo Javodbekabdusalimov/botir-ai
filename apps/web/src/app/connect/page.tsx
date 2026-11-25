@@ -1,7 +1,7 @@
 import { ConnectForm } from "./connect-form";
 import { pageMeta } from "@/lib/seo";
 
-export const metadata = pageMeta({ title: "Biznesni ulash", description: "Biznesingizni Botir AI'ga ulang: katalog va chegirma limitini kiriting, AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida gaplashadi.", path: "/connect" });
+export const metadata = pageMeta({ title: "Biznesni ulash", description: "Biznesingizni Life Assistant'ga ulang: katalog va chegirma limitini kiriting, AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida gaplashadi.", path: "/connect" });
 
 export default function ConnectPage() {
   return (

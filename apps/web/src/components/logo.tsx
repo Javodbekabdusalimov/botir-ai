@@ -14,8 +14,8 @@ export function Logo() {
   return (
     <Link href="/" className="flex min-h-11 items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-ring">
       <LogoMark />
-      <span className="whitespace-nowrap font-display text-lg font-bold tracking-tight">
-        Botir <span className="text-agent">AI</span>
+      <span className="whitespace-nowrap font-sans text-lg font-semibold tracking-tight">
+        Life <span className="text-agent">Assistant</span>
       </span>
     </Link>
   );

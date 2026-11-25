@@ -47,7 +47,7 @@ export class PaymentPoller implements OnModuleInit, OnModuleDestroy {
     }
     return {
       orderId: p.orderId, kind: p.kind === 'subscription' ? 'subscription' : 'order',
-      status: p.status as PaymentStatusResult['status'], amount: p.amount, payUrl: p.link,
+      status: p.status as PaymentStatusResult['status'], amount: p.amount, payUrl: p.link, isTest: p.isTest,
       ...(p.paidAt ? { paidAt: p.paidAt.toISOString() } : {}),
     };
   }

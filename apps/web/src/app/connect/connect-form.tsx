@@ -1,5 +1,7 @@
 "use client";
 
+import { setBusinessId } from "@/hooks/use-business";
+import { refreshMe, useAuth } from "@/hooks/use-auth";
 import { track } from "@/lib/track";
 import type React from "react";
 
@@ -21,6 +23,7 @@ type Errors = Partial<Record<"name" | "district" | "address" | "catalog" | "form
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 export function ConnectForm() {
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [category, setCategory] = useState<BusinessCategory>("restaurant");
   const [district, setDistrict] = useState("");
@@ -90,9 +93,8 @@ export function ConnectForm() {
         lang: "uz",
       });
       const result = await importCatalog(biz.id, file, rows);
-      try {
-        localStorage.setItem("botir.businessId", biz.id);
-      } catch {}
+      setBusinessId(biz.id);
+      void refreshMe();
       track("generate_lead", { category, items: rows.length });
       setReady({ biz, result: { ...result, errors: [...result.errors, ...skipped.map((n) => `${n}-qator: nomi yoki narxi noto'g'ri`)] } });
     } catch (err) {
@@ -103,11 +105,13 @@ export function ConnectForm() {
   }
 
   if (ready) return <AgentReady business={ready.biz} result={ready.result} />;
+  // Biznesi bor egaga ikkinchi biznes yaratish formasi ochilmaydi: katalog va bilimlar shu yerda tahrirlanadi
+  if (user?.role === "business" && user.businessId) return <AlreadyConnected />;
 
   return (
     <form onSubmit={submit} noValidate className="mt-8 space-y-8">
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
-        <legend className="px-2 font-display text-lg font-bold">1. Biznes haqida</legend>
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6 [&>legend+*]:clear-both">
+        <legend className="float-left mb-4 w-full font-sans text-lg font-semibold tracking-tight">1. Biznes haqida</legend>
         <Field id="name" label="Biznes nomi" error={errors.name}>
           <Input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" aria-invalid={!!errors.name} aria-describedby={errors.name ? "name-err" : undefined} placeholder="Masalan: Chilonzor Osh Markazi" />
         </Field>
@@ -142,8 +146,8 @@ export function ConnectForm() {
         </div>
       </fieldset>
 
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
-        <legend className="px-2 font-display text-lg font-bold">2. Katalog</legend>
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6 [&>legend+*]:clear-both">
+        <legend className="float-left mb-4 w-full font-sans text-lg font-semibold tracking-tight">2. Katalog</legend>
         <p className="text-sm text-muted-foreground">Excel (.xlsx) yoki CSV: ustunlar <code>nomi, narx, birlik</code>.</p>
         <div
           onDragOver={(e) => {
@@ -269,6 +273,20 @@ function AgentReady({ business, result }: { business: Business; result: CatalogI
         <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline" }), "h-12 px-5 font-semibold")}>
           Panelga o&apos;tish
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function AlreadyConnected() {
+  return (
+    <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <CheckCircle2 className="mx-auto size-10 text-green-700" aria-hidden="true" />
+      <h1 className="mt-3 font-sans text-xl font-bold">Biznesingiz ulangan</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Narxlar, katalog va agent biladigan faktlar &quot;Bilimlar&quot; bo&apos;limida tahrirlanadi.</p>
+      <div className="mt-5 flex justify-center gap-2">
+        <Link href="/dashboard/knowledge" className={cn(buttonVariants(), "h-11 px-5 font-semibold")}>Katalog va bilimlar</Link>
+        <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-5")}>Panel</Link>
       </div>
     </div>
   );

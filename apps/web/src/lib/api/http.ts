@@ -1,10 +1,12 @@
 import type { ApiResponse } from "@botir/shared";
-import { API_URL, FORCE_DEMO, TIMEOUT_MS, setDemo } from "./config";
+import { API_URL, FORCE_DEMO, TIMEOUT_MS, trackSlow } from "./config";
 
-/** Haqiqiy (4xx yoki `{ ok:false }`) backend xatosi. Mock'ga o'tkazilmaydi, foydalanuvchiga ko'rsatiladi. */
+/** Backend xatosi yoki server javob bermadi: foydalanuvchiga ko'rsatiladi (mock'ga o'tilmaydi). */
 export class ApiError extends Error {}
 /** Resurs topilmadi (faqat `notFoundError: true` so'ralganda tashlanadi). */
 export class NotFoundError extends ApiError {}
+/** 401: token yaroqsiz (faqat shunda sessiya o'chiriladi). */
+export class UnauthorizedError extends ApiError {}
 
 /** Token `localStorage` da shu kalit ostida saqlanadi. */
 export const TOKEN_KEY = "botir_token";
@@ -33,31 +35,34 @@ function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-/** `request` qo'shimcha sozlamalari. */
-export interface RequestOptions {
-  /** 404 ni `NotFoundError` sifatida tashlaydi (aks holda mock fallback). */
-  notFoundError?: boolean;
-}
+/** Server javob bermadi (tarmoq, timeout, 5xx, buzuq javob): foydalanuvchiga shu matn ko'rsatiladi. */
+export const SERVER_DOWN = "Server javob bermadi, qayta urinib ko'ring";
+
+/** Demo rejimda mavjud bo'lmagan amal (to'lov, kirish, Telegram va h.k.). */
+export const demoUnavailable = (): never => {
+  throw new ApiError("Demo rejimda bu amal ishlamaydi");
+};
 
 /**
  * Backend'ga so'rov yuboradi va javobni ochadi (`ApiResponse<T>`).
  *
- * Kontrakt:
- * - tarmoq xatosi, timeout, 5xx, buzuq JSON: "Demo" rejimga o'tadi va `fallback()` natijasini qaytaradi;
- * - 404: backend tirik (rejim "Jonli" qoladi), `fallback()` yoki `notFoundError` bo'lsa `NotFoundError`;
- * - 4xx / `{ ok:false }`: `ApiError` (haqiqiy xato, mock'ga o'tilmaydi);
- * - `FORCE_DEMO` da tarmoqqa umuman chiqmaydi.
+ * Kontrakt (soxta muvaffaqiyat yo'q):
+ * - `fallback` FAQAT `FORCE_DEMO` (`NEXT_PUBLIC_DEMO=1` yoki API manzili yo'q) da ishlaydi;
+ * - tarmoq xatosi, timeout, 5xx, buzuq JSON: `ApiError(SERVER_DOWN)`;
+ * - 404: `NotFoundError`;
+ * - 4xx / `{ ok:false }`: serverning o'z xato matni bilan `ApiError`;
+ * - so'rov 5 s dan oshsa `slowStore` "Server uyg'onmoqda" yozuvini yoqadi.
  */
 export async function request<T>(
   path: string,
   init: RequestInit | undefined,
   fallback: () => T | Promise<T>,
   timeoutMs: number = TIMEOUT_MS,
-  opts: RequestOptions = {},
 ): Promise<T> {
   if (FORCE_DEMO) return fallback();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const endSlow = trackSlow();
   const isForm = typeof FormData !== "undefined" && init?.body instanceof FormData;
   let res: Response;
   try {
@@ -72,31 +77,36 @@ export async function request<T>(
       },
     });
   } catch {
-    setDemo(true);
-    return fallback();
+    throw new ApiError(SERVER_DOWN);
   } finally {
     clearTimeout(timer);
+    endSlow();
   }
-  if (res.status === 404) {
-    // Server javob berdi = backend tirik. "Demo"ga o'tmaymiz (aks holda belgi Jonli/Demo o'rtasida sakraydi).
-    setDemo(false);
-    if (opts.notFoundError) throw new NotFoundError("Topilmadi");
-    return fallback();
-  }
+  if (res.status === 404) throw new NotFoundError("Topilmadi");
   if (res.status >= 500) {
-    setDemo(true);
-    return fallback();
+    // 503 da server o'z matnini beradi (masalan "AI hozir javob bermadi"): bo'lsa shuni ko'rsatamiz
+    const msg = await res
+      .json()
+      .then((b: Partial<ApiResponse<T>> & { message?: string }) => (b && "error" in b && b.error) || b?.message)
+      .catch(() => null);
+    throw new ApiError(typeof msg === "string" && msg && res.status === 503 ? msg : SERVER_DOWN);
   }
-  let body: ApiResponse<T>;
+  let body: ApiResponse<T> & { message?: string | string[] };
   try {
-    body = (await res.json()) as ApiResponse<T>;
+    body = (await res.json()) as ApiResponse<T> & { message?: string | string[] };
   } catch {
-    setDemo(true);
-    return fallback();
+    throw new ApiError(SERVER_DOWN);
   }
-  setDemo(false);
-  if (!body.ok) throw new ApiError(body.error || "Xatolik yuz berdi");
+  if (res.status === 401) throw new UnauthorizedError(textOf(body) || "Sessiya tugagan, qayta kiring");
+  if (!res.ok || !body.ok) throw new ApiError(textOf(body) || "Xatolik yuz berdi");
   return body.data;
+}
+
+/** Nest xatosi (`message`) yoki `{ ok:false, error }` dan matn. */
+function textOf(b: { ok?: boolean; error?: string; message?: string | string[] }): string {
+  if (b.ok === false && b.error) return b.error;
+  if (Array.isArray(b.message)) return b.message.join(", ");
+  return b.message ?? "";
 }
 
 /** JSON `RequestInit` yasaydi (`body` bo'lmasa bo'sh). */

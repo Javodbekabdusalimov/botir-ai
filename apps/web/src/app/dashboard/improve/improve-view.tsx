@@ -67,7 +67,8 @@ export function ImproveView() {
         setProposals((cur) => cur ?? []);
       }
     } catch (e) {
-      setErr(e instanceof Error ? friendlyError(e.message) : "Tahlilni ishga tushirib bo'lmadi");
+      // Uydirma natija yo'q: AI ishlamasa faqat xato
+      setErr(`AI hozir ishlamayapti. ${friendlyError(e instanceof Error ? e.message : null)}`);
     } finally {
       setRunning(false);
     }

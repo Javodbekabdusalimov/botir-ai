@@ -29,7 +29,7 @@ export function LandingPreview() {
         <span className="size-2.5 rounded-full bg-red-300" />
         <span className="size-2.5 rounded-full bg-amber-300" />
         <span className="size-2.5 rounded-full bg-green-400" />
-        <span className="ml-3 flex-1 truncate rounded-md bg-white px-3 py-1 text-[11px] text-muted-foreground">botir.ai/live/chilonzor-osh</span>
+        <span className="ml-3 flex-1 truncate rounded-md bg-white/80 px-3 py-1 text-[11px] text-muted-foreground">lifeassistant.uz/live/chilonzor-osh</span>
       </div>
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
         <span className="flex items-center gap-2 text-sm font-semibold">
@@ -39,7 +39,7 @@ export function LandingPreview() {
           </span>
           {live ? "Muzokara ketmoqda" : "Kelishildi"}
         </span>
-        <span className="truncate text-xs text-muted-foreground">Chilonzor Osh Markazi</span>
+        <span className="flex items-center gap-1 truncate text-xs font-medium text-green-900"><ShieldCheck className="size-3.5 shrink-0 text-green-800" aria-hidden="true" /> Chegirma limitdan oshmaydi</span>
       </div>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [mask-image:linear-gradient(to_bottom,transparent,black_1.25rem)] sm:px-5 [scrollbar-width:none]">
         <NegotiationStage state={state} names={NAMES} autoScroll={false} />
@@ -55,9 +55,6 @@ export function LandingPreview() {
         </div>
       </div>
     </div>
-      <div className="pop-in absolute -top-4 right-6 z-10 hidden rounded-2xl border border-tint-3 bg-white/90 px-3 py-2 text-xs font-semibold text-green-900 shadow-soft sm:flex sm:items-center sm:gap-1.5">
-        <ShieldCheck className="size-4 text-green-600" aria-hidden="true" /> PolicyGuard: chegirma ≤ limit
-      </div>
     </div>
   );
 }

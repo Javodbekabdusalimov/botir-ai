@@ -42,6 +42,11 @@ export function parseSom(v: unknown): number | null {
   return value <= MAX_SOM ? value : null;
 }
 
+/** Every number written in a quote, read whole ("Osh 45.000" → [45000], never 45). */
+export function somInText(text: string): number[] {
+  return (text.match(/\d{1,3}(?:[ .,\u00a0]\d{3})+|\d+/g) ?? []).map((t) => parseSom(t)).filter((n): n is number => n !== null);
+}
+
 const AMOUNT = /(\d+(?:[ .,]\d+)*)(?: ?(ming|k|тыс|mln|million|млн)(?!\p{L}))?/gu;
 
 /** Every amount a quote can mean. "100 000 200 000" → 100000 and 200000 too, "000" alone never starts one. */

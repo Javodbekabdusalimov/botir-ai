@@ -1,22 +1,26 @@
-# Botir AI
+# Life Assistant
 
-> Botir AI: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i. Agent agent bilan gaplashadi, inson faqat yakuniy taklifni tasdiqlaydi.
+> Life Assistant: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i. Agent agent bilan gaplashadi, inson faqat yakuniy taklifni tasdiqlaydi.
 
 ## Nima qiladi
-- Biznes: katalog (Excel/CSV) va maksimal chegirmani kiritadi. AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida 24/7 gaplashadi.
+- Biznes: katalog (Excel/CSV) va maksimal chegirmani kiritadi. AI sotuvchi Telegram xabariga darhol javob qoralamasini tayyorlaydi; autopilot rejimida ish vaqtida o'zi javob beradi.
 - Mijoz: shaxsiy yordamchiga "Ertaga 18:00 ga 6 kishilik osh joy band qil" deb yozadi. Agent bir nechta biznes bilan muzokara qiladi.
 
 ## Qanday ishlaydi
 - Muzokara ko'pi bilan 3 raund: so'rov, taklif, qarshi taklif, bitim.
 - Narx faqat katalogdan olinadi, chegirma biznes belgilagan limitdan oshmaydi (PolicyGuard).
 - Pul faqat inson "Tasdiqlayman" bosgandan keyin, TezCheck orqali (Payme, Click, Uzum). Faqat kirim to'lovlari.
-- Narx: Start bepul, Pro 1 000 so'm/oy, sotuvdan komissiya yo'q.
+- Narx: Start bepul, Biznes 199 000 so'm/oy (tez orada), Pro 1-oy 1 000 so'm, keyin 499 000 so'm/oy. Hech qaysi tarifda komissiya yo'q.
+- To'lov TezCheck orqali. Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi.
 
 ## Sahifalar
 - [Bosh sahifa](/): mahsulot haqida, savol-javob
 - [Qanday ishlaydi](/qanday-ishlaydi): 4 qadam, muzokara qoidalari
 - [Telegram uchun AI sotuvchi](/telegram-ai-sotuvchi): kimga mos, ulash, to'lov
-- [Narxlar](/narxlar): Start bepul, Pro 1 000 so'm/oy
+- [Biznesni avtomatlashtirish](/biznes-avtomatlashtirish): AI sotuvchi Telegram'da, katalog asosida javob, buyurtma tasdiqqa
+- [Arzon narxlarni topish](/arzon-narx-topish): AI joylarni topadi, narx/reyting/masofani solishtiradi, savdolashadi
+- [AI yordamchi o'zbek tilida](/ai-yordamchi): joy band qiladi, narx topadi, siz uchun kelishadi
+- [Narxlar](/narxlar): Start bepul, Pro 1-oy 1 000 so'm
 - [Savol-javob](/savol-javob): barcha savollar
 - [To'liq matn](/llms-full.txt): barcha ommaviy sahifalar bitta faylda
 - [Shaxsiy yordamchi](/assistant)

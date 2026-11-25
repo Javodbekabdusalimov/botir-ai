@@ -7,9 +7,16 @@ import { BottomNav, SiteHeader } from "@/components/site-nav";
 import { Analytics } from "@/components/analytics";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-// Shrift lokal (src/app/fonts): Inter — TezDetal bilan bir xil UI tizimi; sarlavhalar ham Inter (Google Fonts SIL OFL). Offline build ishlaydi.
+// Shriftlar lokal (src/app/fonts): Inter (matn) + Instrument Serif (sarlavhalar, kursiv urg'u), Google Fonts SIL OFL. Offline build ishlaydi.
 const sans = localFont({ src: "./fonts/Inter-latin.woff2", variable: "--font-sans-ui", weight: "300 800", display: "swap" });
-const display = localFont({ src: "./fonts/Inter-latin.woff2", variable: "--font-display-ui", weight: "300 800", display: "swap" });
+const display = localFont({
+  src: [
+    { path: "./fonts/InstrumentSerif-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/InstrumentSerif-Italic.woff2", weight: "400", style: "italic" },
+  ],
+  variable: "--font-display-ui",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -21,7 +28,7 @@ export const metadata: Metadata = {
   // Search Console: asosiy tasdiq public/google84cc5b4f86d33aff.html fayli; env bo'lsa meta-teg ham qo'shiladi.
   ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
   manifest: "/manifest.webmanifest",
-  keywords: ["Botir AI", "AI sotuvchi", "Telegram AI bot", "AI agent O'zbekiston", "o'zbekcha AI yordamchi", "avtomatik savdo", "agent muzokara"],
+  keywords: ["Life Assistant", "AI yordamchi", "biznes avtomatlashtirish", "biznesni avtomatlashtirish", "arzon narxlarni topish", "narx solishtirish", "AI sotuvchi", "Telegram AI bot", "AI agent O'zbekiston", "o'zbekcha AI yordamchi", "avtomatik savdo", "agent muzokara"],
   category: "business",
   formatDetection: { telephone: false },
 };

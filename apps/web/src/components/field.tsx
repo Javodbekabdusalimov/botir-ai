@@ -33,5 +33,5 @@ export function Field({
 }
 
 export const selectClass =
-  "h-11 w-full rounded-lg border border-input bg-input/30 px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm";
+  "h-11 w-full rounded-lg border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm";
 export const inputClass = "h-11 text-base sm:text-sm";

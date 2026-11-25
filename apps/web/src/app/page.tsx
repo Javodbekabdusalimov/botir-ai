@@ -1,16 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Bot, Building2, Check, ChevronDown, Handshake, MessageSquareText, ShieldCheck, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Bot, Building2, Check, ChevronDown, Handshake, MessageSquareText, ShieldCheck, Upload } from "lucide-react";
 import type { Metadata } from "next";
 import { BrandLogo, TezCheckMark, type BrandKey } from "@/components/brand-logos";
-import { buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/reveal";
 import { LandingPreview } from "@/components/landing-preview";
-import { LogoMark } from "@/components/logo";
+import { HeroSage } from "@/components/hero-sage";
+import { HomeRedirect } from "@/components/home-redirect";
 import { NetworkDiagram } from "@/components/network-diagram";
 import { SiteFooter } from "@/components/site-footer";
-import { FAQ, MAX_ROUNDS_COPY, PRO_PRICE_UZS, landingJsonLd } from "@/lib/landing-content";
-import { formatSom } from "@/lib/format";
+import { BUSINESS_PRICE_COPY, FAQ, MAX_ROUNDS_COPY, PRO_PRICE_COPY, landingJsonLd } from "@/lib/landing-content";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -27,142 +26,151 @@ const TRUST: BrandKey[] = ["payme", "click", "uzum", "telegram"];
 
 /** Raqamlar: faqat mahsulot qoidalari (haqiqiy, o'lchanmagan taxminlar emas). */
 const FACTS = [
-  { value: String(MAX_ROUNDS_COPY), unit: "raund", label: "ko'pi bilan, keyin bitim yoki rad" },
-  { value: "0", unit: "so'm komissiya", label: "Pro tarifda sotuvdan foiz olinmaydi" },
-  { value: formatSom(PRO_PRICE_UZS).replace(" so'm", ""), unit: "so'm/oy", label: "Pro tarif, Start bepul" },
-  { value: "24/7", unit: "", label: "AI sotuvchi Telegram'da ishlaydi" },
+  { value: String(MAX_ROUNDS_COPY), unit: "raund", label: "muzokara ko'pi bilan shuncha davom etadi" },
+  { value: "0", unit: "komissiya", label: "Hech qaysi tarifda sotuvdan foiz olinmaydi" },
+  { value: "0", unit: "so'm", label: "Start tarifi va mijoz yordamchisi bepul" },
+  { value: "1", unit: "tasdiq", label: "to'lov faqat sizning tasdig'ingizdan keyin" },
 ];
 
 const STEPS = [
-  { icon: Upload, title: "Ulang", text: "Biznes katalogni (Excel/CSV) yuklaydi, mijoz yordamchiga so'rov yozadi." },
-  { icon: MessageSquareText, title: "Agentlar gaplashadi", text: "Ikki agent o'zaro kelishadi. Siz jonli ko'rasiz, hech narsa qilmaysiz." },
-  { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. Pul faqat shundan keyin." },
+  { icon: Upload, title: "Ulang", text: "Biznes katalogni (Excel yoki CSV) yuklaydi, mijoz yordamchiga so'rovini yozadi." },
+  { icon: MessageSquareText, title: "Agentlar kelishadi", text: "Ikki agent o'zaro muzokara qiladi. Siz jarayonni jonli kuzatasiz, aralashish shart emas." },
+  { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. To'lov faqat shundan keyin." },
 ];
 
+/** Narxlar landing-content.ts da (egasi tasdiqlagan, 2026-11-25). Biznes rejasi backendda hali yo'q: to'lov tugmasi yo'q. */
 const PLANS = [
-  { name: "Start", price: "bepul", note: "Boshlash uchun", features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Oyiga 100 tagacha suhbat"], featured: false },
-  { name: "Pro", price: `${formatSom(PRO_PRICE_UZS).replace(" so'm", "")} so'm/oy`, note: "Foiz yo'q: sotuvdan komissiya olinmaydi", features: ["10 barobar ko'p AI kredit", "Autopilot rejimi", "Agentni avtomatik yaxshilash", "Analitika va buyurtmalar paneli"], featured: true },
+  { name: "Start", price: "bepul", note: "Boshlash uchun", features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Agentlar muzokarasi va to'lov havolasi"], featured: false, cta: "Bepul boshlash" },
+  { name: "Biznes", price: BUSINESS_PRICE_COPY, note: "Taklif: tez orada", features: ["Start'dagi hammasi", "Bilimlar bazasi: matn, sayt, fayl", "Inbox: AI javob qoralamalari"], featured: false, cta: null },
+  { name: "Pro", price: PRO_PRICE_COPY, note: "Hech qaysi tarifda komissiya yo'q", features: ["Biznes'dagi hammasi", "Analitika va buyurtmalar paneli", "Agentni yaxshilash takliflari (siz tasdiqlaysiz)"], featured: true, cta: "Pro'ni tanlash" },
 ];
 
 export default function Home() {
   return (
     <>
+      <HomeRedirect />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(landingJsonLd()).replace(/</g, "\\u003c") }} />
 
-      <section className="khatam relative isolate overflow-hidden">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:px-8 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-24">
-          <div>
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-200 bg-white px-3 py-1.5 text-xs font-semibold text-green-700">
-              <LogoMark className="size-4" /> O&apos;zbekiston uchun AI agentlar tarmog&apos;i
-            </p>
-            <h1 className="text-balance font-display text-[2rem] font-bold leading-[1.12] text-slate-900 sm:text-[2.6rem] lg:text-[2.9rem]">
-              Agent agent bilan <span className="text-grad">gaplashadi</span>, siz faqat <span className="whitespace-nowrap text-grad">tasdiqlaysiz.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Biznesga o&apos;zbekcha gaplashadigan AI sotuvchi, mijozga o&apos;zi muzokara qiladigan shaxsiy yordamchi.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base font-semibold")}>
-                Biznesni ulash <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
-              <Link href="/assistant" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "h-12 px-6 text-base font-semibold")}>
-                Yordamchini sinash
-              </Link>
-            </div>
-          </div>
-          <div className="relative">
-            <LandingPreview />
-            <figure className="glass absolute -bottom-6 -left-3 hidden w-52 overflow-hidden rounded-2xl p-1.5 sm:block lg:-left-10">
-              <Image src="/photos/customer.jpg" alt="Telefonga qarab jilmayayotgan mijoz" width={400} height={260} sizes="208px" className="h-24 w-full rounded-xl object-cover" />
-              <figcaption className="px-2 pb-1.5 pt-2 text-xs font-semibold text-green-900">Mijoz so&apos;raydi, agent kelishadi</figcaption>
-            </figure>
-          </div>
-        </div>
-      </section>
+      <HeroSage />
 
-      <section className="border-y border-border bg-white" aria-label="Integratsiyalar va to'lov">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 px-4 sm:px-6 lg:px-8 py-6 md:flex-row md:justify-between">
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <ShieldCheck className="size-4 text-green-700" aria-hidden="true" /> To&apos;lov va kanallar
+      {/* Integratsiyalar */}
+      <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8" aria-label="Integratsiyalar va to'lov">
+        <div className="glass flex flex-col items-center gap-5 rounded-2xl px-5 py-5 md:flex-row md:justify-between md:px-7">
+          <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <ShieldCheck className="size-4 text-green-800" aria-hidden="true" /> To&apos;lov va kanallar
           </p>
-          <ul className="flex flex-wrap items-center justify-center gap-x-9 gap-y-4">
-            <li className="flex h-10 items-center"><TezCheckMark /></li>
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            <li className="flex h-9 items-center"><TezCheckMark /></li>
             {TRUST.map((b) => (
-              <li key={b} className="flex h-10 items-center gap-2">
-                <BrandLogo brand={b} height={b === "telegram" ? 26 : 24} />
-                {b !== "payme" && <span className="text-sm font-semibold capitalize">{b}</span>}
+              <li key={b} className="flex h-9 items-center gap-2">
+                <BrandLogo brand={b} height={b === "telegram" ? 24 : 22} />
+                {b !== "payme" && <span className="text-sm font-semibold capitalize text-green-950">{b}</span>}
               </li>
             ))}
           </ul>
         </div>
+        <p className="mt-3 text-center text-xs text-muted-foreground">To&apos;lov TezCheck orqali (Payme, Click, Uzum). Hozir sinov rejimi.</p>
       </section>
 
-      <Reveal as="section" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-14">
-        <dl className="stage-deep grid grid-cols-2 gap-px overflow-hidden rounded-2xl lg:grid-cols-4">
+      {/* Jonli muzokara */}
+      <section className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 lg:px-8" aria-labelledby="live-h">
+        <div className="min-w-0">
+          <Eyebrow>Jonli namuna</Eyebrow>
+          <h2 id="live-h" className="mt-4 text-balance text-4xl text-green-950 sm:text-5xl">
+            Muzokara <span className="text-grad">ko&apos;z oldingizda</span> boradi
+          </h2>
+          <p className="mt-4 max-w-md text-pretty leading-relaxed text-muted-foreground">
+            Mijoz agenti so&apos;rov yuboradi, biznes agenti katalogdagi narx bilan javob beradi. Ko&apos;pi bilan {MAX_ROUNDS_COPY} raundda bitim tuziladi yoki muzokara to&apos;xtaydi.
+          </p>
+          <ul className="mt-6 space-y-2.5 text-sm text-green-950">
+            {["Narx faqat katalogdan olinadi", "Chegirma siz belgilagan chegaradan oshmaydi", "Yakuniy qaror har doim sizda"].map((t) => (
+              <li key={t} className="flex items-center gap-2.5">
+                <span className="grid size-5 place-items-center rounded-full bg-green-900 text-white"><Check className="size-3" aria-hidden="true" /></span>
+                {t}
+              </li>
+            ))}
+          </ul>
+          <Link href="/live/demo-chorsu" className="mt-8 inline-flex h-11 items-center gap-1.5 rounded-full border border-white/70 bg-white/60 px-5 text-sm font-semibold text-green-950 backdrop-blur-md transition-colors hover:bg-white/85">
+            To&apos;liq ekranda ko&apos;rish <ArrowUpRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
+        <Reveal className="min-w-0">
+          <LandingPreview />
+        </Reveal>
+      </section>
+
+      {/* Raqamlar */}
+      <Reveal as="section" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {FACTS.map((x) => (
-            <div key={x.label} className="bg-white/[0.04] p-6 sm:p-8">
-              <dd className="font-display text-3xl font-bold tabular-nums text-white sm:text-4xl">
+            <div key={x.label} className="glass rounded-2xl p-6 sm:p-7">
+              <dd className="font-display text-4xl tabular-nums text-green-950 sm:text-5xl">
                 {x.value}
-                {x.unit && <span className="ml-1.5 text-base font-semibold text-green-300 sm:text-lg">{x.unit}</span>}
+                {x.unit && <span className="ml-1.5 font-sans text-sm font-medium text-muted-foreground sm:text-base">{x.unit}</span>}
               </dd>
-              <dt className="mt-2 text-sm text-green-100/80">{x.label}</dt>
+              <dt className="mt-2 text-sm text-muted-foreground">{x.label}</dt>
             </div>
           ))}
         </dl>
       </Reveal>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14" aria-labelledby="who-h">
-        <h2 id="who-h" className="max-w-2xl text-balance text-3xl font-bold sm:text-4xl">Biznes ham, mijoz ham yutadi</h2>
-        <Reveal className="mt-8 grid gap-4 md:grid-cols-6">
-          <article className="group relative isolate flex min-h-[26rem] flex-col justify-end overflow-hidden rounded-2xl md:col-span-4 md:row-span-2">
-            <Image src="/photos/plov.jpg" alt="Osh markazida oshpaz katta qozonda osh tayyorlamoqda" fill priority sizes="(min-width: 768px) 780px, 100vw" className="-z-10 object-cover transition-transform duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/90 via-green-950/40 to-transparent" aria-hidden="true" />
+      {/* Kim uchun */}
+      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8" aria-labelledby="who-h">
+        <Eyebrow>Kim uchun</Eyebrow>
+        <h2 id="who-h" className="mt-4 max-w-2xl text-balance text-4xl text-green-950 sm:text-5xl">
+          Biznes ham, mijoz ham <span className="text-grad">yutadi</span>
+        </h2>
+        <Reveal className="mt-10 grid gap-4 md:grid-cols-6">
+          <article className="group relative isolate flex min-h-[26rem] flex-col justify-end overflow-hidden rounded-[1.75rem] md:col-span-4 md:row-span-2">
+            <Image src="/photos/plov.jpg" alt="Osh markazida oshpaz katta qozonda osh tayyorlamoqda" fill sizes="(min-width: 768px) 780px, 100vw" className="-z-10 object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#1b1f1c]/90 via-[#1b1f1c]/35 to-transparent" aria-hidden="true" />
             <div className="p-6 text-white sm:p-8">
-              <span className="grid size-11 place-items-center rounded-2xl bg-biz-soft text-biz shadow-soft"><Building2 className="size-5" aria-hidden="true" /></span>
-              <h3 className="mt-4 font-display text-2xl font-bold sm:text-3xl">Biznes uchun</h3>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-green-50/90 sm:text-base">Katalog va maksimal chegirmani kiriting. AI sotuvchi mijozlar bilan o&apos;zbek tilida, Telegram&apos;da 24/7 gaplashadi.</p>
-              <Link href="/register" className="mt-5 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-white px-4 text-sm font-semibold text-green-900 transition-transform active:scale-[0.97]">
+              <span className="grid size-11 place-items-center rounded-2xl border border-white/40 bg-white/20 backdrop-blur-md"><Building2 className="size-5" aria-hidden="true" /></span>
+              <h3 className="mt-4 font-display text-3xl font-normal sm:text-4xl">Biznes uchun</h3>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85 sm:text-base">Katalog va eng katta chegirmani kiriting. AI sotuvchi mijozlar bilan o&apos;zbek tilida, Telegram&apos;da kecha-kunduz gaplashadi.</p>
+              <Link href="/register" className="mt-5 inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-green-950 transition-transform active:scale-[0.97]">
                 Biznesni ulash <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
             </div>
           </article>
 
-          <article className="lift flex flex-col overflow-hidden rounded-2xl border border-border bg-card md:col-span-2">
+          <article className="glass flex flex-col overflow-hidden rounded-[1.75rem] md:col-span-2">
             <div className="relative aspect-[16/9]">
               <Image src="/photos/customer.jpg" alt="Telefonga qarab jilmayayotgan mijoz" fill sizes="(min-width: 768px) 380px, 100vw" className="object-cover" />
             </div>
             <div className="flex flex-1 flex-col p-5">
-              <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Bot className="size-5 text-green-700" aria-hidden="true" /> Mijoz uchun</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">&quot;Ertaga 6 kishilik osh joy band qil&quot; deysiz. Agent bir nechta biznesdan eng yaxshi narxni topadi.</p>
-              <Link href="/assistant" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-700 hover:underline">Yordamchini sinash <ArrowRight className="size-4" aria-hidden="true" /></Link>
+              <h3 className="flex items-center gap-2 font-sans text-lg"><Bot className="size-5 text-green-800" aria-hidden="true" /> Mijoz uchun</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">&quot;Ertaga 6 kishiga osh uchun joy band qil&quot; deysiz. Agent bir nechta biznesdan eng qulay narxni topadi.</p>
+              <Link href="/assistant" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-900 hover:underline">Yordamchini sinash <ArrowRight className="size-4" aria-hidden="true" /></Link>
             </div>
           </article>
 
-          <article className="lift flex flex-col overflow-hidden rounded-2xl border border-tint-3 bg-gradient-to-br from-tint-1 to-white p-5 md:col-span-2">
-            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Handshake className="size-5 text-green-700" aria-hidden="true" /> Agentlar muzokarasi</h3>
-            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">So&apos;rov, taklif, qarshi taklif, bitim. Narx katalogdan, chegirma biznes limitidan oshmaydi.</p>
-            <Link href="/live/demo-chorsu" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-700 hover:underline">Jonli ko&apos;rish <ArrowRight className="size-4" aria-hidden="true" /></Link>
+          <article className="glass flex flex-col rounded-[1.75rem] p-5 md:col-span-2">
+            <h3 className="flex items-center gap-2 font-sans text-lg"><Handshake className="size-5 text-green-800" aria-hidden="true" /> Agentlar muzokarasi</h3>
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">So&apos;rov, taklif, qarshi taklif va bitim. Narx katalogdan olinadi, chegirma biznes chegarasidan oshmaydi.</p>
+            <Link href="/live/demo-chorsu" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-900 hover:underline">Jonli ko&apos;rish <ArrowRight className="size-4" aria-hidden="true" /></Link>
           </article>
         </Reveal>
       </section>
 
-      <section id="how" className="scroll-mt-16 bg-tint-1/70 py-14" aria-labelledby="how-h">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 id="how-h" className="text-3xl font-extrabold sm:text-4xl">Qanday ishlaydi</h2>
-          <Reveal as="ol" className="relative mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
-            <span className="absolute left-[16.6%] right-[16.6%] top-6 hidden h-px bg-gradient-to-r from-transparent via-green-400 to-transparent md:block" aria-hidden="true" />
+      {/* Qanday ishlaydi */}
+      <section id="how" className="scroll-mt-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-labelledby="how-h">
+        <div className="stage-deep overflow-hidden rounded-[2rem] px-6 py-14 text-white sm:px-10 lg:px-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Qanday ishlaydi</p>
+          <h2 id="how-h" className="mt-4 max-w-xl text-balance text-4xl text-white sm:text-5xl">
+            Uch qadam, <span className="text-grad">bitta tasdiq</span>
+          </h2>
+          <Reveal as="ol" className="mt-10 grid gap-4 md:grid-cols-3">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
               return (
-                <li key={s.title} className="relative flex gap-4 md:flex-col md:items-center md:text-center">
-                  <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-white shadow-lift ring-4 ring-tint-1">
-                    <Icon className="size-5" aria-hidden="true" />
-                    <span className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-green-900 text-xs font-bold text-white">{i + 1}</span>
-                  </span>
-                  <div>
-                    <h3 className="text-xl font-bold">{s.title}</h3>
-                    <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-muted-foreground">{s.text}</p>
+                <li key={s.title} className="flex flex-col rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md">
+                  <div className="flex items-center justify-between">
+                    <span className="grid size-11 place-items-center rounded-xl bg-white text-green-950"><Icon className="size-5" aria-hidden="true" /></span>
+                    <span className="font-display text-3xl tabular-nums text-white/60">0{i + 1}</span>
                   </div>
+                  <h3 className="mt-6 font-sans text-xl text-white">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/75">{s.text}</p>
                 </li>
               );
             })}
@@ -170,66 +178,90 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8 py-14 lg:grid-cols-[1fr_1.2fr]" aria-labelledby="net-h">
-        <div>
-          <h2 id="net-h" className="text-balance text-3xl font-extrabold sm:text-4xl">Tarmoq har kuni boyiydi</h2>
-          <p className="mt-3 max-w-md text-muted-foreground">Har yangi biznes va har yangi mijoz tarmoqni boyitadi: agentlar ko&apos;proq variantni solishtiradi, narx tushadi, buyurtma ko&apos;payadi.</p>
+      {/* Tarmoq */}
+      <section className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.2fr] lg:px-8" aria-labelledby="net-h">
+        <div className="min-w-0">
+          <Eyebrow>Tarmoq</Eyebrow>
+          <h2 id="net-h" className="mt-4 text-balance text-4xl text-green-950 sm:text-5xl">
+            Tarmoq har kuni <span className="text-grad">boyiydi</span>
+          </h2>
+          <p className="mt-4 max-w-md leading-relaxed text-muted-foreground">Har bir yangi biznes va mijoz tarmoqni kengaytiradi: agentlar ko&apos;proq variantni solishtiradi, mijoz qulay narx topadi, biznes ko&apos;proq buyurtma oladi.</p>
         </div>
-        <Reveal className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
+        <Reveal className="glass min-w-0 rounded-[1.75rem] p-4 sm:p-6">
           <NetworkDiagram />
         </Reveal>
       </section>
 
-      <section id="pricing" className="scroll-mt-16 mx-auto max-w-4xl px-4 pb-14" aria-labelledby="price-h">
-        <h2 id="price-h" className="text-3xl font-extrabold sm:text-4xl">Biznes obunasi</h2>
-        <p className="mt-2 text-muted-foreground">Mijozlar uchun yordamchi bepul.</p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      {/* Narxlar */}
+      <section id="pricing" className="scroll-mt-20 mx-auto max-w-4xl px-4 pb-20" aria-labelledby="price-h">
+        <div className="text-center">
+          <Eyebrow>Narxlar</Eyebrow>
+          <h2 id="price-h" className="mt-4 text-4xl text-green-950 sm:text-5xl">
+            Biznes <span className="text-grad">obunasi</span>
+          </h2>
+          <p className="mt-3 text-muted-foreground">Mijozlar uchun yordamchi bepul.</p>
+        </div>
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
           {PLANS.map((p) => (
-            <article key={p.name} className={cn("lift rounded-2xl border p-6", p.featured ? "border-primary bg-gradient-to-b from-tint-1 to-white shadow-lift" : "border-border bg-card shadow-soft")}>
+            <article key={p.name} className={cn("flex flex-col rounded-[1.75rem] p-7", p.featured ? "stage-deep text-white shadow-[0_30px_60px_-30px_rgb(27_31_28/0.6)]" : "glass")}>
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-2xl font-bold">{p.name}</h3>
-                {p.featured && <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">Mashhur</span>}
+                <h3 className={cn("font-sans text-xl", p.featured ? "text-white" : "text-green-950")}>{p.name}</h3>
+                {p.featured && <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white">Tavsiya etiladi</span>}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{p.note}</p>
-              <p className="mt-4 font-display text-3xl font-extrabold tabular-nums">{p.price}</p>
-              <ul className="mt-5 space-y-2 text-sm">
+              <p className={cn("mt-1 text-sm", p.featured ? "text-white/75" : "text-muted-foreground")}>{p.note}</p>
+              <p className={cn("mt-5 font-display text-2xl tabular-nums sm:text-3xl", p.featured ? "text-white" : "text-green-950")}>{p.price}</p>
+              <ul className="mt-6 flex-1 space-y-2.5 text-sm">
                 {p.features.map((f) => (
-                  <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden="true" />{f}</li>
+                  <li key={f} className="flex gap-2.5"><Check className={cn("mt-0.5 size-4 shrink-0", p.featured ? "text-[#f6c27a]" : "text-green-800")} aria-hidden="true" />{f}</li>
                 ))}
               </ul>
-              <Link href="/register" className={cn(buttonVariants({ variant: p.featured ? "default" : "outline" }), "mt-6 h-12 w-full text-base font-semibold")}>
-                {p.name === "Start" ? "Bepul boshlash" : "Pro'ni tanlash"}
-              </Link>
+              {p.cta ? (
+                <Link href="/register" className={cn("mt-7 grid h-12 place-items-center rounded-full text-sm font-semibold transition-colors", p.featured ? "bg-white text-green-950 hover:bg-white/90" : "bg-green-900 text-white hover:bg-green-950")}>
+                  {p.cta}
+                </Link>
+              ) : (
+                <p className="mt-7 grid h-12 place-items-center rounded-full border border-border text-sm font-semibold text-muted-foreground">Tez orada</p>
+              )}
             </article>
           ))}
         </div>
       </section>
 
-      <section id="faq" className="bg-tint-1/70 py-14" aria-labelledby="faq-h">
-        <div className="mx-auto max-w-3xl px-4">
-          <h2 id="faq-h" className="text-3xl font-bold sm:text-4xl">Ko&apos;p so&apos;raladigan savollar</h2>
-          <div className="mt-6 space-y-3">
-            {FAQ.map((f) => (
-              <details key={f.q} className="group rounded-2xl border border-border bg-card shadow-soft open:border-tint-3 open:shadow-lift">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-5 py-3 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
-                  <h3 className="font-sans text-base font-semibold tracking-normal">{f.q}</h3>
-                  <ChevronDown className="size-5 shrink-0 text-green-700 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
-                </summary>
-                <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
-              </details>
-            ))}
-          </div>
+      {/* FAQ */}
+      <section id="faq" className="mx-auto max-w-3xl px-4 pb-20" aria-labelledby="faq-h">
+        <div className="text-center">
+          <Eyebrow>Savollar</Eyebrow>
+          <h2 id="faq-h" className="mt-4 text-4xl text-green-950 sm:text-5xl">
+            Ko&apos;p so&apos;raladigan <span className="text-grad">savollar</span>
+          </h2>
+        </div>
+        <div className="mt-10 space-y-2.5">
+          {FAQ.map((f) => (
+            <details key={f.q} className="glass group rounded-2xl open:bg-white/70">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-5 py-3 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+                <h3 className="font-sans text-base font-semibold tracking-normal text-green-950">{f.q}</h3>
+                <ChevronDown className="size-5 shrink-0 text-green-800 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16" aria-label="Boshlash">
-        <div className="stage-deep relative overflow-hidden rounded-2xl px-6 py-12 text-center sm:px-12 sm:py-16">
-          <Sparkles className="mx-auto size-7 text-green-300" aria-hidden="true" />
-          <h2 className="mx-auto mt-3 max-w-2xl text-balance text-3xl font-extrabold text-white sm:text-4xl">Agentlar sizning o&apos;rningizga gaplashsin</h2>
-          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/register" className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-base font-semibold text-green-700 transition-colors hover:bg-green-50">Biznesni ulash</Link>
-            <Link href="/live/demo-chorsu" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/40 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white">
-              Jonli namunani ko&apos;rish
+      {/* CTA */}
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8" aria-label="Boshlash">
+        <div className="stage-deep relative overflow-hidden rounded-[2rem] px-6 py-14 text-center sm:px-12 sm:py-20">
+          <h2 className="mx-auto max-w-2xl text-balance text-4xl text-white sm:text-6xl">
+            Agentlar <span className="text-grad">siz uchun</span> gaplashsin
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-white/75">Ro&apos;yxatdan o&apos;tish bir daqiqa oladi. Start tarifi bepul.</p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/register" className="group inline-flex h-14 items-center gap-3 rounded-2xl bg-white py-2 pl-2 pr-5 text-sm font-semibold uppercase tracking-wide text-green-950 transition-transform hover:-translate-y-0.5">
+              <span className="grid size-10 place-items-center rounded-xl bg-green-900 text-white transition-transform duration-300 group-hover:rotate-12"><Handshake className="size-5" aria-hidden="true" /></span>
+              Biznesni ulash
+            </Link>
+            <Link href="/live/demo-chorsu" className="inline-flex h-14 items-center gap-1.5 rounded-2xl px-5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white">
+              Jonli namunani ko&apos;rish <ArrowUpRight className="size-4" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -237,5 +269,14 @@ export default function Home() {
 
       <SiteFooter />
     </>
+  );
+}
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-green-900 backdrop-blur-md">
+      <span className="size-1.5 rounded-full bg-[#e0a24e]" aria-hidden="true" />
+      {children}
+    </p>
   );
 }

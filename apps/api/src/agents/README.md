@@ -1,4 +1,4 @@
-# apps/api/src/agents — Botir AI agent layer
+# apps/api/src/agents — Life Assistant agent layer
 
 Plain TypeScript classes, framework-agnostic. Nest (Ibrat) wraps them; no Nest imports here.
 

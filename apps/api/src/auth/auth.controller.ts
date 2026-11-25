@@ -1,14 +1,23 @@
-import { BadRequestException, Body, Controller, Get, Inject, Post } from '@nestjs/common';
+import {
+  BadRequestException, Body, Controller, Get, HttpCode, Inject, Post, ServiceUnavailableException, UnauthorizedException,
+} from '@nestjs/common';
 import type { User as DbUser } from '@prisma/client';
-import type { AuthResponse, LoginDto, MeResponse, RegisterDto } from '@botir/shared';
+import type { AuthResponse, LoginDto, MeResponse, RegisterDto, TelegramAuthDto } from '@botir/shared';
 import { ok } from '../common/http';
 import { PrismaService } from '../db/prisma.service';
 import { effectivePlan } from '../payments/plans';
 import { Auth, CurrentUser } from './auth.guard';
 import { AuthService, toAuthUser } from './auth.service';
 import { hashPassword, normalizePhone, verifyPassword } from './auth.util';
+import { verifyInitData, type InitDataResult } from './telegram-init-data';
 
 const BAD_CREDENTIALS = "Telefon yoki parol noto'g'ri";
+const TELEGRAM_REJECTED: Record<Extract<InitDataResult, { ok: false }>['reason'], string> = {
+  malformed: "Telegram ma'lumoti noto'g'ri",
+  bad_hash: "Telegram imzosi noto'g'ri",
+  expired: 'Telegram sessiyasi eskirgan, Mini App ni qayta oching',
+  no_user: 'Telegram foydalanuvchisi topilmadi',
+};
 
 @Controller('auth')
 export class AuthController {
@@ -34,9 +43,23 @@ export class AuthController {
   async login(@Body() dto: Partial<LoginDto>) {
     const phone = normalizePhone(dto?.phone);
     const user = phone ? await this.db.user.findFirst({ where: { phone, deletedAt: null } }) : null;
-    if (!user || typeof dto.password !== 'string' || !verifyPassword(dto.password, user.passwordHash)) {
+    // A Telegram-only account has no password: it can never sign in here.
+    if (!user?.passwordHash || typeof dto.password !== 'string' || !verifyPassword(dto.password, user.passwordHash)) {
       throw new BadRequestException(BAD_CREDENTIALS);
     }
+    return ok<AuthResponse>(this.session(user));
+  }
+
+  /** Telegram Mini App sign-in: initData signature checked with the bot token, never trusted unchecked. */
+  @Post('telegram')
+  @HttpCode(200)
+  async telegram(@Body() dto: Partial<TelegramAuthDto>) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim() ?? '';
+    if (!botToken) throw new ServiceUnavailableException('Telegram orqali kirish hozircha yoqilmagan');
+    const res = verifyInitData(dto?.initData, botToken);
+    if (!res.ok) throw new UnauthorizedException(TELEGRAM_REJECTED[res.reason]);
+    const user = await this.auth.telegramUser(res.user);
+    if (user.deletedAt) throw new UnauthorizedException('Akkaunt o‘chirilgan');
     return ok<AuthResponse>(this.session(user));
   }
 

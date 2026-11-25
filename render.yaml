@@ -34,6 +34,10 @@ services:
       # Claude Agent SDK auth (`claude setup-token`) — without it AI negotiation fails.
       - key: CLAUDE_CODE_OAUTH_TOKEN
         sync: false
+      # Telegram bot + Mini App sign-in (POST /auth/telegram checks initData with it). Set only here, one instance per
+      # token (a second poller gets 409). Without it the bot is off and /auth/telegram answers 503.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
       - key: TEZCHECK_API_KEY
         sync: false
       - key: TEZCHECK_CASH_DESK_CODE

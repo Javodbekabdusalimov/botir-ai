@@ -19,7 +19,10 @@ export type UserRole = 'business' | 'user';
 export interface AuthUser {
   id: UUID;
   name: string;
-  phone: string; // +998XXXXXXXXX
+  /** +998XXXXXXXXX. Absent for a user who signed in only through Telegram (Mini App / bot). */
+  phone?: string;
+  /** Telegram user id (decimal string) when the account is linked to Telegram. */
+  telegramId?: string;
   role: UserRole;
   businessId?: UUID;
 }
@@ -34,7 +37,14 @@ export interface LoginDto {
   phone: string;
   password: string;
 }
-/** POST /auth/register, POST /auth/login */
+/**
+ * POST /auth/telegram — Telegram Mini App sign-in. `initData` = raw `Telegram.WebApp.initData` string, unchanged.
+ * 200 → AuthResponse; 401 bad/expired signature; 503 when the API has no bot token (never signs in unchecked).
+ */
+export interface TelegramAuthDto {
+  initData: string;
+}
+/** POST /auth/register, POST /auth/login, POST /auth/telegram */
 export interface AuthResponse {
   token: string; // Authorization: Bearer <token>
   user: AuthUser;

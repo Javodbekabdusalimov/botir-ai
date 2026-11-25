@@ -84,7 +84,7 @@ export interface Plan {
   aiCredits: number; // oylik AI dialog kvotasi (eski, biznes obunasi)
   dailyTokens?: number; // Pro/Max: kunlik token (00:00 Asia/Tashkent da yangilanadi); free: 0
   periodDays: number;
-  introPrice?: number; // Pro: birinchi to'langan oy narxi (har biznesga 1 marta), keyin `price`
+  introPrice?: number; // Pro/Max: birinchi to'langan oy narxi (har akkauntga 1 marta, istalgan tarif), keyin `price`
 }
 /** GET /businesses/:id/plan (owner, Bearer): biznes obunasi va keyingi Pro oyi narxi. */
 export interface BusinessPlanStatus {
@@ -549,7 +549,7 @@ export interface SyncCatalogResult {
 export type BillingOwnerType = 'user' | 'business';
 export interface BillingPrices {
   pro: { price: number; introPrice: number; dailyTokens: number };
-  max: { price: number; dailyTokens: number };
+  max: { price: number; introPrice: number; dailyTokens: number };
   freeDailyRequests: number;
   periodDays: number;
 }
@@ -564,7 +564,7 @@ export interface BillingMe {
   dailyTokens: number; // kunlik limit (free: 0)
   freeLeftToday: number; // free: qolgan bepul qidiruv; pro/max: 0
   resetsAt: ISODate; // keyingi 00:00 Asia/Tashkent
-  introAvailable: boolean; // birinchi Pro oyi arzon narxda
+  introAvailable: boolean; // birinchi to'langan oy (Pro yoki Max) introPrice narxida, har akkauntga 1 marta
   prices: BillingPrices;
 }
 /** POST /billing/subscribe */
@@ -692,3 +692,4 @@ export interface OutreachThread {
   summary: string | null;
   lastReplyAt?: ISODate;
 }
+

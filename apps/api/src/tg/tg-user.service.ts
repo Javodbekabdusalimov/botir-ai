@@ -5,12 +5,14 @@ import { errMsg } from '../common/http';
 import { PrismaActionStore } from '../db/prisma-action-store';
 import { PrismaService } from '../db/prisma.service';
 import { NegotiationsService } from '../negotiations/negotiations.service';
-import { ActionGate, parseSelfCommand, type SelfCommand, type TgAction } from '../tg-connect';
+import { ActionGate, parseSelfCommand, pickChatByName, type SelfCommand, type TgAction } from '../tg-connect';
 import { TgService } from './tg.service';
 
 // B2C: the user's own Telegram. Saved Messages → personal agent; AI writes to others only after approve.
 
 const RESULT_WAIT_MS = 5 * 60 * 1000;
+/** A plain "ha" approves only a proposal made in the last 30 min (the web page /me/actions has no limit). */
+const ANSWER_TTL_MS = 30 * 60 * 1000;
 
 const toShared = (a: TgAction): UserAction => ({
   id: a.id, chatId: a.chatId, peerTitle: a.peerTitle, text: a.text, status: a.status,
@@ -29,7 +31,10 @@ export class TgUserService implements OnModuleInit {
     @Inject(TgService) private readonly tg: TgService,
     @Inject(NegotiationsService) private readonly negotiations: NegotiationsService,
   ) {
-    this.gate = new ActionGate(actions, (accountId, chatId, text) => this.tg.sendAsOwner(accountId, chatId, text));
+    this.gate = new ActionGate(actions, async (accountId, chatId, text, a) =>
+      this.tg.sendAsOwner(accountId, chatId, text, a.firstContact
+        ? { firstContact: { sentToday: await actions.countFirstContact(a.userId, a.id, new Date(Date.now() - 24 * 60 * 60 * 1000)) } }
+        : {}));
   }
 
   onModuleInit(): void {
@@ -62,17 +67,17 @@ export class TgUserService implements OnModuleInit {
   private async handle(userId: string, accountId: string, cmd: SelfCommand): Promise<string> {
     if (cmd.kind === 'approve' || cmd.kind === 'reject') {
       const [latest] = await this.actions.listPending(userId);
-      if (!latest) return ''; // plain "ha" with nothing pending is just a note
+      // Plain "ha" with nothing pending (or only a stale proposal) is just a note: an old message is never sent by accident.
+      if (!latest || Date.now() - Date.parse(latest.createdAt) > ANSWER_TTL_MS) return '';
       const approve = cmd.kind === 'approve';
       const res = approve ? await this.gate.approve(userId, latest.id) : await this.gate.reject(userId, latest.id);
       if (!res.ok) return `⛔ Yuborilmadi: ${res.reason}`;
       return approve ? `✅ ${latest.peerTitle}ga yuborildi.` : '❎ Bekor qilindi, hech narsa yuborilmadi.';
     }
     if (cmd.kind === 'write') {
-      const chat = await this.db.chat.findFirst({
-        where: { accountId, title: { contains: cmd.name }, deletedAt: null }, orderBy: { lastMessageAt: 'desc' },
-      });
-      if (!chat) return `🤖 "${cmd.name}" topilmadi (u avval sizga yozgan bo'lishi kerak).`;
+      const chats = await this.db.chat.findMany({ where: { accountId, deletedAt: null }, select: { id: true, title: true } });
+      const chat = pickChatByName(chats, cmd.name);
+      if (!chat) return `🤖 "${cmd.name}" degan bitta chat topilmadi. Ismini to'liq yozing (u avval sizga yozgan bo'lishi kerak).`;
       await this.gate.propose({ userId, accountId, chatId: chat.id, peerTitle: chat.title, text: cmd.text });
       return `🤖 ${chat.title}ga yuboraymi?\n\n«${cmd.text}»\n\nJavob: ha / yo'q (yoki saytda: ${this.web}/me/actions)`;
     }

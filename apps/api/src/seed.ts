@@ -1,9 +1,12 @@
 // Idempotent demo seed: the same 3 businesses + catalog as agents/store/seed.ts. Run: pnpm --filter api db:seed
+// Runs on every start (render.yaml), so it is CREATE-ONLY for anything an owner can edit or delete: an existing row
+// (even soft-deleted) is never overwritten. Only golden cases (eval data, not editable through the API) follow the code.
 import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type { WorkHours } from '@botir/shared';
 import { DEMO_BUSINESSES, DEMO_GOLDEN_CASES, DEMO_PRODUCTS } from './agents';
 import { hashPassword } from './auth/auth.util';
+import { importDirectoryFile } from './outreach/import-directory';
 
 const ADDRESS: Record<string, string> = {
   'biz-osh': 'Chilonzor tumani, Bunyodkor shoh ko‘chasi',
@@ -22,28 +25,39 @@ async function main(): Promise<void> {
     const data = {
       name: b.name, category: b.category, district: b.area, address: ADDRESS[b.id] ?? b.area,
       workHours: JSON.stringify(workHours), maxDiscountPct: b.maxDiscountPct, lang: 'uz', isDemo: true, notes: b.notes ?? null,
-      rating: b.rating ?? 4.5, distanceKm: b.distanceKm ?? 3,
     };
-    await db.business.upsert({ where: { id: b.id }, create: { id: b.id, ...data }, update: data });
+    await db.business.upsert({ where: { id: b.id }, create: { id: b.id, ...data }, update: {} });
   }
   for (const p of DEMO_PRODUCTS) {
     const data = { businessId: p.businessId, name: p.name, price: p.price, unit: p.unit };
-    await db.catalogItem.upsert({ where: { id: p.id }, create: { id: p.id, ...data }, update: data });
+    await db.catalogItem.upsert({ where: { id: p.id }, create: { id: p.id, ...data }, update: {} });
   }
   for (const g of DEMO_GOLDEN_CASES) {
     const data = { businessId: g.businessId, question: g.question, expected: JSON.stringify(g.expected), forbidden: g.forbidden ? JSON.stringify(g.forbidden) : null };
     await db.goldenCase.upsert({ where: { id: g.id }, create: { id: g.id, ...data }, update: data });
   }
   // Test accounts (README): business owner of biz-osh + a plain user ("demo-user" = web's default userId).
+  // Created once with SEED_DEMO_PASSWORD (default 'botir123'). The default is public: set SEED_DEMO_PASSWORD in prod;
+  // when it is set, each start (re)applies it, so rotating the password = change the env var + restart.
+  const customPassword = process.env.SEED_DEMO_PASSWORD?.trim();
   const TEST_USERS = [
     { id: 'owner-biz-osh', name: 'Chilonzor Osh Markazi egasi', phone: '+998900000001', role: 'business', businessId: 'biz-osh' },
     { id: 'demo-user', name: 'Demo foydalanuvchi', phone: '+998900000002', role: 'user', businessId: null },
   ];
   for (const u of TEST_USERS) {
-    const data = { name: u.name, role: u.role, businessId: u.businessId, passwordHash: hashPassword('botir123'), deletedAt: null };
-    await db.user.upsert({ where: { phone: u.phone }, create: { id: u.id, phone: u.phone, ...data }, update: data });
+    const passwordHash = hashPassword(customPassword || 'botir123');
+    const data = { name: u.name, role: u.role, businessId: u.businessId, passwordHash };
+    await db.user.upsert({ where: { phone: u.phone }, create: { id: u.id, phone: u.phone, ...data }, update: customPassword ? { passwordHash } : {} });
+  }
+  // Demo accounts are PRO for a year, so the jury demo keeps working with BILLING_ENFORCE=1 (refreshed on every start).
+  const demoUntil = new Date(Date.now() + 365 * 86_400_000);
+  for (const o of [{ ownerType: 'user', ownerId: 'demo-user' }, { ownerType: 'business', ownerId: 'biz-osh' }]) {
+    await db.planAccount.upsert({ where: { ownerType_ownerId: o }, create: { ...o, plan: 'pro', expiresAt: demoUntil }, update: { plan: 'pro', expiresAt: demoUntil } });
   }
   await seedDemoOwnerData(db);
+  // Non-partner directory (create-only, idempotent): the personal agent's contact chain works on it.
+  const dir = await importDirectoryFile(db);
+  logger.log(`directory: ${dir.created} created, ${dir.skipped} existing, ${dir.rejected.length} rejected`);
   logger.log(`seeded ${TEST_USERS.length} test users, ${DEMO_BUSINESSES.length} businesses, ${DEMO_PRODUCTS.length} catalog items, ${DEMO_GOLDEN_CASES.length} golden cases, demo inbox + findings`);
   await db.$disconnect();
 }
@@ -55,8 +69,8 @@ async function main(): Promise<void> {
  */
 async function seedDemoOwnerData(db: PrismaClient): Promise<void> {
   const accountId = 'demo-tg-biz-osh';
-  const acc = { ownerType: 'business', businessId: 'biz-osh', kind: 'demo', tgUserId: '0', username: 'namuna', connectedAt: new Date(), deletedAt: null };
-  await db.tgAccount.upsert({ where: { id: accountId }, create: { id: accountId, ...acc }, update: acc });
+  const acc = { ownerType: 'business', businessId: 'biz-osh', kind: 'demo', tgUserId: '0', username: 'namuna', connectedAt: new Date() };
+  await db.tgAccount.upsert({ where: { id: accountId }, create: { id: accountId, ...acc }, update: {} });
 
   const base = Date.now() - 20 * 60_000;
   const chats = [
@@ -78,12 +92,12 @@ async function seedDemoOwnerData(db: PrismaClient): Promise<void> {
   for (const [ci, c] of chats.entries()) {
     const last = new Date(base + (ci === 0 ? 15 : 5) * 60_000);
     const draft = c.draft ? JSON.stringify({ ...c.draft, createdAt: last.toISOString() }) : null;
-    const data = { accountId, peerId: `demo-peer-${ci + 1}`, title: c.title, mode: c.mode, needsHuman: c.needsHuman, draft, lastMessageAt: last, deletedAt: null };
-    await db.chat.upsert({ where: { id: c.id }, create: { id: c.id, ...data }, update: data });
+    const data = { accountId, peerId: `demo-peer-${ci + 1}`, title: c.title, mode: c.mode, needsHuman: c.needsHuman, draft, lastMessageAt: last };
+    await db.chat.upsert({ where: { id: c.id }, create: { id: c.id, ...data }, update: {} });
     for (const [mi, [direction, author, text]] of c.msgs.entries()) {
       const id = `${c.id}-m${mi + 1}`;
-      const m = { chatId: c.id, tgMsgId: mi + 1, direction, author, text, sentAt: new Date(last.getTime() - (c.msgs.length - 1 - mi) * 60_000), deletedAt: null };
-      await db.inboxMessage.upsert({ where: { id }, create: { id, ...m }, update: m });
+      const m = { chatId: c.id, tgMsgId: mi + 1, direction, author, text, sentAt: new Date(last.getTime() - (c.msgs.length - 1 - mi) * 60_000) };
+      await db.inboxMessage.upsert({ where: { id }, create: { id, ...m }, update: {} });
     }
   }
 
@@ -93,8 +107,8 @@ async function seedDemoOwnerData(db: PrismaClient): Promise<void> {
     ['demo-finding-3', 'unanswered', "Mijoz uyga yetkazib berish bormi deb so'radi — agent aniq javob bermadi, xodimga ham ulamadi"],
   ] as const;
   for (const [id, type, detail] of findings) {
-    const f = { sessionId: 'demo-session', businessId: 'biz-osh', type, detail, at: new Date(base), deletedAt: null };
-    await db.auditFinding.upsert({ where: { id }, create: { id, ...f }, update: f });
+    const f = { sessionId: 'demo-session', businessId: 'biz-osh', type, detail, at: new Date(base) };
+    await db.auditFinding.upsert({ where: { id }, create: { id, ...f }, update: {} });
   }
 }
 

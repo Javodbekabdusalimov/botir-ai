@@ -46,6 +46,15 @@ async function main(): Promise<void> {
   const invented = one(cat({ evidence: 'Lagmon 1' }), 'Menyu: osh 45 000');
   assert.deepEqual([invented?.evidence, invented?.confidence], [null, 0.3]);
 
+  // The price must be in the quote ("45 000" ≠ 4500); the quote stays visible so the owner sees the mismatch
+  const wrongZero = one(cat({ price: 4500, evidence: 'Osh 45 000' }), 'Menyu: osh 45 000');
+  assert.deepEqual([wrongZero?.evidence, wrongZero?.confidence], ['Osh 45 000', 0.3]);
+  assert.equal(one(cat({ evidence: 'Osh 45 ming' }), 'osh 45 ming')?.confidence, 0.9);
+  // A size in the name is not the selling unit: "Cola 1.5 l" is sold per bottle
+  assert.equal(one(cat({ topic: 'Cola 1.5 l', unit: 'l', price: 15000 }))?.unit, null);
+  assert.equal(one(cat({ topic: "Go'sht 1kg", unit: 'kg', price: 90000 }))?.unit, null);
+  assert.equal(one(cat({ topic: 'Choy', unit: 'l', price: 5000 }))?.unit, 'l');
+
   // Dedupe: same fact dropped, changed price / answer kept as a correction
   assert.equal(validateFacts({ facts: [cat(), cat({ topic: ' OSH! ' }), cat({ price: 50000 })] }).length, 2);
   const bor = { kind: 'policy' as const, topic: 'delivery', question: null, content: 'Yetkazib berish bor', price: null, evidence: null };
@@ -79,6 +88,23 @@ async function main(): Promise<void> {
   await ex.extract({ text: 'Aloqa: 90 123 45 67' }, []);
   assert.ok(llm.prompt.includes('90 123 45 67'), "the owner's own text keeps the business phone");
   await assert.rejects(ex.extract({ text: '  ' }, []));
+
+  // Photo/PDF: every quote must be in the text the model read from the file (no text → nothing is evidence)
+  class FileLlm extends LlmClient {
+    system = '';
+    constructor(private readonly text?: string) { super({ store: new MemoryStore() }); }
+    override async completeJson<T>(input: Parameters<LlmClient['completeJson']>[0]): Promise<{ data: T; ms: number }> {
+      this.system = input.system;
+      const facts = [cat({ evidence: 'Osh 45 000' }), cat({ topic: 'Lagmon', price: 30000, evidence: 'Lagmon 30 000' })];
+      return { data: { ...(this.text !== undefined && { text: this.text }), facts } as T, ms: 0 };
+    }
+  }
+  const photo = { attachment: { mediaType: 'image/png' as const, base64: '' } };
+  const read = new FileLlm('MENYU\nOsh .... 45 000\nChoy 5 000');
+  const fromPhoto = await new KnowledgeExtractor(read).extract(photo, []);
+  assert.ok(read.system.includes('"text"'), 'file sources ask for the text');
+  assert.deepEqual(fromPhoto.map((f) => [f.topic, f.evidence, f.confidence]), [['Osh', 'Osh 45 000', 0.9], ['Lagmon', null, 0.3]]);
+  assert.deepEqual((await new KnowledgeExtractor(new FileLlm()).extract(photo, [])).map((f) => f.confidence), [0.3, 0.3]);
 
   // CLI mode refuses attachments instead of silently ignoring them
   const cli = new LlmClient({ store: new MemoryStore(), mode: 'cli' });

@@ -133,11 +133,11 @@ export class QuestionsService {
     return q;
   }
 
-  /** Dismissed stays dismissed. Answered reopens only if its fact is gone (rejected/deleted by the owner). */
+  /** Dismissed stays dismissed. Answered reopens only if its fact is gone (rejected/deleted by the owner; superseded = a newer answer exists). */
   private async askedAgain(q: DbQuestion): Promise<void> {
     const factLost =
       q.status === 'answered' && q.factId !== null &&
-      (await this.db.knowledgeFact.count({ where: { id: q.factId, status: 'confirmed', deletedAt: null } })) === 0;
+      (await this.db.knowledgeFact.count({ where: { id: q.factId, status: { in: ['confirmed', 'superseded'] }, deletedAt: null } })) === 0;
     await this.db.pendingQuestion.update({
       where: { id: q.id },
       data: { timesAsked: { increment: 1 }, ...(factLost ? { status: 'open', answer: null, factId: null } : {}) },

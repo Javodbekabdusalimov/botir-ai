@@ -38,7 +38,7 @@ export interface BotDeps {
 export type CreateBotResult = { bot: Bot; reason?: undefined } | { bot: null; reason: string };
 
 const GREETING =
-  'Assalomu alaykum! Men Botir — sizning AI yordamchingiz. 🤝\n\n' +
+  'Assalomu alaykum! Men Life Assistant — sizning AI yordamchingiz. 🤝\n\n' +
   "Menga oddiy so'z bilan yozing yoki ovozli xabar yuboring: nima kerakligini aytsangiz, " +
   "do'konlar, restoranlar va ustalar agentlari bilan o'zim gaplashib, eng yaxshi taklifni topib beraman.\n\n" +
   'Biznesingiz bormi? Telegram Business orqali meni ulang — mijozlaringizga javob qoralamalarini tayyorlayman.';
@@ -210,7 +210,7 @@ async function handleCommand(ctx: Context, deps: BotDeps, name: string, text: st
   if (!ownerId) return;
   const target = await deps.resolveContact(ownerId, name);
   if (!target) {
-    await ctx.reply(`"${name}" degan mijoz topilmadi (u avval sizga yozgan bo'lishi kerak).`);
+    await ctx.reply(`"${name}" degan bitta mijoz topilmadi. Ismini to'liq yozing (u avval sizga yozgan bo'lishi kerak).`);
     return;
   }
   const res = await deps.sender.send(target.accountId, target.chatId, text, 'owner');

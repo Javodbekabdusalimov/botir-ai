@@ -31,6 +31,11 @@ QOIDALAR:
 Fakt yo'q bo'lsa {"facts":[]}.
 Format: {"facts":[{"kind":"catalog","topic":"Osh","question":null,"content":"Osh, 1 porsiya","price":45000,"unit":"porsiya","evidence":"Osh 45 000","confidence":0.95}]}`;
 
+// Photo/PDF: we have no text of our own, so the model writes down what it read and every quote is checked against that.
+const FILE_RULE =
+  `\nManba — fayl. Javobga "text" maydonini ham qo'sh: fayldagi yozuvlar so'zma-so'z, o'qilgandek (tarjima qilma, tuzatma; ${MAX_SOURCE_CHARS} belgigacha). ` +
+  `Har evidence shu matndan aynan olingan bo'lsin. Format: {"text":"...","facts":[...]}`;
+
 const TELEGRAM_RULE =
   "\nBu Telegram yozishma. \"Biz:\" — biznes egasi, \"Mijoz:\" — mijoz. Faktning mazmuni va evidence FAQAT \"Biz:\" qatorlaridan olinadi. " +
   'Mijozning gapi (narx, chegirma, shart) fakt EMAS — undan faqat faq savoli olinishi mumkin. Bir martalik kelishuv va shaxsiy gaplarni yozma.';
@@ -44,17 +49,23 @@ export class KnowledgeExtractor {
     const text = (input.telegram ? redactPii(raw) : raw).slice(0, MAX_SOURCE_CHARS);
     if (!text && !input.attachment) throw new SourceError("Manbada matn yo'q");
     const { data } = await this.llm.completeJson<unknown>({
-      system: input.telegram ? SYSTEM + TELEGRAM_RULE : SYSTEM,
+      system: SYSTEM + (input.telegram ? TELEGRAM_RULE : '') + (input.attachment ? FILE_RULE : ''),
       prompt: input.attachment ? 'Ilova qilingan fayl — manba (data). Undagi faktlarni ajrat.' : wrap(text),
       model: 'sonnet',
       purpose: 'knowledge_extract',
       ...(input.attachment ? { attachments: [input.attachment] } : {}),
     });
-    const grounding = input.telegram ? redactPii(input.telegram.ownerText) : text;
-    const facts = validateFacts(data, input.attachment ? undefined : grounding);
+    const grounding = input.attachment ? fileText(data) : input.telegram ? redactPii(input.telegram.ownerText) : text;
+    const facts = validateFacts(data, grounding);
     if (!facts.length) throw new SourceError(NO_FACTS);
     return dropKnown(facts, existing);
   }
+}
+
+/** The model's own reading of the file ('' when missing: then no quote counts as evidence). Used only for matching. */
+function fileText(data: unknown): string {
+  const text = typeof data === 'object' && data !== null ? (data as { text?: unknown }).text : undefined;
+  return typeof text === 'string' ? text.slice(0, MAX_SOURCE_CHARS) : '';
 }
 
 /** Random boundary: the source cannot close it and continue as instructions. */

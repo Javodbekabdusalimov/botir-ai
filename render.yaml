@@ -8,15 +8,19 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter api exec prisma generate
-    startCommand: cd apps/api && npx prisma db push --skip-generate && npx tsx src/seed.ts && npx tsx src/main.ts
+    # scripts/prisma.mjs picks the Prisma provider from DATABASE_URL (postgres:// → Postgres, file: → SQLite).
+    # generate runs again at start so a DATABASE_URL change applied with "Save and deploy" (no rebuild) still works.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter api run db:generate
+    startCommand: cd apps/api && node scripts/prisma.mjs generate && node scripts/prisma.mjs db push --skip-generate && npx tsx src/seed.ts && npx tsx src/main.ts
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: "22"
-      # SQLite (demo): seeded on every boot, free plan disk is ephemeral.
+      # Persistent data: paste the Render Postgres *Internal* Database URL (postgresql://…), see apps/api/README.md.
+      # file:./dev.db = SQLite on the free plan's ephemeral disk: wiped on every deploy/restart.
+      # The seed is create-only (owner edits survive). Optional SEED_DEMO_PASSWORD (dashboard) = password of the 2 demo accounts.
       - key: DATABASE_URL
-        value: file:./dev.db
+        sync: false
       - key: CORS_ORIGINS
         value: https://ai-assistant-f16u.onrender.com,http://localhost:3000
       - key: WEB_URL
@@ -34,8 +38,33 @@ services:
         sync: false
       - key: TEZCHECK_CASH_DESK_CODE
         sync: false
-      - key: PLAN_PRO_PRICE
+      # Plans: first PRO month PLAN_PRO_INTRO_PRICE (once per account), then PLAN_PRO_PRICE / PLAN_MAX_PRICE per 30 days.
+      # Tokens (real Claude input+output tokens) are a daily allowance, reset 00:00 Asia/Tashkent. BILLING_ENFORCE=1 turns the 402 gates on.
+      - key: PLAN_PRO_INTRO_PRICE
         value: "1000"
+      - key: PLAN_PRO_PRICE
+        value: "82000"
+      - key: PLAN_MAX_PRICE
+        value: "163000"
+      - key: PLAN_PRO_DAILY_TOKENS
+        value: "100000"
+      - key: PLAN_MAX_DAILY_TOKENS
+        value: "200000"
+      - key: BILLING_ENFORCE
+        value: "0"
+      - key: KNOWLEDGE_DAILY_CAP
+        value: "30"
+      # /agent/request abuse limits. Demo venue = one shared Wi-Fi IP, so the per-IP window is generous.
+      - key: AGENT_RATE_LIMIT
+        value: "30"
+      - key: AGENT_DAILY_CAP
+        value: "200"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: LLM_MAX_CONCURRENCY
+        value: "2"
+      - key: LLM_EFFORT
+        value: low
 
   - type: web
     name: ai-assistant

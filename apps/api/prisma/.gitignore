@@ -1,0 +1,2 @@
+# Generated from schema.prisma by scripts/prisma.mjs when DATABASE_URL is Postgres
+schema.pg.prisma

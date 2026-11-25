@@ -2,11 +2,13 @@ import {
   BadRequestException, HttpException, HttpStatus, Inject, Injectable, Logger, NotFoundException, OnModuleInit, UnprocessableEntityException,
 } from '@nestjs/common';
 import type { KnowledgeSource as DbSource } from '@prisma/client';
-import type { KnowledgeFactKind, KnowledgeSource, KnowledgeSourceKind } from '@botir/shared';
+import type { KnowledgeSource, KnowledgeSourceKind } from '@botir/shared';
 import { errMsg } from '../common/http';
 import { PrismaService } from '../db/prisma.service';
 import { AGENTS, type Agents } from '../negotiations/agents.provider';
 import { KnowledgeExtractor, MAX_SOURCE_CHARS, type ExtractInput } from './extractor';
+import type { ComparableFact } from './fact-validation';
+import { KeyedQueue } from './keyed-queue';
 import { htmlToText, SourceError } from './text-utils';
 import { MAX_FILE_BYTES, sniffFile, sttCommand, transcribe } from './upload';
 import { fetchPublicHtml, parsePublicUrl } from './url-guard';
@@ -16,6 +18,18 @@ const MAX_CHATS = 20;
 const MESSAGES_PER_CHAT = 300;
 const MIN_PAGE_CHARS = 80;
 const GENERIC_ERROR = "Manbani o'qib bo'lmadi. Birozdan keyin qayta urinib ko'ring";
+const DEFAULT_DAILY_CAP = 30;
+const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000; // UTC+5, no DST
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Sources that never reach the LLM: POS sync and the owner's own answers.
+const FREE_KINDS: KnowledgeSourceKind[] = ['sync', 'question'];
+
+/** AI source reads per business per Tashkent day: KNOWLEDGE_DAILY_CAP, default 30. */
+export const dailyCap = (): number => {
+  const n = Number(process.env.KNOWLEDGE_DAILY_CAP);
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_DAILY_CAP;
+};
+const tashkentMidnight = (now: number): Date => new Date(Math.floor((now + TASHKENT_OFFSET_MS) / DAY_MS) * DAY_MS - TASHKENT_OFFSET_MS);
 
 export const toSource = (s: DbSource, factsCount: number): KnowledgeSource => ({
   id: s.id,
@@ -32,6 +46,7 @@ export const toSource = (s: DbSource, factsCount: number): KnowledgeSource => ({
 export class KnowledgeSourcesService implements OnModuleInit {
   private readonly logger = new Logger('Knowledge');
   private readonly extractor: KnowledgeExtractor;
+  private readonly gate = new KeyedQueue();
 
   constructor(
     @Inject(PrismaService) private readonly db: PrismaService,
@@ -135,18 +150,45 @@ export class KnowledgeSourcesService implements OnModuleInit {
   }
 
   private async start(businessId: string, kind: KnowledgeSourceKind, label: string, load: () => Promise<ExtractInput>): Promise<KnowledgeSource> {
-    const busy = await this.db.knowledgeSource.count({ where: { businessId, status: 'processing', deletedAt: null } });
-    if (busy >= MAX_PROCESSING) throw new HttpException("Avvalgi manbalar hali o'qilmoqda. Biroz kuting", HttpStatus.TOO_MANY_REQUESTS);
-    const row = await this.db.knowledgeSource.create({ data: { businessId, kind, label } });
+    // Checks and create in one queue per business: parallel uploads cannot all pass the same count.
+    const row = await this.gate.run(businessId, async () => {
+      const [busy, today] = await Promise.all([
+        this.db.knowledgeSource.count({ where: { businessId, status: 'processing', deletedAt: null } }),
+        // Deleted and failed sources count too: each one already cost an AI read.
+        this.db.knowledgeSource.count({ where: { businessId, kind: { notIn: FREE_KINDS }, createdAt: { gte: tashkentMidnight(Date.now()) } } }),
+      ]);
+      if (busy >= MAX_PROCESSING) throw new HttpException("Avvalgi manbalar hali o'qilmoqda. Biroz kuting", HttpStatus.TOO_MANY_REQUESTS);
+      const cap = dailyCap();
+      if (today >= cap) {
+        throw new HttpException(`Bugungi limit tugadi: AI kuniga ${cap} ta manbani o'qiydi. Ertaga qayta urinib ko'ring`, HttpStatus.TOO_MANY_REQUESTS);
+      }
+      return this.db.knowledgeSource.create({ data: { businessId, kind, label } });
+    });
     void this.process(row, load).catch((e: unknown) => this.logger.error(`source ${row.id}: ${errMsg(e).slice(0, 200)}`));
     return toSource(row, 0);
+  }
+
+  /**
+   * What a new source must not repeat: drafts, confirmed facts, and for prices the CURRENT catalog.
+   * A confirmed price the catalog no longer has (newer price, sync, deleted item) is history, so re-sending it is a change, not a duplicate.
+   */
+  private async known(businessId: string): Promise<ComparableFact[]> {
+    const [facts, items] = await Promise.all([
+      this.db.knowledgeFact.findMany({ where: { businessId, deletedAt: null, status: { in: ['draft', 'confirmed'] } } }),
+      this.db.catalogItem.findMany({ where: { businessId, deletedAt: null }, select: { id: true, name: true, price: true } }),
+    ]);
+    const priceOf = new Map(items.map((i) => [i.id, i.price]));
+    const current = facts.filter((f) => f.kind !== 'catalog' || f.status === 'draft' || (f.catalogItemId !== null && priceOf.get(f.catalogItemId) === f.price));
+    return [
+      ...current.map((f) => ({ ...f, kind: f.kind as ComparableFact['kind'] })),
+      ...items.map((i) => ({ kind: 'catalog' as const, topic: i.name, question: null, content: i.name, price: i.price, evidence: null })),
+    ];
   }
 
   private async process(source: DbSource, load: () => Promise<ExtractInput>): Promise<void> {
     let error: string | null = null;
     try {
-      const existing = await this.db.knowledgeFact.findMany({ where: { businessId: source.businessId, deletedAt: null, status: { not: 'rejected' } } });
-      const facts = await this.extractor.extract(await load(), existing.map((f) => ({ ...f, kind: f.kind as KnowledgeFactKind })));
+      const facts = await this.extractor.extract(await load(), await this.known(source.businessId));
       await this.db.knowledgeFact.createMany({ data: facts.map((f) => ({ ...f, businessId: source.businessId, sourceId: source.id })) });
     } catch (e) {
       error = e instanceof SourceError ? e.message : GENERIC_ERROR;

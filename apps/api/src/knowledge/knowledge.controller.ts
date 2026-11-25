@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { User as DbUser } from '@prisma/client';
 import type {
@@ -79,6 +79,13 @@ export class KnowledgeController {
   async patchFact(@Param('id') id: string, @Param('factId') factId: string, @Body() dto: KnowledgeFactPatch, @CurrentUser() user: DbUser) {
     await assertBusinessOwner(this.db, id, user);
     return ok(await this.facts.patch(id, factId, dto));
+  }
+
+  @Delete('knowledge/facts/:factId')
+  @Auth()
+  async removeFact(@Param('id') id: string, @Param('factId') factId: string, @CurrentUser() user: DbUser) {
+    await assertBusinessOwner(this.db, id, user);
+    return ok(await this.facts.remove(id, factId));
   }
 
   @Post('knowledge/questions/:qid/answer')

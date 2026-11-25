@@ -114,7 +114,8 @@ export class TgSync {
         return;
       }
       const sender = await m.getSender();
-      if (sender instanceof Api.User && sender.bot) return;
+      // Bots are not customers, except a bot the user's agent wrote to first (outreach): its chat already exists.
+      if (sender instanceof Api.User && sender.bot && !(await this.store.getChat(chatKey(accountId, peerId)))) return;
       const input = await m.getInputChat();
       if (input) conn.peers.set(peerId, input);
 
@@ -136,6 +137,17 @@ export class TgSync {
     } catch (err) {
       log.error(`${accountId}: new message handling failed: ${errMsg(err)}`);
     }
+  }
+
+  /** Outreach: @username → numeric peer id (the entity is cached in the session, so sendRaw can reach it). Throws if unknown. */
+  async resolvePeer(accountId: string, username: string): Promise<{ peerId: string; title: string }> {
+    const conn = this.connected.get(accountId);
+    if (!conn) throw new Error(`Account ${accountId} is not connected`);
+    const entity = await conn.client.getEntity(username);
+    if (!(entity instanceof Api.User)) throw new Error('not a user or bot');
+    const peerId = entity.id.toString();
+    conn.peers.set(peerId, await conn.client.getInputEntity(entity));
+    return { peerId, title: peerTitle(entity) || username };
   }
 
   /** Low-level send used by Sender (guards are applied there, not here). */

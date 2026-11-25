@@ -13,6 +13,8 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true }); // rawBody: webhook signature checks
   app.useBodyParser('json', { limit: '1mb' }); // 40k-char knowledge texts, 500-item catalog sync
+  // Render (and any proxy in front) sets X-Forwarded-For: req.ip = real client IP for the /agent/request rate limit.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
   const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',').map((s) => s.trim());
   app.enableCors({ origin: origins });
   app.useGlobalFilters(new ApiExceptionFilter());

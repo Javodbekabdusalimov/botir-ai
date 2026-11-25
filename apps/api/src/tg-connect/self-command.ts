@@ -1,5 +1,5 @@
-// B2C: the user talks to Botir from their own Telegram "Saved Messages" (chat with self).
-// Only messages addressed to Botir are commands; everything else is the user's own notes and is ignored.
+// B2C: the user talks to their assistant from their own Telegram "Saved Messages" (chat with self).
+// Only messages addressed to it ("Assistant, ..."; the old "Botir, ..." still works) are commands; everything else is ignored.
 
 export type SelfCommand =
   | { kind: 'approve' }
@@ -7,7 +7,7 @@ export type SelfCommand =
   | { kind: 'write'; name: string; text: string }
   | { kind: 'request'; text: string };
 
-const ADDRESS_RE = /^\s*[/@]?botir\b[\s,:!.\-—]*/i;
+const ADDRESS_RE = /^\s*[/@]?(?:assistant|botir)\b[\s,:!.\-—]*/i;
 const WRITE_RE = /^\s*(\S+?)(?:ga|ka|qa)\s+yoz\s*:\s*([\s\S]+)$/i;
 const APPROVE = new Set(['ha', 'xa', 'ha yubor', 'yubor', 'yes', 'ok', 'да', 'ага']);
 const REJECT = new Set(["yo'q", 'yoq', 'yo‘q', 'yo`q', "yo'q kerak emas", 'kerak emas', 'bekor', 'no', 'нет']);

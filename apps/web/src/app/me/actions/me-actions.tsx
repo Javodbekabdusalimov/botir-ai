@@ -43,7 +43,7 @@ export function MeActions() {
   if (!list.data.length)
     return (
       <div className="mt-8 space-y-4">
-        <Empty>Hozircha amal yo&apos;q. Telegramdagi Saqlangan xabarlarga &quot;Botir, ...&quot; deb yozing, agent shu yerda ruxsat so&apos;raydi.</Empty>
+        <Empty>Hozircha amal yo&apos;q. Telegramdagi Saqlangan xabarlarga &quot;Assistant, ...&quot; deb yozing, agent shu yerda ruxsat so&apos;raydi.</Empty>
         <Link href="/me/telegram" className={cn(buttonVariants(), "h-11 px-5 font-semibold")}>
           Telegramni ulash
         </Link>

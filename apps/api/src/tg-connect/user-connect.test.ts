@@ -37,6 +37,8 @@ async function main(): Promise<void> {
   });
   assert.deepEqual(parseSelfCommand('botir: moy almashtirish kerak'), { kind: 'request', text: 'moy almashtirish kerak' });
   assert.deepEqual(parseSelfCommand('@Botir osh'), { kind: 'request', text: 'osh' });
+  assert.deepEqual(parseSelfCommand('Assistant, ertaga osh'), { kind: 'request', text: 'ertaga osh' });
+  assert.deepEqual(parseSelfCommand('assistantlar zo\'r'), null);
   assert.deepEqual(parseSelfCommand('Botir, Aliga yoz: ertaga boraman'), { kind: 'write', name: 'Ali', text: 'ertaga boraman' });
   assert.deepEqual(parseSelfCommand('ha'), { kind: 'approve' });
   assert.deepEqual(parseSelfCommand('Ha!'), { kind: 'approve' });

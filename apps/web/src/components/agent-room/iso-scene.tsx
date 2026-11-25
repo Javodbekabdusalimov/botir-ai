@@ -28,7 +28,7 @@ export function toPct(x: number, y: number, z = 0) {
 type Tone = { top: string; left: string; right: string };
 const WHITE: Tone = { top: "#ffffff", left: "#eef0f2", right: "#e2e5e8" };
 const WOOD: Tone = { top: "#f3e7d3", left: "#e6d5b8", right: "#d9c6a5" };
-const GREEN: Tone = { top: "#22c55e", left: "#16a34a", right: "#15803d" };
+const GREEN: Tone = { top: "#8e9b91", left: "#6e7b71", right: "#556158" };
 const DARK: Tone = { top: "#3f3f46", left: "#27272a", right: "#18181b" };
 const CLAY: Tone = { top: "#fafafa", left: "#e7e5e4", right: "#d6d3d1" };
 
@@ -64,15 +64,30 @@ function Plant({ x, y, big }: { x: number; y: number; big?: boolean }) {
         [-6, -24, 9],
         [7, -22, 10],
       ].map(([dx, dy, r], i) => (
-        <ellipse key={i} cx={sx + dx * k} cy={sy + dy * k} rx={r * k * 0.75} ry={r * k} fill={i % 2 ? "#4ade80" : "#16a34a"} transform={`rotate(${dx * 2} ${sx + dx * k} ${sy + dy * k})`} />
+        <ellipse key={i} cx={sx + dx * k} cy={sy + dy * k} rx={r * k * 0.75} ry={r * k} fill={i % 2 ? "#9fb09f" : "#6f8a72"} transform={`rotate(${dx * 2} ${sx + dx * k} ${sy + dy * k})`} />
       ))}
+    </g>
+  );
+}
+
+
+/** Iliq yorug' shar (pol chirog'i). */
+function Lamp({ x, y }: { x: number; y: number }) {
+  const [sx, sy] = iso(x, y, 0);
+  return (
+    <g>
+      <ellipse cx={sx} cy={sy} rx={26} ry={12} fill="#f6c27a" opacity={0.28} />
+      <Shadow x={x} y={y} rx={10} ry={5} o={0.18} />
+      <rect x={sx - 1.2} y={sy - 18} width={2.4} height={18} fill="#c9cfca" />
+      <circle cx={sx} cy={sy - 26} r={11} fill="url(#lampGlow)" />
     </g>
   );
 }
 
 const SKIN = ["#f6d1b5", "#e9b48f", "#d39a72", "#f2c6a0"];
 const HAIR = ["#3b2416", "#111827", "#7c4a2d", "#a16207", "#1f2937"];
-const SHIRT = ["#16a34a", "#f59e0b", "#3b82f6", "#ec4899", "#8b5cf6", "#14b8a6"];
+// Sokin, tabiiy tuslar (sage tizimiga mos): sage, qum, loy, kulrang-ko'k, chang-pushti, zaytun
+const SHIRT = ["#556158", "#c8a477", "#b7795f", "#6f8193", "#c99a9a", "#8a8f62"];
 
 /** O'tirgan personaj: stul + tana + bosh. `seed` rangi barqaror bo'lishi uchun. */
 function Person({ x, y, seed, facing = "right", active }: { x: number; y: number; seed: number; facing?: "left" | "right"; active?: boolean }) {
@@ -110,7 +125,7 @@ function Person({ x, y, seed, facing = "right", active }: { x: number; y: number
       <circle cx={sx} cy={sy - 47} r={11} fill={`url(#${id}h)`} />
       <path d={`M${sx - 11.5} ${sy - 47} q 1 -15 12 -14 q 12 0 11.5 13 q -4 -7 -12 -7 q -8 0 -11.5 8 z`} fill={hair} />
       {seed % 3 === 1 && <circle cx={sx - 9 * f} cy={sy - 56} r={6} fill={hair} />}
-      {active && <circle cx={sx} cy={sy - 47} r={15.5} fill="none" stroke="#16a34a" strokeWidth={2} strokeDasharray="3 4" className="room-spin" />}
+      {active && <circle cx={sx} cy={sy - 47} r={15.5} fill="none" stroke="#556158" strokeWidth={2} strokeDasharray="3 4" className="room-spin" />}
     </g>
   );
 }
@@ -121,7 +136,7 @@ function Laptop({ x, y, z, glow }: { x: number; y: number; z: number; glow?: boo
   return (
     <g>
       <polygon points={pts(base)} fill="#d4d4d8" />
-      <polygon points={pts(scr)} fill={glow ? "#22c55e" : "#52525b"} />
+      <polygon points={pts(scr)} fill={glow ? "#f6c27a" : "#5b625d"} />
     </g>
   );
 }
@@ -154,6 +169,8 @@ export function IsoScene({ seats, botirActive, children, className }: { seats: S
   // chuqurlik bo'yicha saralangan ob'ektlar
   const items: { depth: number; node: ReactNode }[] = [
     { depth: 0.5, node: <Plant key="pl1" x={0.3} y={0.3} big /> },
+    { depth: 9.2, node: <Lamp key="lamp1" x={8.9} y={2.6} /> },
+    { depth: 8.2, node: <Lamp key="lamp2" x={1.3} y={6.9} /> },
     { depth: 9.4, node: <Plant key="pl2" x={8.9} y={0.4} /> },
     { depth: 9.6, node: <Plant key="pl3" x={0.4} y={9.0} /> },
     { depth: 17.7, node: <Plant key="pl4" x={9.1} y={8.6} /> },
@@ -168,7 +185,7 @@ export function IsoScene({ seats, botirActive, children, className }: { seats: S
           {[0.35, 0.65, 0.5, 0.95, 1.1].map((hgt, i) => {
             const bx = 3.95 + i * 0.38;
             const p = [iso(bx, 0.27, 1.25), iso(bx + 0.22, 0.27, 1.25), iso(bx + 0.22, 0.27, 1.25 + hgt * 0.95), iso(bx, 0.27, 1.25 + hgt * 0.95)];
-            return <polygon key={i} points={pts(p)} fill={i === 4 ? "#16a34a" : "#86efac"} />;
+            return <polygon key={i} points={pts(p)} fill={i === 4 ? "#f0b86a" : "#b2bdb4"} />;
           })}
         </g>
       ),
@@ -217,9 +234,14 @@ export function IsoScene({ seats, botirActive, children, className }: { seats: S
     <div className={cn("relative w-full", className)} style={{ aspectRatio: `${VB.w} / ${VB.h}` }}>
       <svg viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`} className="absolute inset-0 size-full" role="img" aria-label="Agent xonasi: Botir peshtaxta ortida, mijoz agentlari stollarda">
         <defs>
+          <radialGradient id="lampGlow" cx="40%" cy="35%" r="70%">
+            <stop offset="0%" stopColor="#fffaf0" />
+            <stop offset="55%" stopColor="#fbe3b8" />
+            <stop offset="100%" stopColor="#f2bf7c" />
+          </radialGradient>
           <linearGradient id="floor" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor="#f1f5f3" />
+            <stop offset="100%" stopColor="#eef1ee" />
           </linearGradient>
         </defs>
         <g strokeLinejoin="round">
@@ -234,7 +256,7 @@ export function IsoScene({ seats, botirActive, children, className }: { seats: S
           </g>
         ))}
         {/* gilam */}
-        <polygon points={pts([iso(4.6, 3.6), iso(8.4, 3.6), iso(8.4, 6.9), iso(4.6, 6.9)])} fill="#dcfce7" opacity={0.7} />
+        <polygon points={pts([iso(4.6, 3.6), iso(8.4, 3.6), iso(8.4, 6.9), iso(4.6, 6.9)])} fill="#e8ece8" opacity={0.9} />
         {items.map((it) => it.node)}
       </svg>
       {children}

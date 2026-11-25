@@ -68,7 +68,7 @@ export function MeTelegram() {
 
   if (st.data.connected || done)
     return (
-      <div className="slide-up mt-8 space-y-4 rounded-3xl border border-green-500/40 bg-tint-1 p-5 shadow-soft sm:p-6" role="status">
+      <div className="slide-up mt-8 space-y-4 rounded-2xl border border-green-500/40 bg-tint-1 p-5 shadow-soft sm:p-6" role="status">
         <p className="flex items-center gap-2 font-display text-2xl font-bold text-green-900">
           <CheckCircle2 className="size-7 text-green-600" aria-hidden="true" /> Ulandi ✅
         </p>
@@ -117,7 +117,7 @@ export function MeTelegram() {
           </li>
         ))}
       </ol>
-      <div className="rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-border">
             <BrandLogo brand="telegram" height={24} />

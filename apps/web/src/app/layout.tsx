@@ -7,9 +7,9 @@ import { BottomNav, SiteHeader } from "@/components/site-nav";
 import { Analytics } from "@/components/analytics";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-// Shriftlar lokal (public emas, src/app/fonts): Manrope (UI) va Unbounded (sarlavhalar), Google Fonts SIL OFL. Offline build ishlaydi.
-const sans = localFont({ src: "./fonts/Manrope-latin.woff2", variable: "--font-sans-ui", weight: "200 800", display: "swap" });
-const display = localFont({ src: "./fonts/Unbounded-latin.woff2", variable: "--font-display-ui", weight: "300 900", display: "swap" });
+// Shrift lokal (src/app/fonts): Inter — TezDetal bilan bir xil UI tizimi; sarlavhalar ham Inter (Google Fonts SIL OFL). Offline build ishlaydi.
+const sans = localFont({ src: "./fonts/Inter-latin.woff2", variable: "--font-sans-ui", weight: "300 800", display: "swap" });
+const display = localFont({ src: "./fonts/Inter-latin.woff2", variable: "--font-display-ui", weight: "300 800", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

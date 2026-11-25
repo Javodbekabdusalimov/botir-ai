@@ -84,7 +84,7 @@ export function RegisterForm() {
                     on ? "border-primary bg-tint-1 shadow-soft" : "border-border bg-card hover:border-tint-3",
                   )}
                 >
-                  <span className={cn("grid size-12 shrink-0 place-items-center rounded-xl", on ? "bg-primary text-green-950" : "bg-muted text-muted-foreground")}>
+                  <span className={cn("grid size-12 shrink-0 place-items-center rounded-xl", on ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
                     <Icon className="size-6" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1">

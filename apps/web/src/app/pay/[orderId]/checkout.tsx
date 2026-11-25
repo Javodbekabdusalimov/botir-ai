@@ -117,8 +117,8 @@ export function Checkout({ orderId }: { orderId: string }) {
 
   if (notFound) {
     return (
-      <div className="min-h-[calc(100dvh-4rem)] bg-gradient-to-b from-tint-1 via-background to-tint-1/60">
-        <section role="alert" className="slide-up mx-4 mt-16 max-w-md sm:mx-auto rounded-3xl border border-border bg-card p-8 text-center shadow-lift sm:mt-24">
+      <div className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-7rem)] bg-gradient-to-b from-tint-1 via-background to-tint-1/60">
+        <section role="alert" className="slide-up mx-4 mt-16 max-w-md sm:mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-lift sm:mt-24">
           <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
             <SearchX className="size-7" aria-hidden="true" />
           </span>
@@ -145,7 +145,7 @@ export function Checkout({ orderId }: { orderId: string }) {
   const step = phase === "paid" ? 2 : 1;
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] bg-gradient-to-b from-tint-1 via-background to-tint-1/60">
+    <div className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-7rem)] bg-gradient-to-b from-tint-1 via-background to-tint-1/60">
       <div className="mx-auto max-w-[1100px] px-4 py-8 sm:py-12">
         <nav aria-label="Yo'l" className="mb-3 text-xs font-medium text-muted-foreground">
           <Link href="/" className="hover:text-foreground">Bosh</Link> / <Link href="/assistant" className="hover:text-foreground">Yordamchi</Link> / <span className="text-foreground">To&apos;lov</span>
@@ -159,7 +159,7 @@ export function Checkout({ orderId }: { orderId: string }) {
         </div>
 
         {phase === "paid" ? (
-          <section role="status" className="slide-up mx-auto max-w-xl rounded-3xl border border-green-500/30 bg-card p-8 text-center shadow-lift">
+          <section role="status" className="slide-up mx-auto max-w-xl rounded-2xl border border-green-500/30 bg-card p-8 text-center shadow-lift">
             <span className="mx-auto grid size-20 place-items-center rounded-full bg-green-600 text-white shadow-lift">
               <svg viewBox="0 0 24 24" className="check-draw size-10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M5 12.5l4.5 4.5L19 7.5" />
@@ -187,7 +187,7 @@ export function Checkout({ orderId }: { orderId: string }) {
           </section>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-            <section aria-labelledby="pm" className="rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
+            <section aria-labelledby="pm" className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
               <h2 id="pm" className="font-sans text-lg font-extrabold">To&apos;lov usulini tanlang</h2>
               <div role="radiogroup" aria-labelledby="pm" className="mt-4 grid gap-3">
                 {METHODS.map((m) => {
@@ -241,7 +241,7 @@ export function Checkout({ orderId }: { orderId: string }) {
               </ul>
             </section>
 
-            <aside aria-label="Buyurtma xulosasi" className="h-fit overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+            <aside aria-label="Buyurtma xulosasi" className="h-fit overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
               <div className="relative h-32">
                 <Image src={bizPhoto(sum?.businessId ?? "")} alt="" fill priority sizes="384px" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-green-950/80 to-transparent" aria-hidden="true" />

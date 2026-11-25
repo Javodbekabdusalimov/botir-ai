@@ -56,7 +56,7 @@ export function MeActions() {
       {err && <ErrorBox message={err} />}
       <ul className="space-y-4">
         {sorted.map((a) => (
-          <li key={a.id} className={cn("rounded-3xl border bg-card p-5 shadow-soft", a.status === "pending" ? "border-amber-300" : "border-border")}>
+          <li key={a.id} className={cn("rounded-2xl border bg-card p-5 shadow-soft", a.status === "pending" ? "border-amber-300" : "border-border")}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Kimga</p>

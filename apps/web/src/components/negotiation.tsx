@@ -228,7 +228,7 @@ export function OfferCard({
   }, [focusConfirm, ready, result]);
   const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
-    <div className="slide-up overflow-hidden rounded-3xl border border-primary/50 bg-card shadow-lift">
+    <div className="slide-up overflow-hidden rounded-2xl border border-primary/50 bg-card shadow-lift">
       <div className="relative isolate overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5">
         <Image src={bizPhoto(best.businessId)} alt="" fill sizes="400px" className="-z-10 object-cover" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/90 via-green-950/60 to-green-900/40" aria-hidden="true" />
@@ -386,7 +386,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
   if (status === "paid")
     return (
       <div ref={(el) => el?.scrollIntoView({ block: "center", behavior: "smooth" })} className="slide-up relative mt-4 overflow-hidden rounded-2xl border border-green-500/40 bg-tint-1 p-5 text-center" role="status">
-        <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-green-950">
+        <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-white">
           <svg viewBox="0 0 24 24" className="check-draw size-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>

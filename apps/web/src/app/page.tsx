@@ -50,21 +50,19 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(landingJsonLd()).replace(/</g, "\\u003c") }} />
 
       <section className="khatam relative isolate overflow-hidden">
-        <div className="pointer-events-none absolute -left-24 top-10 -z-10 size-96 rounded-full bg-green-300/30 blur-3xl" aria-hidden="true" />
-        <div className="pointer-events-none absolute -right-24 -top-10 -z-10 size-[28rem] rounded-full bg-emerald-200/50 blur-3xl" aria-hidden="true" />
-        <div className="mx-auto grid max-w-[1200px] gap-10 px-4 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-24">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:px-8 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-24">
           <div>
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-tint-3 bg-white/70 px-3 py-1.5 text-xs font-semibold text-green-900 shadow-sm backdrop-blur">
+            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-200 bg-white px-3 py-1.5 text-xs font-semibold text-green-700">
               <LogoMark className="size-4" /> O&apos;zbekiston uchun AI agentlar tarmog&apos;i
             </p>
-            <h1 className="text-balance font-display text-[2.1rem] font-bold leading-[1.08] sm:text-5xl lg:text-[3.1rem]">
-              Agent agent bilan <span className="text-grad">gaplashadi</span>, siz faqat <span className="whitespace-nowrap rounded-xl bg-tint-2 px-2">tasdiqlaysiz.</span>
+            <h1 className="text-balance font-display text-[2rem] font-bold leading-[1.12] text-slate-900 sm:text-[2.6rem] lg:text-[2.9rem]">
+              Agent agent bilan <span className="text-grad">gaplashadi</span>, siz faqat <span className="whitespace-nowrap text-grad">tasdiqlaysiz.</span>
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
               Biznesga o&apos;zbekcha gaplashadigan AI sotuvchi, mijozga o&apos;zi muzokara qiladigan shaxsiy yordamchi.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base font-semibold shadow-lift")}>
+              <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base font-semibold")}>
                 Biznesni ulash <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
               <Link href="/assistant" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "h-12 px-6 text-base font-semibold")}>
@@ -83,7 +81,7 @@ export default function Home() {
       </section>
 
       <section className="border-y border-border bg-white" aria-label="Integratsiyalar va to'lov">
-        <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-5 px-4 py-6 md:flex-row md:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 px-4 sm:px-6 lg:px-8 py-6 md:flex-row md:justify-between">
           <p className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <ShieldCheck className="size-4 text-green-700" aria-hidden="true" /> To&apos;lov va kanallar
           </p>
@@ -99,8 +97,8 @@ export default function Home() {
         </div>
       </section>
 
-      <Reveal as="section" className="mx-auto max-w-[1200px] px-4 pt-14">
-        <dl className="stage-deep grid grid-cols-2 gap-px overflow-hidden rounded-3xl lg:grid-cols-4">
+      <Reveal as="section" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-14">
+        <dl className="stage-deep grid grid-cols-2 gap-px overflow-hidden rounded-2xl lg:grid-cols-4">
           {FACTS.map((x) => (
             <div key={x.label} className="bg-white/[0.04] p-6 sm:p-8">
               <dd className="font-display text-3xl font-bold tabular-nums text-white sm:text-4xl">
@@ -113,10 +111,10 @@ export default function Home() {
         </dl>
       </Reveal>
 
-      <section className="mx-auto max-w-[1200px] px-4 py-14" aria-labelledby="who-h">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14" aria-labelledby="who-h">
         <h2 id="who-h" className="max-w-2xl text-balance text-3xl font-bold sm:text-4xl">Biznes ham, mijoz ham yutadi</h2>
         <Reveal className="mt-8 grid gap-4 md:grid-cols-6">
-          <article className="group relative isolate flex min-h-[26rem] flex-col justify-end overflow-hidden rounded-3xl md:col-span-4 md:row-span-2">
+          <article className="group relative isolate flex min-h-[26rem] flex-col justify-end overflow-hidden rounded-2xl md:col-span-4 md:row-span-2">
             <Image src="/photos/plov.jpg" alt="Osh markazida oshpaz katta qozonda osh tayyorlamoqda" fill priority sizes="(min-width: 768px) 780px, 100vw" className="-z-10 object-cover transition-transform duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/90 via-green-950/40 to-transparent" aria-hidden="true" />
             <div className="p-6 text-white sm:p-8">
@@ -129,7 +127,7 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="lift flex flex-col overflow-hidden rounded-3xl border border-border bg-card md:col-span-2">
+          <article className="lift flex flex-col overflow-hidden rounded-2xl border border-border bg-card md:col-span-2">
             <div className="relative aspect-[16/9]">
               <Image src="/photos/customer.jpg" alt="Telefonga qarab jilmayayotgan mijoz" fill sizes="(min-width: 768px) 380px, 100vw" className="object-cover" />
             </div>
@@ -140,7 +138,7 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="lift flex flex-col overflow-hidden rounded-3xl border border-tint-3 bg-gradient-to-br from-tint-1 to-white p-5 md:col-span-2">
+          <article className="lift flex flex-col overflow-hidden rounded-2xl border border-tint-3 bg-gradient-to-br from-tint-1 to-white p-5 md:col-span-2">
             <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Handshake className="size-5 text-green-700" aria-hidden="true" /> Agentlar muzokarasi</h3>
             <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">So&apos;rov, taklif, qarshi taklif, bitim. Narx katalogdan, chegirma biznes limitidan oshmaydi.</p>
             <Link href="/live/demo-chorsu" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-green-700 hover:underline">Jonli ko&apos;rish <ArrowRight className="size-4" aria-hidden="true" /></Link>
@@ -149,7 +147,7 @@ export default function Home() {
       </section>
 
       <section id="how" className="scroll-mt-16 bg-tint-1/70 py-14" aria-labelledby="how-h">
-        <div className="mx-auto max-w-[1200px] px-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 id="how-h" className="text-3xl font-extrabold sm:text-4xl">Qanday ishlaydi</h2>
           <Reveal as="ol" className="relative mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
             <span className="absolute left-[16.6%] right-[16.6%] top-6 hidden h-px bg-gradient-to-r from-transparent via-green-400 to-transparent md:block" aria-hidden="true" />
@@ -157,7 +155,7 @@ export default function Home() {
               const Icon = s.icon;
               return (
                 <li key={s.title} className="relative flex gap-4 md:flex-col md:items-center md:text-center">
-                  <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-green-950 shadow-lift ring-4 ring-tint-1">
+                  <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-white shadow-lift ring-4 ring-tint-1">
                     <Icon className="size-5" aria-hidden="true" />
                     <span className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-green-900 text-xs font-bold text-white">{i + 1}</span>
                   </span>
@@ -172,12 +170,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1200px] items-center gap-8 px-4 py-14 lg:grid-cols-[1fr_1.2fr]" aria-labelledby="net-h">
+      <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8 py-14 lg:grid-cols-[1fr_1.2fr]" aria-labelledby="net-h">
         <div>
           <h2 id="net-h" className="text-balance text-3xl font-extrabold sm:text-4xl">Tarmoq har kuni boyiydi</h2>
           <p className="mt-3 max-w-md text-muted-foreground">Har yangi biznes va har yangi mijoz tarmoqni boyitadi: agentlar ko&apos;proq variantni solishtiradi, narx tushadi, buyurtma ko&apos;payadi.</p>
         </div>
-        <Reveal className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
+        <Reveal className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
           <NetworkDiagram />
         </Reveal>
       </section>
@@ -187,10 +185,10 @@ export default function Home() {
         <p className="mt-2 text-muted-foreground">Mijozlar uchun yordamchi bepul.</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {PLANS.map((p) => (
-            <article key={p.name} className={cn("lift rounded-3xl border p-6", p.featured ? "border-primary bg-gradient-to-b from-tint-1 to-white shadow-lift" : "border-border bg-card shadow-soft")}>
+            <article key={p.name} className={cn("lift rounded-2xl border p-6", p.featured ? "border-primary bg-gradient-to-b from-tint-1 to-white shadow-lift" : "border-border bg-card shadow-soft")}>
               <div className="flex items-center justify-between">
                 <h3 className="font-display text-2xl font-bold">{p.name}</h3>
-                {p.featured && <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-green-950">Mashhur</span>}
+                {p.featured && <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">Mashhur</span>}
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{p.note}</p>
               <p className="mt-4 font-display text-3xl font-extrabold tabular-nums">{p.price}</p>
@@ -224,13 +222,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1200px] px-4 py-16" aria-label="Boshlash">
-        <div className="stage-deep relative overflow-hidden rounded-3xl px-6 py-12 text-center sm:px-12 sm:py-16">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16" aria-label="Boshlash">
+        <div className="stage-deep relative overflow-hidden rounded-2xl px-6 py-12 text-center sm:px-12 sm:py-16">
           <Sparkles className="mx-auto size-7 text-green-300" aria-hidden="true" />
           <h2 className="mx-auto mt-3 max-w-2xl text-balance text-3xl font-extrabold text-white sm:text-4xl">Agentlar sizning o&apos;rningizga gaplashsin</h2>
           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base font-semibold")}>Biznesni ulash</Link>
-            <Link href="/live/demo-chorsu" className="inline-flex h-12 items-center justify-center rounded-lg border border-white/40 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white">
+            <Link href="/register" className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-base font-semibold text-green-700 transition-colors hover:bg-green-50">Biznesni ulash</Link>
+            <Link href="/live/demo-chorsu" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/40 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white">
               Jonli namunani ko&apos;rish
             </Link>
           </div>

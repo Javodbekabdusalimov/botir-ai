@@ -75,7 +75,7 @@ export function PlanBar() {
   return (
     <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold", pro ? "bg-primary text-green-950" : "bg-muted text-foreground")}>
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold", pro ? "bg-primary text-white" : "bg-muted text-foreground")}>
           <Crown className="size-4" aria-hidden="true" /> {pro ? "Pro" : "Start"}
         </span>
         <span className="text-sm text-muted-foreground">

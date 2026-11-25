@@ -6,7 +6,7 @@ export const metadata = pageMeta({ title: "Kirish", description: "Botir AI hisob
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="mx-auto h-96 max-w-md animate-pulse rounded-3xl bg-muted" />}>
+    <Suspense fallback={<div className="mx-auto h-96 max-w-md animate-pulse rounded-2xl bg-muted" />}>
       <LoginForm />
     </Suspense>
   );

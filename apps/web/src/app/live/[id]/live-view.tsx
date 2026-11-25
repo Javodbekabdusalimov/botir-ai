@@ -27,7 +27,7 @@ function Stepper({ active }: { active: number }) {
             <span
               className={cn(
                 "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors duration-300",
-                done ? "bg-green-600 text-white" : current ? "bg-primary text-green-950 ring-4 ring-green-200" : "border border-border bg-white text-muted-foreground",
+                done ? "bg-green-600 text-white" : current ? "bg-primary text-white ring-4 ring-green-200" : "border border-border bg-white text-muted-foreground",
               )}
             >
               {done ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
@@ -108,9 +108,9 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   }
 
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-col px-4 py-5 lg:h-[calc(100dvh-2.9rem)] lg:py-6">
+    <div className="mx-auto flex max-w-7xl flex-col px-4 sm:px-6 lg:px-8 py-5 lg:h-[calc(100dvh-5.9rem)] lg:py-6">
       <header className="mb-4 shrink-0">
-        <p className="inline-flex items-center gap-2 rounded-full border border-tint-3 bg-white/70 px-3 py-1 text-xs font-semibold text-green-900 backdrop-blur">
+        <p className="inline-flex items-center gap-2 rounded-full border border-tint-3 bg-white/70 px-3 py-1 text-xs font-semibold text-green-900">
           <span className="size-1.5 rounded-full bg-green-500" aria-hidden="true" /> Agentlar muzokarasi
         </p>
         <h1 className="mt-3 text-balance text-2xl font-bold sm:text-4xl">
@@ -129,7 +129,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
           <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
           <span className="flex-1">{friendlyError(state.error)}</span>
           {isAiUnavailable(state.error) && id !== "demo-chorsu" && (
-            <Link href="/live/demo-chorsu" className="inline-flex h-11 items-center rounded-lg bg-primary px-4 font-semibold text-green-950 hover:opacity-90">
+            <Link href="/live/demo-chorsu" className="inline-flex h-11 items-center rounded-lg bg-primary px-4 font-semibold text-white hover:opacity-90">
               Namunani ko&apos;rish
             </Link>
           )}

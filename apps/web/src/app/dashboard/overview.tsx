@@ -7,7 +7,7 @@ import { useCountUp } from "@/hooks/use-count-up";
 import { Empty, ErrorBox, Loading, Panel } from "@/components/states";
 import { useAsync } from "@/hooks/use-async";
 import { useBusinessId } from "@/hooks/use-business";
-import { getAnalytics, getChats, getOrders } from "@/lib/api";
+import { getAnalytics, getChats, getKnowledge, getOrders } from "@/lib/api";
 import { formatSom, formatWhen, shortId } from "@/lib/format";
 import type { OrderStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,8 @@ export function Overview() {
   const orders = useAsync(`orders:${id}`, () => getOrders(id));
   const chats = useAsync(`chats:${id}`, () => getChats(id));
   const stats = useAsync(`stats:${id}`, () => getAnalytics(id));
+  const kb = useAsync(`kb:${id}`, () => getKnowledge(id));
+  const ai = kb.data?.metrics;
 
   return (
     <div className="space-y-6">
@@ -32,7 +34,7 @@ export function Overview() {
         <Stat icon={Receipt} tone="green" label="Botir orqali buyurtmalar" value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid" || o.status === "confirmed").length} ta tasdiqlangan` : undefined} />
         <Stat icon={MessagesSquare} tone="amber" label="AI muzokaralar" value={stats.data ? stats.data.topRequests.reduce((s, r) => s + r.count, 0) : undefined} hint={stats.data ? `${stats.data.topRequests.length} xil so'rov` : undefined} />
         <Stat icon={SearchX} tone="blue" label="Topilmagan so'rovlar" value={stats.data?.notFound.length} hint={stats.data ? (stats.data.notFound.length ? "Katalogga qo'shish mumkin" : "Hammasi katalogda bor") : undefined} />
-        <Stat icon={Bot} tone="violet" label="AI javob bergan" value={chats.data?.length ? Math.round((chats.data.filter((c) => !c.needsHuman).length / chats.data.length) * 100) : chats.data ? 0 : undefined} suffix="%" hint={chats.data ? `${chats.data.length} ta suhbat` : undefined} />
+        <Stat icon={Bot} tone="violet" label="AI javob bergan" value={ai ? (ai.aiAnsweredPct ?? 0) : undefined} display={ai && ai.aiAnsweredPct == null ? "—" : undefined} suffix="%" hint={ai ? (ai.aiTurns ? `${ai.aiTurns} ta javob` : "Hali suhbat yo'q") : undefined} />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -176,7 +178,7 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-function Stat({ icon: Icon, label, value, money, suffix, tone, hint, spark }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | undefined; money?: boolean; suffix?: string; tone: keyof typeof TONES; hint?: string; spark?: number[] }) {
+function Stat({ icon: Icon, label, value, display, money, suffix, tone, hint, spark }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | undefined; display?: string; money?: boolean; suffix?: string; tone: keyof typeof TONES; hint?: string; spark?: number[] }) {
   const n = useCountUp(value);
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift">
@@ -190,7 +192,7 @@ function Stat({ icon: Icon, label, value, money, suffix, tone, hint, spark }: { 
         {value === undefined ? (
           <div className="h-8 w-24 animate-pulse rounded-lg bg-muted" role="status" aria-label="Yuklanmoqda" />
         ) : (
-          <p className="min-w-0 break-words font-display text-lg font-bold tabular-nums sm:text-xl xl:text-[22px]">{money ? formatSom(n) : `${n}${suffix ?? ""}`}</p>
+          <p className="min-w-0 break-words font-display text-lg font-bold tabular-nums sm:text-xl xl:text-[22px]">{display ?? (money ? formatSom(n) : `${n}${suffix ?? ""}`)}</p>
         )}
         {spark && <Spark data={spark} color={STROKE[tone]} />}
       </div>

@@ -135,9 +135,14 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
               Yangi so&apos;rov
             </Link>
           ) : (
-            <Button variant="outline" className="h-11 px-4" onClick={onRetry}>
-              <RotateCw className="size-4" aria-hidden="true" /> Qayta ulanish
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="h-11 px-4" onClick={onRetry}>
+                <RotateCw className="size-4" aria-hidden="true" /> Qayta ulanish
+              </Button>
+              <Link href="/assistant" className="inline-flex h-11 items-center rounded-lg bg-primary px-4 font-semibold text-white hover:opacity-90">
+                Boshqa so&apos;rov yuborish
+              </Link>
+            </div>
           )}
         </div>
       )}

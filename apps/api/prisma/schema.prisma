@@ -32,6 +32,8 @@ model Business {
   geoLng         Float?
   workHours      String // JSON WorkHours
   maxDiscountPct Int       @default(0)
+  rating         Float     @default(4.5)
+  distanceKm     Float     @default(3)
   lang           String    @default("uz")
   ownerUserId    String    @default("demo-owner")
   isDemo         Boolean   @default(false)
@@ -158,6 +160,7 @@ model AgentOffer {
   total         Int
   discountPct   Int
   status        String
+  upsell        String? // JSON {productId,name,price}, not in total
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?

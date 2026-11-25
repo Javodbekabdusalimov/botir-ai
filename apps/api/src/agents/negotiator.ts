@@ -16,6 +16,8 @@ export interface NegotiationInput {
   task: UserTask;
   lang: Lang;
   sessionId?: string; // pass your own (e.g. Prisma id) to stream SSE before start resolves
+  memory?: string[]; // remembered user preferences, injected into the REQUEST
+  competitors?: number; // other businesses negotiating the same task in parallel
   onEvent?: NegotiationEventHandler;
 }
 
@@ -62,15 +64,17 @@ export class Negotiator {
 
     emit({ type: 'status', status: 'running' });
     try {
-      await say('personal_agent', personalAgent.requestText(input.task, input.lang));
+      await say('personal_agent', personalAgent.requestText(input.task, input.lang, input.memory));
       for (round = 1; round <= MAX_ROUNDS; round++) {
         const turn = await businessAgent.respond({
           sessionId, business: input.business, products, history: transcript, round, lang: input.lang,
+          competitors: input.competitors,
         });
         await say('biz_agent', turn.reply);
         for (const v of turn.violations) await say('system', `PolicyGuard: ${v}`);
         if (turn.offer) {
-          offer = turn.offer;
+          // Keep an earlier upsell suggestion if the business did not repeat it in a later round.
+          offer = turn.offer.upsell || !offer?.upsell ? turn.offer : { ...turn.offer, upsell: offer.upsell };
           this.offers.set(offer.id, offer);
           await store.saveOffer(offer);
           emit({ type: 'offer', offer });

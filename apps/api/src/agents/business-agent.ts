@@ -32,6 +32,8 @@ export interface BusinessTurnInput {
   lang: Lang;
   /** Override for evaluation; when omitted the active PromptVersion from the store is used. */
   extraInstructions?: string;
+  /** How many other businesses negotiate the same task in parallel (0/undefined = no competition). */
+  competitors?: number;
 }
 
 export interface BusinessTurnResult {
@@ -44,6 +46,7 @@ export interface BusinessTurnResult {
 interface LlmBusinessReply {
   reply: string;
   offer?: OfferDraft | null;
+  upsell?: { productId?: string } | null;
   confidence?: number;
 }
 
@@ -90,6 +93,7 @@ export class BusinessAgent {
           total: computeTotal(products, draft),
           discountPct: draft.discountPct,
           status: 'proposed',
+          upsell: pickUpsell(products, draft, data.upsell?.productId),
         };
         reply = `${reply}\n${renderOfferLine(offer, products, input.lang)}`;
       } else {
@@ -120,9 +124,13 @@ export class BusinessAgent {
       `- Chegirma ${b.maxDiscountPct}% dan oshmasin. Birinchi taklifda chegirma bermaslikka harakat qil, mijoz so'rasa — asta-sekin ber.`,
       `- Ish vaqtidan tashqari vaqtga band qilma — boshqa vaqt taklif qil.`,
       `- Jami summani matnda YOZMA — tizim katalogdan o'zi hisoblab qo'shadi.`,
+      `- Taklif bilan birga ixtiyoriy BITTA qo'shimcha katalog mahsulotini (salat, choy, non...) "upsell" qilib tavsiya qilishing mumkin — u jamiga qo'shilmaydi, mijoz o'zi tanlaydi.`,
+      ...(input.competitors
+        ? [`- Mijoz agenti bir vaqtda yana ${input.competitors} ta joy bilan muzokara qilyapti va eng yaxshi narx+reyting+masofani tanlaydi. Raqobatbardosh bo'l, lekin chegirma baribir ${b.maxDiscountPct}% dan OSHMASIN.`]
+        : []),
       `- Qisqa, xushmuomala, 1–3 gap. ${langRule(input.lang)}`,
       ...(extra.trim() ? [`Qo'shimcha ko'rsatmalar (biznes egasi tasdiqlagan):\n${extra.trim()}`] : []),
-      'JSON formati: {"reply": string, "offer": {"items":[{"productId": string, "qty": number}], "discountPct": number} | null, "confidence": number (0..1)}',
+      'JSON formati: {"reply": string, "offer": {"items":[{"productId": string, "qty": number}], "discountPct": number} | null, "upsell": {"productId": string} | null, "confidence": number (0..1)}',
     ].join('\n');
   }
 }
@@ -143,9 +151,22 @@ export function renderOfferLine(offer: Offer, products: Product[], lang: Lang): 
   const byId = new Map(products.map((p) => [p.id, p]));
   const items = offer.items.map((it) => `${byId.get(it.productId)?.name ?? it.productId} × ${it.qty}`).join(', ');
   const disc = offer.discountPct ? (lang === 'ru' ? `, скидка ${offer.discountPct}%` : `, chegirma ${offer.discountPct}%`) : '';
+  const up = offer.upsell
+    ? lang === 'ru'
+      ? ` Доп.: ${offer.upsell.name} — ${formatSum(offer.upsell.price)} (не входит в итог).`
+      : ` Qo'shimcha: ${offer.upsell.name} — ${formatSum(offer.upsell.price)} (jamiga kirmagan).`
+    : '';
   return lang === 'ru'
-    ? `Предложение: ${items}${disc}. Итого: ${formatSum(offer.total)}`
-    : `Taklif: ${items}${disc}. Jami: ${formatSum(offer.total)}`;
+    ? `Предложение: ${items}${disc}. Итого: ${formatSum(offer.total)}.${up}`
+    : `Taklif: ${items}${disc}. Jami: ${formatSum(offer.total)}.${up}`;
+}
+
+/** Upsell must be a priced catalog item that is not already in the offer; price always from the catalog. */
+function pickUpsell(products: Product[], draft: OfferDraft, productId?: string): Offer['upsell'] {
+  if (!productId) return undefined;
+  const p = products.find((x) => x.id === String(productId));
+  if (!p || p.price <= 0 || draft.items.some((it) => it.productId === p.id)) return undefined;
+  return { productId: p.id, name: p.name, price: p.price };
 }
 
 function clamp01(n: number): number {

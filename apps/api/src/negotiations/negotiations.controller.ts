@@ -45,7 +45,7 @@ export class NegotiationsController {
   }
 
   @Post('negotiations/:id/confirm')
-  async confirm(@Param('id') id: string, @Body() body: { businessId: string }) {
-    return ok(await this.negotiations.confirm(id, body?.businessId));
+  async confirm(@Param('id') id: string, @Body() body: { businessId: string; acceptUpsell?: boolean }) {
+    return ok(await this.negotiations.confirm(id, body?.businessId, body?.acceptUpsell === true));
   }
 }

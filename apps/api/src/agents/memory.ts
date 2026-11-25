@@ -17,7 +17,9 @@ export class Memory {
       purpose: 'memory',
       system: [
         "Mijoz haqida keyingi suhbatlarda foydali bo'ladigan barqaror faktlarni ajrat",
-        "(odatlar, afzal ko'rgan joy/vaqt, oila soni, mashina, byudjetga munosabat). Bir martalik detallarni yozma.",
+        "(odatlar, ovqat istaklari masalan \"oshni piyozsiz yeydi\", afzal ko'rgan joy masalan \"deraza yonida\",",
+        "odatdagi kishi soni masalan \"odatda 6 kishi\", afzal vaqt, mashina, byudjetga munosabat). Bir martalik detallarni (aniq sana) yozma.",
+        "Faktda mijozning o'z so'zini saqla (masalan \"piyozsiz\").",
         "Har fakt qisqa o'zbekcha gap. weight 0..1 — qanchalik muhim. Faqat matnda bor narsani yoz.",
         'JSON: {"facts":[{"fact":string,"weight":number}]}',
       ].join('\n'),
@@ -37,16 +39,20 @@ export class Memory {
     return facts;
   }
 
-  /** Top facts (weight, then recency) as prompt-ready bullet list. Empty string if none. */
-  async contextFor(userId: string, limit = 5): Promise<string> {
-    const facts = await this.store.getMemoryFacts(userId);
+  /** Top distinct stable facts (weight ≥ minWeight, then recency). One-off details (low weight) are skipped. */
+  async factsFor(userId: string, limit = 5, minWeight = 0.5): Promise<string[]> {
+    const facts = (await this.store.getMemoryFacts(userId)).filter((f) => f.weight >= minWeight);
     const seen = new Set<string>();
     return facts
       .slice()
       .sort((a, b) => b.weight - a.weight || b.at.localeCompare(a.at))
-      .filter((f) => !seen.has(f.fact) && seen.add(f.fact))
+      .filter((f) => !seen.has(f.fact.toLowerCase()) && seen.add(f.fact.toLowerCase()))
       .slice(0, limit)
-      .map((f) => `- ${f.fact}`)
-      .join('\n');
+      .map((f) => f.fact);
+  }
+
+  /** Top facts as prompt-ready bullet list. Empty string if none. */
+  async contextFor(userId: string, limit = 5): Promise<string> {
+    return (await this.factsFor(userId, limit)).map((f) => `- ${f}`).join('\n');
   }
 }

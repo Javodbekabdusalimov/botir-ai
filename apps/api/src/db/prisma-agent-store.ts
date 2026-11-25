@@ -44,6 +44,7 @@ export class PrismaAgentStore implements AgentStore {
     const data = {
       sessionId: offer.sessionId, negotiationId, businessId, items: JSON.stringify(offer.items),
       total: offer.total, discountPct: offer.discountPct, status: offer.status,
+      upsell: offer.upsell ? JSON.stringify(offer.upsell) : null,
     };
     await this.db.agentOffer.upsert({ where: { id: offer.id }, create: { id: offer.id, ...data }, update: data });
   }

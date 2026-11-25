@@ -1,6 +1,12 @@
 // Demo rejim: backend yo'q bo'lganda yoki NEXT_PUBLIC_DEMO=1 da ishlaydigan realistik stsenariylar.
 import type {
   A2APayload,
+  KnowledgeFact,
+  KnowledgeFactPatch,
+  KnowledgeOverview,
+  KnowledgeSource,
+  KnowledgeSourceKind,
+  PendingQuestion,
   AgentRequestResult,
   Analytics,
   Business,
@@ -481,4 +487,45 @@ export function mockPaymentStatus(orderId: string): PaymentStatus {
     else sessionStorage.setItem(key, String(started));
   } catch {}
   return { status: Date.now() - started >= 5000 ? "paid" : "pending" };
+}
+
+/* ---- Biznes bilimi (demo) ---- */
+const kbNow = () => new Date().toISOString();
+const KB_SOURCES: KnowledgeSource[] = [
+  { id: "src-1", kind: "text", label: "Menyu va ish vaqti", status: "ready", factsCount: 4, createdAt: kbNow() },
+];
+const KB_FACTS: KnowledgeFact[] = [
+  { id: "f-1", sourceId: "src-1", sourceKind: "text", kind: "catalog", topic: "catalog", content: "To'y oshi, 1 porsiya", price: 45000, unit: "porsiya", confidence: 0.92, status: "draft", createdAt: kbNow() },
+  { id: "f-2", sourceId: "src-1", sourceKind: "text", kind: "policy", topic: "delivery", content: "Chilonzor ichida yetkazib berish bepul, 40 daqiqada", confidence: 0.81, status: "draft", createdAt: kbNow() },
+  { id: "f-3", sourceId: "src-1", sourceKind: "text", kind: "profile", topic: "hours", content: "Har kuni 09:00–23:00", confidence: 0.95, status: "confirmed", createdAt: kbNow() },
+  { id: "f-4", sourceId: "src-1", sourceKind: "text", kind: "faq", topic: "payment", question: "Karta bilan to'lasa bo'ladimi?", content: "Ha, Click va Payme orqali", confidence: 0.42, status: "draft", createdAt: kbNow() },
+];
+const KB_QUESTIONS: PendingQuestion[] = [
+  { id: "q-1", question: "Bolalar maydonchasi bormi?", timesAsked: 3, status: "open", createdAt: kbNow() },
+];
+export const mockKnowledge = (): KnowledgeOverview => ({
+  sources: KB_SOURCES,
+  facts: KB_FACTS,
+  questions: KB_QUESTIONS,
+  metrics: { aiAnsweredPct: null, aiTurns: 0, minutesToReady: null, missingTopics: ["booking"] },
+});
+export function mockKnowledgeSource(kind: KnowledgeSourceKind, label: string) {
+  const s = { id: `src-${Date.now()}`, kind, label: label.slice(0, 60), status: "ready" as const, factsCount: 0, createdAt: kbNow() };
+  KB_SOURCES.unshift(s);
+  return s;
+}
+export function mockPatchFact(id: string, patch: KnowledgeFactPatch) {
+  const f = KB_FACTS.find((x) => x.id === id) ?? KB_FACTS[0];
+  Object.assign(f, patch);
+  return f;
+}
+export function mockAnswerQuestion(id: string, answer: string) {
+  const q = KB_QUESTIONS.find((x) => x.id === id) ?? KB_QUESTIONS[0];
+  Object.assign(q, { status: "answered", answer });
+  return q;
+}
+export function mockDismissQuestion(id: string) {
+  const q = KB_QUESTIONS.find((x) => x.id === id) ?? KB_QUESTIONS[0];
+  q.status = "dismissed";
+  return q;
 }

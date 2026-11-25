@@ -403,3 +403,95 @@ export const API = {
   loopApprove: 'POST /loop/proposals/:id/approve',
   loopReject: 'POST /loop/proposals/:id/reject',
 } as const;
+
+// ---------- Biznes bilimi (B2B onboarding: manbalar → qoralama faktlar → egasi tasdiqlaydi → agent konteksti) ----------
+export type KnowledgeSourceKind = 'photo' | 'pdf' | 'text' | 'telegram' | 'website' | 'voice' | 'sync' | 'question';
+export type KnowledgeFactKind = 'profile' | 'policy' | 'faq' | 'catalog' | 'style';
+export type KnowledgeFactStatus = 'draft' | 'confirmed' | 'rejected';
+
+export interface KnowledgeSource {
+  id: UUID;
+  kind: KnowledgeSourceKind;
+  label: string;
+  status: 'processing' | 'ready' | 'failed';
+  error?: string;
+  factsCount: number;
+  createdAt: ISODate;
+}
+export interface KnowledgeFact {
+  id: UUID;
+  sourceId: UUID;
+  sourceKind: KnowledgeSourceKind;
+  kind: KnowledgeFactKind;
+  topic: string;
+  question?: string;
+  content: string;
+  price?: number; // catalog, so'm
+  unit?: string; // catalog
+  evidence?: string;
+  confidence: number; // 0..1
+  status: KnowledgeFactStatus;
+  createdAt: ISODate;
+}
+/** Agent bilmagan savol — egasi bir marta javob beradi, javob FAQ bo'ladi. */
+export interface PendingQuestion {
+  id: UUID;
+  question: string;
+  timesAsked: number;
+  status: 'open' | 'answered' | 'dismissed';
+  answer?: string;
+  createdAt: ISODate;
+}
+export interface KnowledgeMetrics {
+  /** AgentTurn bo'yicha: answered / total, 0..100. Hali suhbat yo'q → null (0 emas!). */
+  aiAnsweredPct: number | null;
+  aiTurns: number;
+  /** Biznes yaratilganidan agent tayyor bo'lguncha, daqiqa. Hali tayyor emas → null. */
+  minutesToReady: number | null;
+  /** Qaysi mavzular hali yo'q (profile, catalog, delivery, payment, booking, ...). */
+  missingTopics: string[];
+}
+/** GET /businesses/:id/knowledge (egasi) */
+export interface KnowledgeOverview {
+  sources: KnowledgeSource[];
+  facts: KnowledgeFact[];
+  questions: PendingQuestion[];
+  metrics: KnowledgeMetrics;
+}
+/** POST /businesses/:id/knowledge/sources/text — kind 'voice' = brauzer diktovkasi (uz-UZ) matni */
+export interface KnowledgeTextDto {
+  text: string;
+  kind?: 'text' | 'voice';
+}
+/** POST /businesses/:id/knowledge/sources/url */
+export interface KnowledgeUrlDto {
+  url: string;
+}
+/** POST /businesses/:id/knowledge/sources/telegram — FAQAT egasi tanlagan chatlar (shaxsiy chatlar yuborilmaydi) */
+export interface KnowledgeTelegramDto {
+  chatIds: UUID[];
+}
+// POST /businesses/:id/knowledge/sources/file — multipart "file": rasm (jpg/png/webp), PDF, audio. → KnowledgeSource (processing)
+/** PATCH /businesses/:id/knowledge/facts/:factId */
+export type KnowledgeFactPatch = Partial<Pick<KnowledgeFact, 'topic' | 'question' | 'content' | 'price' | 'unit' | 'status'>>;
+/** POST /businesses/:id/knowledge/facts/confirm — ko'pini birdan */
+export interface KnowledgeConfirmDto {
+  ids: UUID[];
+}
+/** POST /businesses/:id/knowledge/questions/:qid/answer */
+export interface KnowledgeAnswerDto {
+  answer: string;
+}
+/** POST /businesses/:id/sync-key → kalit FAQAT bir marta ko'rinadi */
+export interface SyncKeyResult {
+  key: string;
+}
+/** POST /sync/catalog (X-Sync-Key): iiko/1C/POS/skript narx va qoldiqni yuboradi */
+export interface SyncCatalogDto {
+  items: { name: string; price: number; unit?: string; inStock?: boolean }[];
+}
+export interface SyncCatalogResult {
+  updated: number;
+  created: number;
+  errors: string[];
+}

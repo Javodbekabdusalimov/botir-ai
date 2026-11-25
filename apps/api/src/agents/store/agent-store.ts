@@ -16,6 +16,8 @@ import type {
 export interface AgentStore {
   getBusinesses(filter?: { category?: BusinessCategory; area?: string }): Promise<AgentBusiness[]>;
   getProducts(businessId: string): Promise<Product[]>;
+  /** Prompt section with owner-confirmed facts of this business only; '' when there are none. */
+  getKnowledge(businessId: string): Promise<string>;
   saveMessage(sessionId: string, message: AgentMessage): Promise<void>;
   saveOffer(offer: Offer): Promise<void>;
   saveLlmCall(call: LlmCallRecord): Promise<void>;

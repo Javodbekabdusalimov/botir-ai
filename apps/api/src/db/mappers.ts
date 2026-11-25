@@ -64,7 +64,9 @@ export function toCatalogItem(c: DbCatalogItem): CatalogItem {
   };
 }
 
-export const toProduct = (c: DbCatalogItem): Product => ({ id: c.id, businessId: c.businessId, name: c.name, price: c.price, unit: c.unit });
+export const toProduct = (c: DbCatalogItem): Product => ({
+  id: c.id, businessId: c.businessId, name: c.name, price: c.price, unit: c.unit, description: c.description ?? undefined,
+});
 
 export function toOrder(o: DbOrder): Order {
   return {

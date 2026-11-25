@@ -31,6 +31,8 @@ apps/api/                      NestJS + Prisma (SQLite). Runtime: tsx (no decora
   src/auth/                    register/login/me, JWT HS256, AuthGuard, @Auth(), @CurrentUser()
   src/tg*, tg-connect/         Telegram Business / userbot connect (AES-256-GCM session), inbox, bot
   src/loop/                    HTTP surface of LoopEngine
+  src/knowledge/               Business knowledge: sources → draft facts → owner confirms. Agent side: knowledge-context.ts (prompt section),
+                               questions.service.ts (unknown questions), turn-recorder + metrics.service.ts (AI-answered %)
 apps/web/                      Next.js 16 App Router + React 19 + Tailwind 4 + shadcn/ui. Read apps/web/AGENTS.md (breaking changes).
   src/lib/api.ts                 Every backend call. Timeouts, SSE with reconnect, mock fallback, Jonli/Demo mode store
   src/lib/mock.ts                Scripted demo data used ONLY when the API is unreachable (or id starts with "demo")
@@ -54,7 +56,8 @@ render.yaml                    Render blueprint: ai-assistant (web) + ai-assista
 5. **Owner-only business data.** Catalog writes (`POST|PATCH|DELETE /businesses/:id/catalog*`, `/catalog/import`),
    `/businesses/:id/orders|analytics|memory`, `/inbox*`, `/tg-connect*` and `/loop/*` use `@Auth()` + owner check
    (`auth/ownership.ts`): 401 without token (before any lookup), 403 for another business. Catalog reads stay public
-   (agents read catalogs). Prices must be ≥ 0. `/agent/request` takes the user from the Bearer token when present;
+   (agents read catalogs). `/tg-connect/code` accepts only a login started for a business the caller owns, otherwise 404.
+   `/businesses/:id/knowledge*` is owner-only too. Prices must be ≥ 0. `/agent/request` takes the user from the Bearer token when present;
    a guest may not act under a registered user's id.
 6. **Response envelope** is always `{ ok: true, data } | { ok: false, error }`.
 7. **Web mode badge is honest.** `lib/api.ts` shows "Demo" only when the backend is unreachable (network error / 5xx /
@@ -68,7 +71,14 @@ render.yaml                    Render blueprint: ai-assistant (web) + ai-assista
     autopilot only within business hours (Asia/Tashkent).
 11. **No secrets in git.** `.env*` is ignored (only `.env.example` is tracked). Render secrets are `sync: false`.
 12. **Dashboard shows agent work, not revenue.** The AI cannot know a business's real revenue, so KPIs are:
-    orders via Botir, AI negotiations, not-found requests, AI-answered %.
+    orders via Botir, AI negotiations, not-found requests, AI-answered %. Knowledge metrics are `null` without data, never a fake 0.
+13. **The business agent uses only owner-confirmed knowledge of its own business.** `loadKnowledge()` is the only path into the prompt
+    (negotiations, inbox drafts, evaluator, auditor): `status = confirmed`, not deleted, one `businessId`, size-capped. Draft and catalog
+    facts never enter it; product prices and discounts still come only from the catalog and PolicyGuard.
+14. **The agent does not invent.** A question outside catalog/facts → reply says "aniqlab beraman" and sets `unknownQuestion` →
+    `PendingQuestion` (a reply with an unknown question is never auto-sent in autopilot). The owner's answer (panel, or a Telegram reply to
+    that exact bot message, from that chat, while still linked) becomes a confirmed FAQ. Dismissed questions are not reopened.
+    Bot notifications: once per question, ≤ 10 per business per hour. Recording turns/questions is best effort and never happens in evaluation.
 
 ## 3. Run, test, verify
 
@@ -84,6 +94,7 @@ pnpm dev:web                         # http://localhost:3000 (header badge must 
 - Test accounts (seeded, idempotent): business `+998900000001` / `botir123` (owner of `biz-osh`), client `+998900000002` / `botir123`.
 - Seeded businesses: `biz-osh` (Chilonzor Osh Markazi), `biz-auto` (Chilonzor AutoService), `biz-shop` (Mini Market), 24 golden cases.
 - Typecheck: `pnpm --filter api typecheck` · Web: `pnpm --filter web build` and `pnpm --filter web lint`.
+- Agent knowledge test (no network): see the header of `apps/api/src/knowledge/agent-knowledge.test.ts`.
 - E2E: see `e2e/README.md`.
 
 **Definition of done for any change:** build + lint green, the golden path works end to end against the real API

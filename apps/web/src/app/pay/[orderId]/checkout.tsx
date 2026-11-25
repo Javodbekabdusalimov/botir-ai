@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { openExternal } from "@/lib/telegram";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { BadgeCheck, Check, CircleCheck, Home, Loader2, Lock, SearchX, ShieldCheck, Zap } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logos";
@@ -114,7 +115,7 @@ export function Checkout({ orderId }: { orderId: string }) {
     if (phase === "paying") return;
     setPhase("paying");
     if (link && !isTest) {
-      window.location.href = link; // haqiqiy TezCheck hisobi
+      openExternal(link); // haqiqiy TezCheck hisobi (Telegram ichida openLink)
       return;
     }
     // TEST to'lov: backend /pay/test/:orderId (haqiqiy pul emas)

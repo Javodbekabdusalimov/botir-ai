@@ -8,7 +8,8 @@ import { signJwt, verifyJwt } from './auth.util';
 export const toAuthUser = (u: DbUser): AuthUser => ({
   id: u.id,
   name: u.name,
-  phone: u.phone,
+  // Telegram orqali kirganda telefon yo'q (ichki qiymat `tg:<id>`), mijozga ko'rsatilmaydi
+  ...(u.phone.startsWith('tg:') ? {} : { phone: u.phone }),
   role: u.role as UserRole,
   ...(u.businessId ? { businessId: u.businessId } : {}),
 });

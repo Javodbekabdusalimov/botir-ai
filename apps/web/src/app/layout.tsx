@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ChatLauncher } from "@/components/chat-launcher";
 import { BottomNav, SiteHeader } from "@/components/site-nav";
+import { TelegramShell } from "@/components/telegram-shell";
 import { Analytics } from "@/components/analytics";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -42,6 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </Suspense>
         <main className="flex-1">{children}</main>
         <Analytics />
+        <Suspense fallback={null}>
+          <TelegramShell />
+        </Suspense>
         <Suspense fallback={null}>
           <BottomNav />
           <ChatLauncher />

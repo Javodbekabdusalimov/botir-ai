@@ -126,6 +126,9 @@ export const getFacts = (businessId: string) =>
 /* ---- Auth: faqat backend (POST /auth/register, /auth/login, GET /auth/me); sekin uyg'onishga 60 s ---- */
 export const login = (phone: string, password: string) =>
   request<AuthResult>("/auth/login", json("POST", { phone, password }), demoUnavailable, AGENT_TIMEOUT_MS);
+/** Telegram Mini App: xom initData serverda HMAC bilan tekshiriladi → login bilan bir xil AuthResult. */
+export const telegramAuth = (initData: string) =>
+  request<AuthResult>("/auth/telegram", json("POST", { initData }), demoUnavailable, AGENT_TIMEOUT_MS);
 export const register = (dto: RegisterDto) =>
   request<AuthResult>("/auth/register", json("POST", dto), demoUnavailable, AGENT_TIMEOUT_MS);
 export const getMe = (token: string) =>

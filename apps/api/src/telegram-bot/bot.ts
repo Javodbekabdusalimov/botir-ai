@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import { Bot, GrammyError, InlineKeyboard, type Context } from 'grammy';
 import type { Message } from 'grammy/types';
 import { createLogger, errMsg } from '../tg-connect/logger';
+import { linkKeyboard, openAppKeyboard } from './webapp-button';
 import type { Sender, Transport } from '../tg-connect/sender';
 import type { OnIncoming, TgSync } from '../tg-connect/sync';
 import { chatKey, messageKey, type TgMessage, type TgStore } from '../tg-connect/types';
@@ -64,7 +65,7 @@ export function createBot(deps: BotDeps): CreateBotResult {
   const bot = new Bot(token);
   const transcribe = deps.transcribe ?? defaultTranscribe;
 
-  bot.command('start', (ctx) => ctx.reply(GREETING));
+  bot.command('start', (ctx) => ctx.reply(GREETING, { reply_markup: openAppKeyboard() }));
 
   bot.on('message:text', async (ctx) => {
     const text = ctx.message.text;
@@ -77,7 +78,7 @@ export function createBot(deps: BotDeps): CreateBotResult {
     const cmd = COMMAND_RE.exec(text);
     if (cmd) return handleCommand(ctx, deps, cmd[1] ?? '', cmd[2] ?? '');
     await ctx.replyWithChatAction('typing');
-    await ctx.reply(await deps.personalAgent(ctx.from.id, text));
+    await replyWithApp(ctx, await deps.personalAgent(ctx.from.id, text));
   });
 
   bot.on(['message:voice', 'message:audio'], async (ctx) => {
@@ -92,7 +93,7 @@ export function createBot(deps: BotDeps): CreateBotResult {
       if (!text) return ctx.reply('Ovozni tushunolmadim, qaytadan yuboring.');
       const cmd = COMMAND_RE.exec(text);
       if (cmd) return handleCommand(ctx, deps, cmd[1] ?? '', cmd[2] ?? '');
-      await ctx.reply(await deps.personalAgent(ctx.from.id, text));
+      await replyWithApp(ctx, await deps.personalAgent(ctx.from.id, text));
     } catch (e) {
       log.error(`voice failed: ${errMsg(e)}`);
       await ctx.reply("Ovozni qayta ishlashda xato bo'ldi, matn bilan yozib ko'ring.");
@@ -112,7 +113,7 @@ export function createBot(deps: BotDeps): CreateBotResult {
           ? await deps.alternativeOffer(offerId, ctx.from.id)
           : 'Boshqa variant qidiryapman…';
     await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => undefined);
-    await ctx.reply(reply);
+    await replyWithApp(ctx, reply);
   });
 
   // ---- Telegram Business (mode A) ----
@@ -226,4 +227,9 @@ function toBizMessage(chatId: string, m: Message, fromOwner: boolean): TgMessage
     text: m.text ?? '',
     sentAt: new Date(m.date * 1000).toISOString(),
   };
+}
+
+/** Javobda /live yoki /pay havolasi bo'lsa — Mini App tugmasi bilan. */
+function replyWithApp(ctx: Context, text: string) {
+  return ctx.reply(text, { reply_markup: linkKeyboard(text) });
 }

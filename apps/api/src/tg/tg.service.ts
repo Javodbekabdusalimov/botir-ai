@@ -12,6 +12,7 @@ import { TurnRecorder } from '../knowledge/turn-recorder.service';
 import { AGENTS, type Agents } from '../negotiations/agents.provider';
 import { OrderExistsError } from '../negotiations/confirm-rules';
 import { NegotiationsService } from '../negotiations/negotiations.service';
+import { menuButton } from '../telegram-bot/webapp-button';
 import { createBot, makeTransport, startBot } from '../telegram-bot/bot';
 import {
   loadTgApiCreds, ModeHandler, pickChatByName, Sender, TgSync, UserbotLogin,
@@ -334,5 +335,8 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     if (!res.bot) return;
     this.bot = res.bot;
     startBot(res.bot);
+    // Chat pastidagi menyu tugmasi → Mini App (BotFather'da qo'lda sozlanmasa ham)
+    const menu = menuButton();
+    if (menu) void res.bot.api.setChatMenuButton({ menu_button: menu }).catch((e: unknown) => this.logger.warn(`menu button: ${e instanceof Error ? e.message : String(e)}`));
   }
 }

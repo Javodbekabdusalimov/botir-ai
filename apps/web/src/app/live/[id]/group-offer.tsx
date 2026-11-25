@@ -10,11 +10,11 @@ import type { BestOffer, ConfirmResult } from "@/lib/types";
 /** Tasdiq xatosida doim aytiladi: pul yechilmagan. */
 export const CONFIRM_FAILED = "Buyurtma yaratilmadi, pul yechilmadi.";
 
-/** Takliflarni vazifa (biznes kategoriyasi) bo'yicha guruhlaydi: moy suv bilan solishtirilmaydi. */
+/** Takliflarni vazifa bo'yicha guruhlaydi (taskId, bo'lmasa biznes kategoriyasi): moy suv bilan solishtirilmaydi. */
 export function groupOffers(best: Record<string, BestOffer>, categoryOf: (id: string) => string): BestOffer[][] {
   const groups = new Map<string, BestOffer[]>();
   for (const b of Object.values(best)) {
-    const key = categoryOf(b.businessId);
+    const key = b.taskId ? `task:${b.taskId}` : `cat:${categoryOf(b.businessId)}`;
     groups.set(key, [...(groups.get(key) ?? []), b]);
   }
   return [...groups.values()].map((g) => g.sort((a, b) => a.offer.price - b.offer.price));
@@ -51,7 +51,7 @@ export function GroupOffer({
     setError(null);
     setUpgrade(null);
     try {
-      setResult(await confirmNegotiation(negotiationId, current.businessId));
+      setResult(await confirmNegotiation(negotiationId, current.businessId, current.taskId));
     } catch (e) {
       if (e instanceof UpgradeRequiredError) setUpgrade(e.message);
       else setError(`${CONFIRM_FAILED} ${friendlyError(e instanceof Error ? e.message : null)}`);

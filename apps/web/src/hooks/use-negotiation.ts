@@ -83,7 +83,12 @@ export function useNegotiation(id: string, forceMock = false): NegotiationState 
           }
           await sleep(MESSAGE_GAP_MS);
         } else if (ev.type === "best_offer") {
-          setState((s) => ({ ...s, best: { ...s.best, [ev.businessId]: { businessId: ev.businessId, businessName: ev.businessName, offer: ev.offer } } }));
+          setState((s) => {
+            // Bitta biznes ikki vazifaga taklif bersa, ikkinchisi alohida kalitda (birinchisi bid bo'yicha qoladi)
+            const prev = s.best[ev.businessId];
+            const key = prev?.taskId && ev.taskId && prev.taskId !== ev.taskId ? `${ev.taskId}|${ev.businessId}` : ev.businessId;
+            return { ...s, best: { ...s.best, [key]: { taskId: ev.taskId, businessId: ev.businessId, businessName: ev.businessName, offer: ev.offer } } };
+          });
         }
       }
       pumping.delete(bid);

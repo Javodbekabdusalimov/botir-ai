@@ -12,6 +12,8 @@ import { useLive } from "./use-live";
 const LIMIT = 100;
 const when = (iso: string | null) => (iso ? formatWhen(iso) : "—");
 const num = (n: number) => n.toLocaleString("ru-RU").replace(/\s/g, " ");
+/** Telegram Mini App foydalanuvchisida telefon o'rniga `tg:<telegramId>` saqlanadi. */
+const phoneLabel = (p: string | null | undefined) => (!p ? "—" : p.startsWith("tg:") ? `Telegram · ${p.slice(3)}` : p);
 
 /** Qidiruv maydoni: 300 ms kutib so'rov yuboradi. */
 function useSearch(): [string, string, (v: string) => void] {
@@ -100,7 +102,7 @@ function ClientRow({ c }: { c: AdminClient }) {
     <tr>
       <Td>
         <p className="font-medium">{c.name}</p>
-        <p className="text-xs text-muted-foreground">{c.ownerType === "business" ? "Biznes · " : ""}{c.phone ?? "—"}</p>
+        <p className="text-xs text-muted-foreground">{c.ownerType === "business" ? "Biznes · " : ""}{phoneLabel(c.phone)}</p>
       </Td>
       <Td>{c.active ? <Pill tone="plan">{c.plan === "max" ? "Max" : "Pro"}</Pill> : <Pill tone="muted">{c.expiresAt ? "Free (tugagan)" : "Free"}</Pill>}</Td>
       <Td>{when(c.planStartedAt)}</Td>
@@ -160,7 +162,7 @@ function PaymentRow({ p }: { p: AdminPayment }) {
       <Td>{p.isTest ? <Pill tone="test">TEST</Pill> : "Haqiqiy"}</Td>
       <Td>
         <p>{p.payer?.name ?? (p.payer ? "Mehmon" : "—")}</p>
-        <p className="text-xs text-muted-foreground">{p.payer?.phone ?? ""}</p>
+        {p.payer && <p className="text-xs text-muted-foreground">{phoneLabel(p.payer.phone)}</p>}
       </Td>
       <Td>
         <p>{p.business?.name ?? "—"}</p>

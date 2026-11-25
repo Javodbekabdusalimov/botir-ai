@@ -47,7 +47,9 @@ async function main(): Promise<void> {
   await db.llmCall.create({ data: { model: 'haiku', ms: 1, chars: 1, purpose: 'parser', ok: true, at: now, costUsd: 0.07, userId: 'u-alice' } });
   await db.negotiation.create({ data: { userId: 'u-alice', text: 'osh', tasks: '[]' } });
 
-  const tokens: Record<string, typeof admin> = { admin, alice };
+  // Telegram Mini App user (#37): phone = id = `tg:<telegramId>`; a 9-digit id normalizes to the admin's phone digits
+  const tgUser = await user('tg:901111111', 'TG Mijoz', 'tg:901111111');
+  const tokens: Record<string, typeof admin> = { admin, alice, tg: tgUser };
   let lookups = 0;
   const auth = { userFromToken: async (t: string) => (lookups++, tokens[t] ?? null) };
   @Module({
@@ -79,6 +81,8 @@ async function main(): Promise<void> {
       assert.equal((await get(p, 'alice')).status, 403, `${p} non-admin`);
     }
     assert.equal(lookups, 6, 'no token → no lookup');
+    process.env.ADMIN_PHONES = '+998901111111';
+    assert.equal((await get('/admin/overview', 'tg')).status, 403, 'tg:<id> phone is never admin, even if its digits match');
     delete process.env.ADMIN_PHONES;
     assert.equal((await get('/admin/overview', 'admin')).status, 403, 'unset ADMIN_PHONES');
     process.env.ADMIN_PHONES = '';
@@ -92,7 +96,7 @@ async function main(): Promise<void> {
     assert.deepEqual([o.data.payingClients, o.data.byPlan.pro, o.data.byPlan.max], [1, 1, 0]);
     assert.deepEqual(o.data.paidSubscriptions, { intro: 1, full: 1 });
     assert.equal(o.data.testPaymentsPaid, 1);
-    assert.deepEqual([o.data.users.total, o.data.businesses, o.data.negotiations.today], [3, 1, 1], 'soft-deleted user not counted');
+    assert.deepEqual([o.data.users.total, o.data.businesses, o.data.negotiations.today], [4, 1, 1], 'soft-deleted user not counted');
     assert.deepEqual(o.data.globalTokens, { usedToday: 1234, cap: 3_000_000 });
     assert.equal(o.data.aiCostUsd.today, 0.07);
 
@@ -111,6 +115,7 @@ async function main(): Promise<void> {
     assert.deepEqual((await get<Page<Client>>('/admin/clients?q=karim', 'admin')).data.rows.map((r) => r.ownerId), ['u-alice']);
     assert.deepEqual((await get<Page<Client>>('/admin/clients?q=90%20444', 'admin')).data.rows.map((r) => r.ownerId), ['biz-1']);
     assert.deepEqual((await get<Page<Client>>('/admin/clients?plan=pro', 'admin')).data.rows.map((r) => r.ownerId), ['u-alice']);
+    assert.equal(c.data.rows.find((r) => r.ownerId === 'tg:901111111')?.phone, 'tg:901111111', 'raw tg: phone; the web shows "Telegram"');
 
     // 4. payments: newest first, TEST rows listed and flagged, filters, payer names (deleted payer → no name)
     const p = await get<Page<Pay>>('/admin/payments', 'admin');

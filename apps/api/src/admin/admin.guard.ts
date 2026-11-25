@@ -10,9 +10,14 @@ import { normalizePhone } from '../auth/auth.util';
 export const adminPhones = (): string[] =>
   (process.env.ADMIN_PHONES ?? '').split(',').map((p) => normalizePhone(p.trim())).filter((p): p is string => p !== null);
 
+/**
+ * Only a stored phone already in canonical +998XXXXXXXXX form can be admin. Telegram users store `tg:<telegramId>`, and
+ * normalizePhone would turn a 9-digit telegram id into a valid phone, so a tg: (or null / non-canonical) phone is never admin.
+ */
 export const isAdmin = (user: Pick<DbUser, 'phone'>): boolean => {
-  const phone = normalizePhone(user.phone);
-  return phone !== null && adminPhones().includes(phone);
+  const stored: string | null = user.phone;
+  if (!stored || stored.startsWith('tg:') || normalizePhone(stored) !== stored) return false;
+  return adminPhones().includes(stored);
 };
 
 /** Runs after AuthGuard (which puts the DB user on req.user). */

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Crown, Loader2, Zap } from "lucide-react";
+import { PlanTokensText } from "@/components/plan-tokens";
 import { Button } from "@/components/ui/button";
 import { refreshMe, useAuth } from "@/hooks/use-auth";
-import { getPaymentStatus, getPlans, subscribePro } from "@/lib/api";
+import { getBillingMe, getPaymentStatus, subscribePro } from "@/lib/api";
 import { useAsync } from "@/hooks/use-async";
 import { formatSom } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ const until = (iso: string) => {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 };
 
-/** Biznes kabineti: tarif (Start/Pro), muddat, AI kreditlar va [Pro ga o'tish]. */
+/** Biznes kabineti: tarif (Free/Pro/Max), muddat, bugungi tokenlar (GET /billing/me), AI kreditlar va [Pro ga o'tish]. */
 export function PlanBar() {
   const { user, business } = useAuth();
   const [ref, setRef] = useState<string | null>(null);
@@ -23,8 +24,10 @@ export function PlanBar() {
   const [err, setErr] = useState<string | null>(null);
   const [paid, setPaid] = useState(false);
   const [netErr, setNetErr] = useState(false);
-  const plans = useAsync("plans", getPlans);
-  const proPrice = plans.data?.find((p) => p.id === "pro")?.price;
+  const billing = useAsync(`billing-me|${paid}`, getBillingMe);
+  const b = billing.data;
+  // Narx faqat serverdan: birinchi to'langan oy introPrice, keyin to'liq narx
+  const proPrice = b && (b.introAvailable ? b.prices.pro.introPrice : b.prices.pro.price);
 
   // To'lov holati har 5s da tekshiriladi
   useEffect(() => {
@@ -56,7 +59,9 @@ export function PlanBar() {
   }, [ref]);
 
   if (user?.role !== "business" || !business) return null;
-  const pro = business.plan === "pro";
+  // /auth/me tarifi billing ledger'dan (PlanAccount): Max ham pullik tarif
+  const pro = business.plan === "pro" || business.plan === "max";
+  const planName = business.plan === "max" ? "Max" : "Pro";
   const waiting = ref !== null;
 
   async function upgrade() {
@@ -83,11 +88,16 @@ export function PlanBar() {
     <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold", pro ? "bg-primary text-white" : "bg-muted text-foreground")}>
-          <Crown className="size-4" aria-hidden="true" /> {pro ? "Pro" : "Start"}
+          <Crown className="size-4" aria-hidden="true" /> {pro ? planName : "Free"}
         </span>
         <span className="text-sm text-muted-foreground">
           {pro && business.planUntil ? <>Muddat: <strong className="text-foreground">{until(business.planUntil)}</strong> gacha</> : "Bepul tarif"}
         </span>
+        {b && (
+          <span className="text-sm text-muted-foreground">
+            <PlanTokensText b={b} />
+          </span>
+        )}
         <span className="flex items-center gap-1 text-sm text-muted-foreground">
           <Zap className="size-4 text-green-600" aria-hidden="true" /> AI kreditlar: <strong className="tabular-nums text-foreground">{business.aiCredits ?? 0}</strong>
         </span>
@@ -104,7 +114,7 @@ export function PlanBar() {
         ) : !pro ? (
           <Button className="h-11 px-5 font-semibold" onClick={upgrade} disabled={busy}>
             {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            Pro ga o&apos;tish{proPrice != null && <> · 1-oy {formatSom(proPrice)}</>}
+            Pro ga o&apos;tish{proPrice != null && <> · {b?.introAvailable ? `1-oy ${formatSom(proPrice)}` : `${formatSom(proPrice)}/oy`}</>}
           </Button>
         ) : null}
         {waiting && netErr && <p className="mt-1 text-xs text-destructive">Holatni tekshirib bo&apos;lmadi, qayta urinilmoqda…</p>}

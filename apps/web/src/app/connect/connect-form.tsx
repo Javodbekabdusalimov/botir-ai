@@ -34,6 +34,7 @@ export function ConnectForm() {
   const [close, setClose] = useState("22:00");
   const [discount, setDiscount] = useState(10);
   const [rows, setRows] = useState<CatalogRow[]>([]);
+  const [pending, setPending] = useState<CatalogRow | null>(null);
   const [fileName, setFileName] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
@@ -105,7 +106,14 @@ export function ConnectForm() {
     if (name.trim().length < 2) next.name = "Biznes nomini kiriting";
     if (district.trim().length < 2) next.district = "Tumanni kiriting";
     if (address.trim().length < 2) next.address = "Manzilni kiriting";
-    if (!rows.length) next.catalog = "Katalog qo'shing: fayl yuklang yoki qo'lda kiriting";
+    // Yozilgan, lekin "Qo'shish" bosilmagan qator ham katalogga kiradi
+    const items = pending ? [...rows, pending] : rows;
+    const upload = pending ? null : file;
+    if (pending) {
+      setRows(items);
+      setFile(null);
+    }
+    if (!items.length) next.catalog = "Katalog qo'shing: nomi va narxini yozib \"Qo'shish\" ni bosing yoki fayl yuklang";
     setErrors(next);
     if (Object.keys(next).length) return;
     setBusy(true);
@@ -119,10 +127,10 @@ export function ConnectForm() {
         maxDiscountPct: discount,
         lang: "uz",
       });
-      const result = await importCatalog(biz.id, file, rows);
+      const result = await importCatalog(biz.id, upload, items);
       setBusinessId(biz.id);
       void refreshMe();
-      track("generate_lead", { category, items: rows.length });
+      track("generate_lead", { category, items: items.length });
       setReady({ biz, result: { ...result, errors: [...result.errors, ...skipped.map((n) => `${n}-qator: nomi yoki narxi noto'g'ri`)] } });
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Ulab bo'lmadi, qayta urinib ko'ring" });
@@ -210,7 +218,7 @@ export function ConnectForm() {
             </a>
           </div>
         </div>
-        <CatalogManual onAdd={addRow} onParse={fromText} />
+        <CatalogManual onAdd={addRow} onParse={fromText} onPending={setPending} />
         {errors.catalog && (
           <p role="alert" className="text-sm text-destructive">
             {errors.catalog}

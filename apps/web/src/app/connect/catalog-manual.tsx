@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,20 @@ import { cellPrice, type CatalogRow } from "@/lib/catalog-parse";
 import { formatSom } from "@/lib/format";
 
 /** Faylsiz katalog: bittalab qo'lda kiritish yoki ro'yxatni yozib/nusxalab qo'yish. */
-export function CatalogManual({ onAdd, onParse }: { onAdd: (r: CatalogRow) => void; onParse: (text: string) => void }) {
+/**
+ * `onPending`: maydonlarda yozilgan, lekin "Qo'shish" bosilmagan to'g'ri qator (yoki null).
+ * Forma yuborilganda u ham katalogga qo'shiladi: odam "Qo'shish" ni unutsa xato chiqmasin.
+ */
+export function CatalogManual({ onAdd, onParse, onPending }: { onAdd: (r: CatalogRow) => void; onParse: (text: string) => void; onPending: (r: CatalogRow | null) => void }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("");
   const [text, setText] = useState("");
   const p = cellPrice(price);
   const ok = name.trim().length > 1 && p !== null;
+  useEffect(() => {
+    onPending(ok && p !== null ? { name: name.trim(), price: p, unit: unit.trim() || "dona" } : null);
+  }, [ok, p, name, unit, onPending]);
 
   function add() {
     if (!ok || p === null) return;

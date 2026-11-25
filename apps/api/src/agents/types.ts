@@ -15,13 +15,21 @@ export interface AgentBusiness extends Business {
 
 export type LlmModel = 'sonnet' | 'haiku';
 
+export type LlmErrorKind = 'auth' | 'limit' | 'overloaded' | 'timeout' | 'bad_output' | 'other';
+
 export interface LlmCallRecord {
-  model: LlmModel;
+  model: LlmModel; // the model actually used (after purpose policy / fallback)
   ms: number;
   chars: number;
   purpose: string;
   ok: boolean;
   at: string;
+  errorKind?: LlmErrorKind; // set when ok=false
+  inputTokens?: number; // incl. cache reads/writes, when the provider reports usage
+  outputTokens?: number; // incl. thinking tokens
+  costUsd?: number; // provider estimate (total_cost_usd)
+  userId?: string; // billing owner (set by LlmClient from the request context)
+  businessId?: string;
 }
 
 export interface MemoryFact {
@@ -99,6 +107,15 @@ export interface UserTask {
   when?: string;
   people?: number;
   area?: string;
+  wishes?: string;
+  maxBudget?: number;
+  /** Items the client named explicitly; qty only when the client said a number. Checked in code before any accept. */
+  items?: TaskItem[];
+}
+
+export interface TaskItem {
+  name: string;
+  qty?: number;
 }
 
 export type GuardResult = { ok: true } | { ok: false; reason: string };

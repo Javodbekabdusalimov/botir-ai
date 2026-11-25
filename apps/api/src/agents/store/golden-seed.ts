@@ -2,7 +2,8 @@ import type { GoldenCase } from '../types';
 
 type Raw = [question: string, expected: string[], forbidden?: string[]];
 
-const HANDOFF = "mijozni xodim/operatorga (odamga) ulashini aytadi";
+// No follow-up channel to the client exists, so "I'll ask and write back" is a false promise.
+const HANDOFF = "savol biznes egasiga yetkazilishini aytadi, keyin mijozga xabar berishni va'da qilmaydi";
 
 function cases(businessId: string, prefix: string, rows: Raw[]): GoldenCase[] {
   return rows.map(([question, expected, forbidden], i) => ({

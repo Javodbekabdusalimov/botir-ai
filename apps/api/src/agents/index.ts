@@ -33,7 +33,7 @@ export function createAgents(opts: { store: AgentStore; logger?: AgentLogger; ll
   const llm = new LlmClient({ store: opts.store, logger: opts.logger, mode: opts.llmMode });
   const guard = new PolicyGuard(opts.store);
   const businessAgent = new BusinessAgent(llm, guard, opts.store);
-  const personalAgent = new PersonalAgent(llm, opts.store);
+  const personalAgent = new PersonalAgent(llm, opts.store, opts.logger);
   const negotiator = new Negotiator({ store: opts.store, businessAgent, personalAgent, logger: opts.logger });
   const evaluator = new Evaluator(llm, opts.store, businessAgent);
   return {

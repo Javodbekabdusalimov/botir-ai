@@ -7,14 +7,15 @@ import type React from "react";
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Loader2, Upload, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, inputClass, selectClass } from "@/components/field";
 import { createBusiness, importCatalog } from "@/lib/api";
-import { parseCatalogFile, SAMPLE_CSV, type CatalogRow } from "@/lib/catalog-parse";
+import { parseCatalogFile, parseCatalogText, SAMPLE_CSV, type CatalogRow } from "@/lib/catalog-parse";
+import { CatalogManual } from "./catalog-manual";
 import { CATEGORY_LABEL, formatSom } from "@/lib/format";
-import { SAMPLE_CATALOG } from "@/lib/mock";
+import { sampleCatalog } from "@/lib/sample-catalogs";
 import type { Business, BusinessCategory, CatalogImportResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export function ConnectForm() {
   const [close, setClose] = useState("22:00");
   const [discount, setDiscount] = useState(10);
   const [rows, setRows] = useState<CatalogRow[]>([]);
+  const [pending, setPending] = useState<CatalogRow | null>(null);
   const [fileName, setFileName] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
@@ -48,7 +50,7 @@ export function ConnectForm() {
     setErrors((e) => ({ ...e, catalog: undefined }));
     try {
       const { rows: parsed, skipped: bad } = await parseCatalogFile(f);
-      if (!parsed.length) throw new Error("Mahsulot topilmadi. Ustunlar: nomi, narx, birlik");
+      if (!parsed.length) throw new Error("Fayldan nom va narx topilmadi. Har qatorda nomi va narxi bo'lsin, masalan: Moy almashtirish | 150 000");
       setRows(parsed);
       setSkipped(bad);
       setFile(f);
@@ -63,8 +65,34 @@ export function ConnectForm() {
     }
   }
 
+  function fromText(text: string) {
+    const { rows: parsed, skipped: bad } = parseCatalogText(text);
+    if (!parsed.length) {
+      setErrors((e) => ({ ...e, catalog: "Ro'yxatdan narx topilmadi. Har qatorda: nomi va narxi, masalan: Moy almashtirish 150 000" }));
+      return;
+    }
+    setRows((cur) => (file ? parsed : [...cur, ...parsed]));
+    setSkipped(bad);
+    setFile(null);
+    setFileName("Katalog");
+    setErrors((e) => ({ ...e, catalog: undefined }));
+  }
+
+  /** Qo'lda qo'shilgan qator: fayl o'rniga qatorlar yuboriladi */
+  function addRow(r: CatalogRow) {
+    setRows((cur) => (file ? [r] : [...cur, r]));
+    setFile(null);
+    setFileName("Katalog");
+    setErrors((e) => ({ ...e, catalog: undefined }));
+  }
+
+  function removeRow(i: number) {
+    setRows((cur) => cur.filter((_, j) => j !== i));
+    setFile(null);
+  }
+
   function loadSampleCatalog() {
-    setRows(SAMPLE_CATALOG);
+    setRows(sampleCatalog(category));
     setSkipped([]);
     setFile(null);
     setFileName("namuna katalog");
@@ -78,7 +106,14 @@ export function ConnectForm() {
     if (name.trim().length < 2) next.name = "Biznes nomini kiriting";
     if (district.trim().length < 2) next.district = "Tumanni kiriting";
     if (address.trim().length < 2) next.address = "Manzilni kiriting";
-    if (!rows.length) next.catalog = "Katalog faylini yuklang (yoki namuna katalogni tanlang)";
+    // Yozilgan, lekin "Qo'shish" bosilmagan qator ham katalogga kiradi
+    const items = pending ? [...rows, pending] : rows;
+    const upload = pending ? null : file;
+    if (pending) {
+      setRows(items);
+      setFile(null);
+    }
+    if (!items.length) next.catalog = "Katalog qo'shing: nomi va narxini yozib \"Qo'shish\" ni bosing yoki fayl yuklang";
     setErrors(next);
     if (Object.keys(next).length) return;
     setBusy(true);
@@ -92,10 +127,10 @@ export function ConnectForm() {
         maxDiscountPct: discount,
         lang: "uz",
       });
-      const result = await importCatalog(biz.id, file, rows);
+      const result = await importCatalog(biz.id, upload, items);
       setBusinessId(biz.id);
       void refreshMe();
-      track("generate_lead", { category, items: rows.length });
+      track("generate_lead", { category, items: items.length });
       setReady({ biz, result: { ...result, errors: [...result.errors, ...skipped.map((n) => `${n}-qator: nomi yoki narxi noto'g'ri`)] } });
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Ulab bo'lmadi, qayta urinib ko'ring" });
@@ -148,7 +183,7 @@ export function ConnectForm() {
 
       <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6 [&>legend+*]:clear-both">
         <legend className="float-left mb-4 w-full font-sans text-lg font-semibold tracking-tight">2. Katalog</legend>
-        <p className="text-sm text-muted-foreground">Excel (.xlsx) yoki CSV: ustunlar <code>nomi, narx, birlik</code>.</p>
+        <p className="text-sm text-muted-foreground">Istalgan Excel yoki CSV narx ro&apos;yxati: nom va narx ustuni bo&apos;lsa yetarli (sarlavha shart emas).</p>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -183,6 +218,7 @@ export function ConnectForm() {
             </a>
           </div>
         </div>
+        <CatalogManual onAdd={addRow} onParse={fromText} onPending={setPending} />
         {errors.catalog && (
           <p role="alert" className="text-sm text-destructive">
             {errors.catalog}
@@ -200,7 +236,7 @@ export function ConnectForm() {
                 {skipped.length > 8 ? "..." : ""}): nomi yoki narxi noto&apos;g&apos;ri.
               </p>
             )}
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="max-h-96 overflow-auto rounded-xl border border-border">
               <table className="w-full min-w-[420px] text-left text-sm">
                 <caption className="sr-only">Katalog ko'rinishi</caption>
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
@@ -208,20 +244,25 @@ export function ConnectForm() {
                     <th className="px-3 py-2 font-medium">Nomi</th>
                     <th className="px-3 py-2 font-medium">Narx</th>
                     <th className="px-3 py-2 font-medium">Birlik</th>
+                    <th className="w-10 px-2 py-2"><span className="sr-only">O&apos;chirish</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.slice(0, 8).map((r, i) => (
+                  {rows.map((r, i) => (
                     <tr key={`${r.name}-${i}`} className="border-t border-border">
                       <td className="px-3 py-2">{r.name}</td>
                       <td className="px-3 py-2 tabular-nums">{formatSom(r.price)}</td>
                       <td className="px-3 py-2 text-muted-foreground">{r.unit}</td>
+                      <td className="px-2 py-1">
+                        <button type="button" onClick={() => removeRow(i)} aria-label={`${r.name} ni o'chirish`} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive">
+                          <X className="size-4" aria-hidden="true" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {rows.length > 8 && <p className="mt-2 text-xs text-muted-foreground">Yana {rows.length - 8} ta mahsulot...</p>}
           </div>
         )}
       </fieldset>

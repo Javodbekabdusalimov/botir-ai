@@ -31,10 +31,10 @@ export function Overview() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Receipt} tone="green" label="Botir orqali buyurtmalar" value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid" || o.status === "confirmed").length} ta tasdiqlangan` : undefined} />
-        <Stat icon={MessagesSquare} tone="amber" label="AI muzokaralar" value={stats.data ? stats.data.topRequests.reduce((s, r) => s + r.count, 0) : undefined} hint={stats.data ? `${stats.data.topRequests.length} xil so'rov` : undefined} />
-        <Stat icon={SearchX} tone="blue" label="Topilmagan so'rovlar" value={stats.data?.notFound.length} hint={stats.data ? (stats.data.notFound.length ? "Katalogga qo'shish mumkin" : "Hammasi katalogda bor") : undefined} />
-        <Stat icon={Bot} tone="violet" label="AI javob bergan" value={ai ? (ai.aiAnsweredPct ?? 0) : undefined} display={ai && ai.aiAnsweredPct == null ? "—" : undefined} suffix="%" hint={ai ? (ai.aiTurns ? `${ai.aiTurns} ta javob` : "Hali suhbat yo'q") : undefined} />
+        <Stat icon={Receipt} tone="green" label="Botir orqali buyurtmalar" error={!!orders.error} value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid" || o.status === "confirmed").length} ta tasdiqlangan` : undefined} />
+        <Stat icon={MessagesSquare} tone="amber" label="So'rovlar" error={!!stats.error} value={stats.data ? stats.data.topRequests.reduce((s, r) => s + r.count, 0) : undefined} hint={stats.data ? `${stats.data.topRequests.length} xil so'rov` : undefined} />
+        <Stat icon={SearchX} tone="blue" label="Topilmagan so'rovlar" error={!!stats.error} value={stats.data?.notFound.length} hint={stats.data ? (stats.data.notFound.length ? "Katalogga qo'shish mumkin" : "Hammasi katalogda bor") : undefined} />
+        <Stat icon={Bot} tone="violet" label="AI javob bergan" error={!!kb.error} value={ai ? (ai.aiAnsweredPct ?? 0) : undefined} display={ai && ai.aiAnsweredPct == null ? "—" : undefined} suffix="%" hint={ai ? (ai.aiTurns ? `${ai.aiTurns} ta javob` : "Hali suhbat yo'q") : undefined} />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -178,7 +178,7 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-function Stat({ icon: Icon, label, value, display, money, suffix, tone, hint, spark }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | undefined; display?: string; money?: boolean; suffix?: string; tone: keyof typeof TONES; hint?: string; spark?: number[] }) {
+function Stat({ icon: Icon, label, value, display, money, suffix, tone, hint, spark, error }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | undefined; error?: boolean; display?: string; money?: boolean; suffix?: string; tone: keyof typeof TONES; hint?: string; spark?: number[] }) {
   const n = useCountUp(value);
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift">
@@ -189,7 +189,9 @@ function Stat({ icon: Icon, label, value, display, money, suffix, tone, hint, sp
         <span className="line-clamp-2 leading-tight">{label}</span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-2">
-        {value === undefined ? (
+        {error ? (
+          <p role="alert" className="text-sm font-semibold text-destructive">Yuklab bo&apos;lmadi</p>
+        ) : value === undefined ? (
           <div className="h-8 w-24 animate-pulse rounded-lg bg-muted" role="status" aria-label="Yuklanmoqda" />
         ) : (
           <p className="min-w-0 break-words font-display text-lg font-bold tabular-nums sm:text-xl xl:text-[22px]">{display ?? (money ? formatSom(n) : `${n}${suffix ?? ""}`)}</p>

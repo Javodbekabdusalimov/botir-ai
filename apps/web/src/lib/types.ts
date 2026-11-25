@@ -35,4 +35,4 @@ export interface CatalogRowInput {
 /* ---- Auth / to'lov: tiplar @botir/shared'da (AuthUser, AuthResponse, MeResponse, PaymentStatusResult...) ---- */
 export type AuthResult = import("@botir/shared").AuthResponse;
 export type PaymentState = import("@botir/shared").Payment["status"];
-export type PaymentStatus = Pick<import("@botir/shared").PaymentStatusResult, "status">;
+export type PaymentStatus = Pick<import("@botir/shared").PaymentStatusResult, "status" | "isTest" | "payUrl"> & Partial<Pick<import("@botir/shared").PaymentStatusResult, "amount" | "paidAt">>;

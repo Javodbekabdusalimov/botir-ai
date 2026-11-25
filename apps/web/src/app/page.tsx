@@ -9,8 +9,7 @@ import { HeroSage } from "@/components/hero-sage";
 import { HomeRedirect } from "@/components/home-redirect";
 import { NetworkDiagram } from "@/components/network-diagram";
 import { SiteFooter } from "@/components/site-footer";
-import { FAQ, MAX_ROUNDS_COPY, PRO_PRICE_UZS, landingJsonLd } from "@/lib/landing-content";
-import { formatSom } from "@/lib/format";
+import { BUSINESS_PRICE_COPY, FAQ, MAX_ROUNDS_COPY, PRO_PRICE_COPY, landingJsonLd } from "@/lib/landing-content";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +27,9 @@ const TRUST: BrandKey[] = ["payme", "click", "uzum", "telegram"];
 /** Raqamlar: faqat mahsulot qoidalari (haqiqiy, o'lchanmagan taxminlar emas). */
 const FACTS = [
   { value: String(MAX_ROUNDS_COPY), unit: "raund", label: "muzokara ko'pi bilan shuncha davom etadi" },
-  { value: "0", unit: "so'm komissiya", label: "Pro tarifda sotuvdan foiz olinmaydi" },
-  { value: formatSom(PRO_PRICE_UZS).replace(" so'm", ""), unit: "so'm/oy", label: "Pro tarif, Start bepul" },
-  { value: "24/7", unit: "", label: "AI sotuvchi Telegram'da tinimsiz ishlaydi" },
+  { value: "0", unit: "komissiya", label: "Hech qaysi tarifda sotuvdan foiz olinmaydi" },
+  { value: "0", unit: "so'm", label: "Start tarifi va mijoz yordamchisi bepul" },
+  { value: "1", unit: "tasdiq", label: "to'lov faqat sizning tasdig'ingizdan keyin" },
 ];
 
 const STEPS = [
@@ -39,9 +38,11 @@ const STEPS = [
   { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. To'lov faqat shundan keyin." },
 ];
 
+/** Narxlar landing-content.ts da (egasi tasdiqlaydi). Biznes rejasi backendda hali yo'q: to'lov tugmasi yo'q. */
 const PLANS = [
-  { name: "Start", price: "bepul", note: "Boshlash uchun", features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Oyiga 100 tagacha suhbat"], featured: false },
-  { name: "Pro", price: `${formatSom(PRO_PRICE_UZS).replace(" so'm", "")} so'm/oy`, note: "Foiz yo'q: sotuvdan komissiya olinmaydi", features: ["10 barobar ko'p AI kredit", "Autopilot rejimi", "Agentni avtomatik yaxshilash", "Analitika va buyurtmalar paneli"], featured: true },
+  { name: "Start", price: "bepul", note: "Boshlash uchun", features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Agentlar muzokarasi va to'lov havolasi"], featured: false, cta: "Bepul boshlash" },
+  { name: "Biznes", price: BUSINESS_PRICE_COPY, note: "Taklif: tez orada", features: ["Start'dagi hammasi", "Bilimlar bazasi: matn, sayt, fayl", "Inbox: AI javob qoralamalari"], featured: false, cta: null },
+  { name: "Pro", price: PRO_PRICE_COPY, note: "Hech qaysi tarifda komissiya yo'q", features: ["Biznes'dagi hammasi", "Analitika va buyurtmalar paneli", "Agentni yaxshilash takliflari (siz tasdiqlaysiz)"], featured: true, cta: "Pro'ni tanlash" },
 ];
 
 export default function Home() {
@@ -68,6 +69,7 @@ export default function Home() {
             ))}
           </ul>
         </div>
+        <p className="mt-3 text-center text-xs text-muted-foreground">To&apos;lov TezCheck orqali (Payme, Click, Uzum). Hozir sinov rejimi.</p>
       </section>
 
       {/* Jonli muzokara */}
@@ -199,7 +201,7 @@ export default function Home() {
           </h2>
           <p className="mt-3 text-muted-foreground">Mijozlar uchun yordamchi bepul.</p>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
           {PLANS.map((p) => (
             <article key={p.name} className={cn("flex flex-col rounded-[1.75rem] p-7", p.featured ? "stage-deep text-white shadow-[0_30px_60px_-30px_rgb(27_31_28/0.6)]" : "glass")}>
               <div className="flex items-center justify-between">
@@ -207,15 +209,19 @@ export default function Home() {
                 {p.featured && <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white">Tavsiya etiladi</span>}
               </div>
               <p className={cn("mt-1 text-sm", p.featured ? "text-white/75" : "text-muted-foreground")}>{p.note}</p>
-              <p className={cn("mt-5 font-display text-4xl tabular-nums", p.featured ? "text-white" : "text-green-950")}>{p.price}</p>
+              <p className={cn("mt-5 font-display text-2xl tabular-nums sm:text-3xl", p.featured ? "text-white" : "text-green-950")}>{p.price}</p>
               <ul className="mt-6 flex-1 space-y-2.5 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex gap-2.5"><Check className={cn("mt-0.5 size-4 shrink-0", p.featured ? "text-[#f6c27a]" : "text-green-800")} aria-hidden="true" />{f}</li>
                 ))}
               </ul>
-              <Link href="/register" className={cn("mt-7 grid h-12 place-items-center rounded-full text-sm font-semibold transition-colors", p.featured ? "bg-white text-green-950 hover:bg-white/90" : "bg-green-900 text-white hover:bg-green-950")}>
-                {p.name === "Start" ? "Bepul boshlash" : "Pro'ni tanlash"}
-              </Link>
+              {p.cta ? (
+                <Link href="/register" className={cn("mt-7 grid h-12 place-items-center rounded-full text-sm font-semibold transition-colors", p.featured ? "bg-white text-green-950 hover:bg-white/90" : "bg-green-900 text-white hover:bg-green-950")}>
+                  {p.cta}
+                </Link>
+              ) : (
+                <p className="mt-7 grid h-12 place-items-center rounded-full border border-border text-sm font-semibold text-muted-foreground">Tez orada</p>
+              )}
             </article>
           ))}
         </div>

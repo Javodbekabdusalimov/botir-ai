@@ -1,5 +1,7 @@
 "use client";
 
+import { setBusinessId } from "@/hooks/use-business";
+import { refreshMe } from "@/hooks/use-auth";
 import { track } from "@/lib/track";
 import type React from "react";
 
@@ -90,9 +92,8 @@ export function ConnectForm() {
         lang: "uz",
       });
       const result = await importCatalog(biz.id, file, rows);
-      try {
-        localStorage.setItem("botir.businessId", biz.id);
-      } catch {}
+      setBusinessId(biz.id);
+      void refreshMe();
       track("generate_lead", { category, items: rows.length });
       setReady({ biz, result: { ...result, errors: [...result.errors, ...skipped.map((n) => `${n}-qator: nomi yoki narxi noto'g'ri`)] } });
     } catch (err) {

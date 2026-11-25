@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError } from "@/lib/friendly-error";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AlertTriangle, Check, FileUp, KeyRound, Link2, Loader2, Mic, MicOff, Pencil, Send, Type, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,13 +49,16 @@ export function KnowledgeView() {
   }, [processing, id]);
 
   const refresh = () => getKnowledge(id).then(setData).catch((e: unknown) => setErr(e instanceof Error ? e.message : "Yuklab bo'lmadi"));
-  const act = async (fn: () => Promise<unknown>) => {
+  /** true = server qabul qildi (forma shundagina tozalanadi). */
+  const act = async (fn: () => Promise<unknown>): Promise<boolean> => {
     setErr(null);
     try {
       await fn();
       await refresh();
+      return true;
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Xatolik yuz berdi");
+      return false;
     }
   };
 
@@ -87,7 +91,7 @@ export function KnowledgeView() {
                       <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> O&apos;qilmoqda
                     </span>
                   ) : s.status === "failed" ? (
-                    <span className="text-xs text-destructive" title={s.error}>Xato</span>
+                    <span className="min-w-0 max-w-[60%] text-xs text-destructive">Xato{s.error ? `: ${friendlyError(s.error)}` : ""}</span>
                   ) : (
                     <span className="text-xs text-muted-foreground">{s.factsCount} fakt</span>
                   )}
@@ -173,7 +177,7 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
   );
 }
 
-function AddSource({ businessId, onAdded }: { businessId: string; onAdded: (fn: () => Promise<unknown>) => Promise<void> }) {
+function AddSource({ businessId, onAdded }: { businessId: string; onAdded: (fn: () => Promise<unknown>) => Promise<boolean> }) {
   const [tab, setTab] = useState<Tab>("text");
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
@@ -184,9 +188,9 @@ function AddSource({ businessId, onAdded }: { businessId: string; onAdded: (fn: 
 
   const submit = async (fn: () => Promise<unknown>, reset?: () => void) => {
     setBusy(true);
-    await onAdded(fn);
+    const ok = await onAdded(fn);
     setBusy(false);
-    reset?.();
+    if (ok) reset?.();
   };
 
   return (
@@ -315,7 +319,7 @@ function TelegramPick({ businessId, busy, onPick }: { businessId: string; busy: 
   );
 }
 
-function DraftFacts({ businessId, facts, act }: { businessId: string; facts: KnowledgeFact[]; act: (fn: () => Promise<unknown>) => Promise<void> }) {
+function DraftFacts({ businessId, facts, act }: { businessId: string; facts: KnowledgeFact[]; act: (fn: () => Promise<unknown>) => Promise<boolean> }) {
   const [sel, setSel] = useState<string[]>([]);
   const [edit, setEdit] = useState<string | null>(null);
   if (!facts.length) return <Empty>Qoralama fakt yo&apos;q. Manba qo&apos;shsangiz, AI chiqargan faktlar shu yerda tasdiqlanadi.</Empty>;
@@ -403,7 +407,7 @@ function FactEditor({ fact, onSave, onCancel }: { fact: KnowledgeFact; onSave: (
   );
 }
 
-function QuestionRow({ q, onAnswer, onDismiss }: { q: { question: string; timesAsked: number }; onAnswer: (a: string) => Promise<void>; onDismiss: () => void }) {
+function QuestionRow({ q, onAnswer, onDismiss }: { q: { question: string; timesAsked: number }; onAnswer: (a: string) => Promise<boolean>; onDismiss: () => void }) {
   const [a, setA] = useState("");
   const [busy, setBusy] = useState(false);
   return (

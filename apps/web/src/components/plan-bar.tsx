@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Crown, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { refreshMe, useAuth } from "@/hooks/use-auth";
-import { getPaymentStatus, subscribePro } from "@/lib/api";
+import { getPaymentStatus, getPlans, subscribePro } from "@/lib/api";
+import { useAsync } from "@/hooks/use-async";
 import { formatSom } from "@/lib/format";
-import { mockActivatePro } from "@/lib/mock";
 import { cn } from "@/lib/utils";
 
 const until = (iso: string) => {
@@ -21,7 +21,9 @@ export function PlanBar() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [paid, setPaid] = useState(false);
-  const bizId = business?.id ?? user?.businessId;
+  const [netErr, setNetErr] = useState(false);
+  const plans = useAsync("plans", getPlans);
+  const proPrice = plans.data?.find((p) => p.id === "pro")?.price;
 
   // To'lov holati har 5s da tekshiriladi
   useEffect(() => {
@@ -31,8 +33,8 @@ export function PlanBar() {
       try {
         const r = await getPaymentStatus(ref);
         if (!alive) return;
+        setNetErr(false);
         if (r.status === "paid") {
-          if (bizId) mockActivatePro(bizId); // demo rejimda muddatni saqlaydi, real API'da e'tiborsiz
           setPaid(true);
           setRef(null);
           void refreshMe();
@@ -41,7 +43,8 @@ export function PlanBar() {
           setErr("To'lov amalga oshmadi. Qayta urinib ko'ring.");
         }
       } catch {
-        /* keyingi tickda qayta uriniladi */
+        // Hech qachon "to'landi" deb taxmin qilmaymiz: faqat xabar, keyingi tickda qayta so'raladi
+        if (alive) setNetErr(true);
       }
     };
     const t = setInterval(tick, 5000);
@@ -49,7 +52,7 @@ export function PlanBar() {
       alive = false;
       clearInterval(t);
     };
-  }, [ref, bizId]);
+  }, [ref]);
 
   if (user?.role !== "business" || !business) return null;
   const pro = business.plan === "pro";
@@ -97,9 +100,10 @@ export function PlanBar() {
         ) : !pro ? (
           <Button className="h-11 px-5 font-semibold" onClick={upgrade} disabled={busy}>
             {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            Pro ga o&apos;tish · {formatSom(1000)}/oy
+            Pro ga o&apos;tish{proPrice != null && <> · 1-oy {formatSom(proPrice)}</>}
           </Button>
         ) : null}
+        {waiting && netErr && <p className="mt-1 text-xs text-destructive">Holatni tekshirib bo&apos;lmadi, qayta urinilmoqda…</p>}
         {err && (
           <p role="alert" className="mt-1 text-xs text-destructive">
             {err}

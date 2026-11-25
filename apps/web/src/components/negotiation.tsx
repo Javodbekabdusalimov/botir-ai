@@ -181,7 +181,7 @@ export function NegotiationStage({
           {state.status === "agreed" && "Kelishildi"}
           {state.status === "confirmed" && "Tasdiqlandi"}
           {state.status === "rejected" && "Kelishilmadi"}
-          {state.status === "failed" && "Javob kechikdi"}
+          {state.status === "failed" && "Texnik xato"}
         </span>
       </div>
       <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3" aria-live="polite">
@@ -326,6 +326,7 @@ const OPENED = new Set<string>();
 function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer }) {
   const [status, setStatus] = useState<"pending" | "paid" | "failed" | "expired">("pending");
   const [netError, setNetError] = useState(false);
+  const [isTest, setIsTest] = useState(() => result.paymentLink.includes("/pay/test/"));
   const [copied, setCopied] = useState(false);
   const { offer } = best;
   const [paidAt] = useState(() => Date.now());
@@ -351,6 +352,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
         const r = await getPaymentStatus(result.orderId);
         if (!alive) return;
         setNetError(false);
+        if (typeof r.isTest === "boolean") setIsTest(r.isTest);
         if (r.status !== "pending") {
           setStatus(r.status);
           if (r.status === "paid")
@@ -391,8 +393,8 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">To&apos;landi</p>
-        <p className="mt-1 text-sm font-medium text-green-900/80">TezCheck orqali to&apos;landi</p>
+        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">{isTest ? "TEST to'lov" : "To'landi"}</p>
+        <p className="mt-1 text-sm font-medium text-green-900/80">{isTest ? "TEST to'lov: haqiqiy pul o'tmadi" : "TezCheck orqali to'landi"}</p>
         <dl className="mx-auto mt-4 max-w-xs divide-y divide-tint-3 rounded-xl border border-tint-3 bg-card text-left text-sm">
           {[
             ["Summa", formatSom(offer.price)],

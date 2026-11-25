@@ -4,16 +4,23 @@ import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../db/prisma.service';
 import type { PayableOrder, PaymentLink, PaymentLinkProvider } from './payment-link';
+import { TestPaymentLinkProvider } from './test-payment.provider';
 import { TezcheckClient } from './tezcheck.client';
 
 @Injectable()
 export class TezcheckPaymentLinkProvider implements PaymentLinkProvider {
   private readonly logger = new Logger('TezCheck');
 
-  constructor(@Inject(PrismaService) private readonly db: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly db: PrismaService,
+    @Inject(TestPaymentLinkProvider) private readonly test: TestPaymentLinkProvider,
+  ) {}
 
   /** Idempotent per order: DB first, then TezCheck Idempotency-Key `botir-<orderId>` (same bill on retry/race). */
   async createPaymentLink(order: PayableOrder): Promise<PaymentLink> {
+    // The configured cash desk is Botir's own and payouts do not exist (invariant 3): only the subscription is Botir's
+    // money. Customer orders stay on TEST links until each business has its own cash desk.
+    if ((order.kind ?? 'order') !== 'subscription') return this.test.createPaymentLink(order);
     const existing = await this.findLive(order.id);
     if (existing) return { payUrl: existing.link, billId: existing.billId };
     const client = TezcheckClient.fromEnv();

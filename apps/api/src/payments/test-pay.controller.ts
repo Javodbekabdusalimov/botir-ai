@@ -23,13 +23,15 @@ export class TestPayController {
          ${p.status === 'paid' ? '' : `<form method="post" action="/pay/test/${esc(orderId)}"><button>TEST to‘lov qilish</button></form>`}`;
     res.type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
       <title>TEST to'lov</title><body style="font-family:system-ui;max-width:420px;margin:40px auto;padding:0 16px">
-      <h2>⚠️ TEST to‘lov sahifasi</h2><p>Bu haqiqiy to‘lov emas — TezCheck moduli ulanmagan.</p>${body}</body>`);
+      <h2>⚠️ TEST to‘lov sahifasi</h2><p>Bu haqiqiy to‘lov emas — pul yechilmaydi va biznesga pul kelmaydi.</p>${body}</body>`);
   }
 
   @Post(':orderId')
   async pay(@Param('orderId') orderId: string, @Res() res: Response): Promise<void> {
     const p = await this.payments.findByOrder(orderId);
     if (!p?.isTest) throw new NotFoundException('test payment not found'); // never touches real TezCheck payments
+    // Once real billing is on, an old TEST subscription link must not switch Pro on for free.
+    if (p.kind === 'subscription' && process.env.TEZCHECK_API_KEY) throw new NotFoundException('test payment not found');
     await this.settlement.markPaid(p);
     res.redirect(303, `/pay/test/${orderId}`);
   }

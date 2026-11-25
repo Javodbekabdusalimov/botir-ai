@@ -1,7 +1,8 @@
-import { Controller, Get, Inject, Module } from '@nestjs/common';
+import { Controller, Get, Inject, Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { AuthController } from './auth/auth.controller';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
+import { BILLING_CONTROLLERS, BILLING_PROVIDERS, configureBilling } from './billing/billing.module';
 import { BusinessesController } from './businesses/businesses.controller';
 import { AnalyticsService } from './businesses/analytics.service';
 import { ok } from './common/http';
@@ -18,10 +19,12 @@ import { KnowledgeSourcesService } from './knowledge/sources.service';
 import { SyncService } from './knowledge/sync.service';
 import { TurnRecorder } from './knowledge/turn-recorder.service';
 import { LoopController } from './loop/loop.controller';
-import { agentsProvider } from './negotiations/agents.provider';
+import { AGENTS, agentsProvider, type Agents } from './negotiations/agents.provider';
 import { MemoryController } from './negotiations/memory.controller';
 import { NegotiationsController } from './negotiations/negotiations.controller';
 import { NegotiationsService } from './negotiations/negotiations.service';
+import { OutreachController } from './outreach/outreach.controller';
+import { OutreachService } from './outreach/outreach.service';
 import { PAYMENT_LINK } from './payments/payment-link';
 import { PaymentPoller } from './payments/payment-poller.service';
 import { PaymentSettlement } from './payments/payment-settlement.service';
@@ -36,12 +39,18 @@ import { TgService } from './tg/tg.service';
 
 @Controller()
 class HealthController {
-  constructor(@Inject(PrismaService) private readonly db: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly db: PrismaService,
+    @Inject(AGENTS) private readonly agents: Agents,
+  ) {}
 
   @Get('health')
   async health() {
     const businesses = await this.db.business.count({ where: { deletedAt: null } });
+    const { ai, ...aiDetail } = this.agents.llm.status(); // from the last AI call, 'unknown' until the first one
     return ok({
+      ai,
+      aiDetail,
       status: 'ok',
       db: 'sqlite',
       businesses,
@@ -53,12 +62,12 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController, OutreachController, ...BILLING_CONTROLLERS],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
     PrismaActionStore, TgUserService, MetricsService, QuestionsService, TurnRecorder,
-    CatalogWriter, KnowledgeSourcesService, KnowledgeFactsService, SyncService,
-    TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller,
+    OutreachService, CatalogWriter, KnowledgeSourcesService, KnowledgeFactsService, SyncService,
+    TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller, ...BILLING_PROVIDERS,
     // Real TezCheck bills when the key is configured; otherwise clearly-labeled TEST links.
     {
       provide: PAYMENT_LINK,
@@ -67,4 +76,8 @@ class HealthController {
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    configureBilling(consumer);
+  }
+}

@@ -8,6 +8,18 @@ import { TG_SCRIPT, inTelegramHint, markTelegram, tg } from "@/lib/telegram";
 /** Orqaga tugmasi kerak bo'lmagan "bosh" sahifalar. */
 const ROOTS = new Set(["/", "/tg", "/assistant", "/dashboard"]);
 const BG = "#e3e7e3";
+const BG_DARK = "#141815";
+
+/** Telegram colorScheme → <html data-theme>, header va fon rangi (J-M2). */
+function applyTheme(w: NonNullable<ReturnType<typeof tg>>) {
+  const dark = w.colorScheme === "dark";
+  if (dark) document.documentElement.dataset.theme = "dark";
+  else delete document.documentElement.dataset.theme;
+  try {
+    w.setHeaderColor(dark ? BG_DARK : BG);
+    w.setBackgroundColor(dark ? BG_DARK : BG);
+  } catch {}
+}
 
 /**
  * Telegram ichida ochilganda: skriptni yuklaydi, ready/expand, header va fon rangini saytga moslaydi,
@@ -34,9 +46,11 @@ export function TelegramShell() {
     try {
       w.ready();
       w.expand();
-      w.setHeaderColor(BG);
-      w.setBackgroundColor(BG);
     } catch {}
+    applyTheme(w);
+    const onTheme = () => applyTheme(w);
+    w.onEvent?.("themeChanged", onTheme);
+    return () => w.offEvent?.("themeChanged", onTheme);
   }, [ready]);
 
   useEffect(() => {

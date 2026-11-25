@@ -1,0 +1,93 @@
+/* Telegram qorong'i rejimi (J-M2): <html data-theme="dark"> faqat Telegram colorScheme = dark bo'lganda qo'yiladi.
+   Sahifalarda green-* va white qattiq yozilgan, shuning uchun shkala teskari aylantiriladi: to'q yashil matn och bo'ladi,
+   oq kartalar to'q yuzaga aylanadi, "oq matn + to'q tugma" juftligi "to'q matn + och tugma" bo'lib kontrast saqlanadi. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-white: #1d221f;
+  --color-green-50: #1b1f1c;
+  --color-green-100: #2b312d;
+  --color-green-200: #363e38;
+  --color-green-300: #444e47;
+  --color-green-400: #556158;
+  --color-green-500: #8e9b91;
+  --color-green-600: #b2bdb4;
+  --color-green-700: #c6cfc8;
+  --color-green-800: #d2d9d3;
+  --color-green-900: #e8ece8;
+  --color-green-950: #f4f6f4;
+  --color-emerald-50: #1b1f1c;
+  --color-emerald-100: #2b312d;
+  --color-emerald-200: #363e38;
+  --color-emerald-300: #444e47;
+  --color-emerald-400: #556158;
+  --color-emerald-500: #8e9b91;
+  --color-emerald-600: #b2bdb4;
+  --color-emerald-700: #c6cfc8;
+  --color-emerald-800: #d2d9d3;
+  --color-emerald-900: #e8ece8;
+  --color-emerald-950: #f4f6f4;
+  --color-amber-50: #2a2112;
+  --color-amber-100: #3a2c14;
+  --color-amber-200: #5a3f12;
+  --color-amber-300: #7c5512;
+  --color-amber-400: #b4780f;
+  --color-amber-500: #d9921a;
+  --color-amber-600: #f0a83a;
+  --color-amber-700: #f6c27a;
+  --color-amber-800: #fbd9a4;
+  --color-amber-900: #fde9c8;
+  --color-amber-950: #fff6e6;
+  --biz-soft: #2a2112;
+  --ink: #eef1ee;
+  --background: #141815;
+  --foreground: #eef1ee;
+  --card: rgb(40 46 42 / 0.72);
+  --card-foreground: #eef1ee;
+  --popover: rgb(32 37 34 / 0.96);
+  --popover-foreground: #eef1ee;
+  --primary: #d2d9d3;
+  --primary-strong: #e8ece8;
+  --primary-foreground: #141815;
+  --secondary: rgb(255 255 255 / 0.08);
+  --secondary-foreground: #e8ece8;
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: #a7b2aa;
+  --accent: rgb(255 255 255 / 0.1);
+  --accent-foreground: #e8ece8;
+  --border: rgb(232 236 232 / 0.12);
+  --input: rgb(232 236 232 / 0.2);
+  --ring: #8e9b91;
+  --agent: #c6cfc8;
+  --agent-soft: rgb(255 255 255 / 0.08);
+  --tint-1: rgb(255 255 255 / 0.06);
+  --tint-2: #222824;
+  --tint-3: #2f3631;
+  --elev-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -12px rgb(0 0 0 / 0.5);
+  --elev-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 24px 48px -16px rgb(0 0 0 / 0.6);
+}
+html[data-theme="dark"] body {
+  background-image: linear-gradient(180deg, #161a17 0%, #1b201c 100%);
+}
+html[data-theme="dark"] .glass {
+  background: rgb(40 46 42 / 0.6);
+  border-color: rgb(255 255 255 / 0.08);
+}
+/* Inbox: chiquvchi xabar pufakchasi (yorug'da #d9fdd3) */
+html[data-theme="dark"] .bg-\[\#d9fdd3\] {
+  background-color: #23402a;
+}
+/* Rasm ustidagi to'q qatlam va to'q sahnalar: ichida asl (yorug') shkala qoladi — oq matn to'q fonda */
+html[data-theme="dark"] :is(.tg-keep, .stage-deep) {
+  --color-white: #ffffff;
+  --color-green-50: #f4f6f4;
+  --color-green-100: #e8ece8;
+  --color-green-200: #d2d9d3;
+  --color-green-300: #b2bdb4;
+  --color-green-400: #8e9b91;
+  --color-green-500: #6e7b71;
+  --color-green-600: #556158;
+  --color-green-700: #444e47;
+  --color-green-800: #363e38;
+  --color-green-900: #2b312d;
+  --color-green-950: #1b1f1c;
+}

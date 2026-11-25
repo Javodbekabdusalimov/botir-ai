@@ -274,7 +274,7 @@ export function Checkout({ orderId }: { orderId: string }) {
             </section>
 
             <aside aria-label="Buyurtma xulosasi" className="h-fit overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-              <div className="relative h-32">
+              <div className="tg-keep relative h-32">
                 <Image src={bizPhoto(sum?.businessId ?? "")} alt="" fill priority sizes="384px" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-green-950/80 to-transparent" aria-hidden="true" />
                 <p className="absolute bottom-3 left-4 right-4 truncate font-display text-lg font-extrabold text-white">{sum?.businessName ?? "Buyurtma"}</p>

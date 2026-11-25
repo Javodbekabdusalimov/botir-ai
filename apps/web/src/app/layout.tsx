@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./tg-dark.css";
 import { ChatLauncher } from "@/components/chat-launcher";
 import { BottomNav, SiteHeader } from "@/components/site-nav";
 import { TelegramShell } from "@/components/telegram-shell";

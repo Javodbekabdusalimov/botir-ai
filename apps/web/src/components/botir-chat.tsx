@@ -7,7 +7,8 @@ import { OfferCard } from "@/components/negotiation";
 import { BizAvatar } from "@/components/biz-avatar";
 import { useNegotiation } from "@/hooks/use-negotiation";
 import { useAsync } from "@/hooks/use-async";
-import { agentRequest, confirmNegotiation, getBusinesses } from "@/lib/api";
+import { UpgradeRequiredError, agentRequest, confirmNegotiation, getBusinesses } from "@/lib/api";
+import { UpgradeCard } from "@/components/upgrade-card";
 import type { ConfirmResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +51,7 @@ function NegotiationTurn({ id, names, onDone }: { id: string; names: Record<stri
   const [result, setResult] = useState<ConfirmResult | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState<string | null>(null);
   const ranked = useMemo(() => Object.values(state.best).sort((a, b) => a.offer.price - b.offer.price), [state.best]);
   const ready = state.status === "agreed" || state.status === "confirmed";
   const msgCount = state.order.reduce((s, b) => s + state.lanes[b].messages.length, 0);
@@ -63,10 +65,12 @@ function NegotiationTurn({ id, names, onDone }: { id: string; names: Record<stri
     if (!current || confirming) return;
     setConfirming(true);
     setErr(null);
+    setUpgrade(null);
     try {
       setResult(await confirmNegotiation(id, current.businessId));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Tasdiqlab bo'lmadi");
+      if (e instanceof UpgradeRequiredError) setUpgrade(e.message);
+      else setErr(e instanceof Error ? e.message : "Tasdiqlab bo'lmadi");
     } finally {
       setConfirming(false);
     }
@@ -112,6 +116,7 @@ function NegotiationTurn({ id, names, onDone }: { id: string; names: Record<stri
       {state.status === "failed" && <p className="text-sm text-muted-foreground">{TECH_ERROR_TEXT}</p>}
       {current && (
         <div className="pl-0 sm:pl-9">
+          {upgrade && <UpgradeCard message={upgrade} className="mb-3" />}
           <OfferCard
             key={ready ? "final" : "live"}
             best={current}
@@ -137,6 +142,7 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chatUpgrade, setChatUpgrade] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const names = useAsync("businesses", getBusinesses);
   const nameMap = useMemo(() => Object.fromEntries((names.data ?? []).map((b) => [b.id, b.name])), [names.data]);
@@ -150,6 +156,7 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
     if (!t || busy) return;
     setText("");
     setError(null);
+    setChatUpgrade(null);
     setTurns((m) => [...m, { id: m.length, from: "me", text: t, at: time() }]);
     setBusy(true);
     try {
@@ -160,7 +167,8 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
         { id: m.length, from: "ai", text: "Tushundim. Biznes agentlari bilan gaplashib, eng yaxshi narxni topaman. Siz faqat tasdiqlaysiz.", at: time(), negotiationId },
       ]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Agent javob bermadi, qayta urinib ko'ring");
+      if (e instanceof UpgradeRequiredError) setChatUpgrade(e.message);
+      else setError(e instanceof Error ? e.message : "Agent javob bermadi, qayta urinib ko'ring");
       setText(t);
     } finally {
       setBusy(false);
@@ -206,6 +214,7 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
         )}
         <div ref={endRef} />
       </div>
+      {chatUpgrade && <UpgradeCard message={chatUpgrade} className="mx-4 mb-2" />}
       {error && (
         <p role="alert" className="px-4 pb-1 text-sm text-destructive">
           {error}

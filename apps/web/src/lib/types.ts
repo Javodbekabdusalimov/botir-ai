@@ -13,6 +13,8 @@ export interface Lane {
 }
 
 export interface BestOffer {
+  /** best_offer.taskId: bitta so'rovda bir nechta vazifa bo'lsa guruh kaliti. */
+  taskId?: string;
   businessId: string;
   businessName: string;
   offer: OfferPayload;

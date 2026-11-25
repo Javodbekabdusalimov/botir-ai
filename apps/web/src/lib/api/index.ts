@@ -76,10 +76,10 @@ export async function agentRequest(text: string): Promise<AgentRequestResult> {
 }
 
 /** Faqat `demo*` id (namuna muzokara) mock tasdiq oladi; haqiqiy muzokara doim serverdan. */
-export const confirmNegotiation = (id: string, businessId: string) =>
+export const confirmNegotiation = (id: string, businessId: string, taskId?: string) =>
   id.startsWith("demo")
     ? delay(600, mock.mockConfirm())
-    : request<ConfirmResult>(`/negotiations/${id}/confirm`, json("POST", { businessId }), demoUnavailable, AGENT_TIMEOUT_MS).catch((e: unknown) => {
+    : request<ConfirmResult>(`/negotiations/${id}/confirm`, json("POST", taskId ? { businessId, taskId } : { businessId }), demoUnavailable, AGENT_TIMEOUT_MS).catch((e: unknown) => {
         // Ikki marta "Tasdiqlayman" (yoki reload): yangi buyurtma yo'q, mavjudiga o'tamiz
         if (e instanceof AlreadyConfirmedError) return { orderId: e.orderId, paymentLink: e.paymentLink ?? `/pay/${e.orderId}` } as ConfirmResult;
         throw e;

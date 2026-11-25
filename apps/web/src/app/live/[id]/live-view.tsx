@@ -174,7 +174,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
             <div className="space-y-4">
               {groups.length > 1 && <p className="text-sm font-semibold text-muted-foreground">{groups.length} ta vazifa: har biri alohida tasdiqlanadi</p>}
               {groups.map((g) => (
-                <GroupOffer key={g.map((b) => b.businessId).join(",")} negotiationId={id} offers={g} ready={ready} focusId={confirmFor} />
+                <GroupOffer key={g.map((b) => `${b.taskId ?? ""}:${b.businessId}`).join(",")} negotiationId={id} offers={g} ready={ready} focusId={confirmFor} />
               ))}
             </div>
           ) : notFound ? null : (

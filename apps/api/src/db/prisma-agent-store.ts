@@ -6,6 +6,7 @@ import type {
 } from '../agents';
 import type { AgentMessage, Offer } from '../agents/shared';
 import { parseJson } from '../common/http';
+import { loadKnowledge } from '../knowledge/knowledge-context';
 import { toAgentBusiness, toProduct } from './mappers';
 import { PrismaService } from './prisma.service';
 
@@ -34,6 +35,10 @@ export class PrismaAgentStore implements AgentStore {
   async getProducts(businessId: string): Promise<Product[]> {
     const rows = await this.db.catalogItem.findMany({ where: { businessId, deletedAt: null, inStock: true } });
     return rows.map(toProduct);
+  }
+
+  getKnowledge(businessId: string): Promise<string> {
+    return loadKnowledge(this.db, businessId);
   }
 
   /** Raw agent messages are mapped to the shared shape by NegotiationsService; nothing to persist here. */

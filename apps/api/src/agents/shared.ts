@@ -18,6 +18,7 @@ export interface Product {
   name: string;
   price: number; // so'm
   unit: string;
+  description?: string;
 }
 
 export type AgentRole = 'user' | 'biz_agent' | 'personal_agent' | 'system';

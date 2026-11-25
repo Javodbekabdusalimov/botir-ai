@@ -41,6 +41,8 @@ model Business {
   plan           String    @default("start") // start | pro (subscription, paid via TezCheck)
   planUntil      DateTime?
   aiCredits      Int       @default(100) // monthly AI dialog quota
+  agentReadyAt   DateTime? // first time the agent had a catalog + confirmed knowledge (onboarding time metric)
+  syncKeyHash    String? // sha256 of the catalog sync API key (POS/1C/iiko push); plain key is shown once
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -318,4 +320,70 @@ model LlmCall {
   purpose String
   ok      Boolean
   at      DateTime
+}
+
+// ---- Business knowledge: sources → draft facts → owner confirms → agent context ----
+model KnowledgeSource {
+  id         String    @id @default(uuid())
+  businessId String
+  kind       String // photo | pdf | text | telegram | website | voice | sync | question
+  label      String
+  status     String    @default("processing") // processing | ready | failed
+  error      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([businessId])
+}
+
+model KnowledgeFact {
+  id            String    @id @default(uuid())
+  businessId    String
+  sourceId      String
+  kind          String // profile | policy | faq | catalog | style
+  topic         String // delivery, payment, booking, parking, ... | item name for catalog
+  question      String? // faq
+  content       String
+  price         Int? // catalog only
+  unit          String? // catalog only
+  evidence      String? // short quote from the source (PII redacted)
+  confidence    Float     @default(0.5)
+  status        String    @default("draft") // draft | confirmed | rejected
+  confirmedAt   DateTime?
+  catalogItemId String? // set when a catalog fact was confirmed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([businessId, status])
+}
+
+model PendingQuestion {
+  id          String    @id @default(uuid())
+  businessId  String
+  question    String
+  normalized  String
+  timesAsked  Int       @default(1)
+  status      String    @default("open") // open | answered | dismissed
+  answer      String?
+  factId      String?
+  tgMessageId Int? // bot message sent to the owner (reply to it = answer)
+  tgChatId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([businessId, normalized])
+}
+
+/// One business-agent turn. Source of the honest "AI answered X%" metric.
+model AgentTurn {
+  id         String   @id @default(uuid())
+  businessId String
+  channel    String // negotiation | inbox
+  answered   Boolean // false = the agent did not know / needs a human
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
 }

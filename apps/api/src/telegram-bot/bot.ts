@@ -27,6 +27,8 @@ export interface BotDeps {
   resolveContact(ownerTgId: number, name: string): Promise<{ accountId: string; chatId: string } | null>;
   /** Offer buttons. */
   confirmOffer(offerId: string, userId: number): Promise<string>;
+  /** Owner's reply to the bot's "agent does not know" message. null = not such a reply, handle as a normal message. */
+  answerQuestion?(chatId: number, replyToMessageId: number, text: string): Promise<string | null>;
   alternativeOffer?(offerId: string, userId: number): Promise<string>;
   /** Same pipeline as userbot incoming (ModeHandler.handleIncoming). */
   onIncoming: OnIncoming;
@@ -67,6 +69,11 @@ export function createBot(deps: BotDeps): CreateBotResult {
   bot.on('message:text', async (ctx) => {
     const text = ctx.message.text;
     if (text.startsWith('/')) return;
+    const repliedTo = ctx.message.reply_to_message;
+    if (repliedTo && deps.answerQuestion) {
+      const saved = await deps.answerQuestion(ctx.chat.id, repliedTo.message_id, text);
+      if (saved !== null) return void (await ctx.reply(saved));
+    }
     const cmd = COMMAND_RE.exec(text);
     if (cmd) return handleCommand(ctx, deps, cmd[1] ?? '', cmd[2] ?? '');
     await ctx.replyWithChatAction('typing');

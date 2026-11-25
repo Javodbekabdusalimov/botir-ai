@@ -7,6 +7,8 @@ import { toAgentBusiness, toProduct } from '../db/mappers';
 import { splitSessionId } from '../db/prisma-agent-store';
 import { PrismaService } from '../db/prisma.service';
 import { PrismaTgStore } from '../db/prisma-tg-store';
+import { QuestionsService } from '../knowledge/questions.service';
+import { TurnRecorder } from '../knowledge/turn-recorder.service';
 import { AGENTS, type Agents } from '../negotiations/agents.provider';
 import { NegotiationsService } from '../negotiations/negotiations.service';
 import { createBot, makeTransport, startBot } from '../telegram-bot/bot';
@@ -32,6 +34,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
   private modes!: ModeHandler;
   private readonly loginOwner = new Map<string, TgOwner>(); // loginId → owner
   private disabledReason = '';
+  private readonly recordedTurn = new Map<string, string>(); // chatId → last customer message already counted
   private selfHandler?: OnSelf;
 
   constructor(
@@ -39,6 +42,8 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     @Inject(PrismaTgStore) private readonly store: PrismaTgStore,
     @Inject(AGENTS) private readonly agents: Agents,
     @Inject(NegotiationsService) private readonly negotiations: NegotiationsService,
+    @Inject(QuestionsService) private readonly questions: QuestionsService,
+    @Inject(TurnRecorder) private readonly turns: TurnRecorder,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -61,6 +66,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     const transport: Transport = this.sync ? makeTransport(this.store, () => this.bot, this.sync) : noUserbot;
     this.sender = new Sender(this.store, transport);
     this.modes = new ModeHandler(this.store, this.sender, (chat, history) => this.draftReply(chat, history), () => undefined);
+    this.questions.setNotifier((businessId, text) => this.askOwner(businessId, text));
     await this.reconnectAccounts();
     this.startBot(onIncoming);
   }
@@ -80,6 +86,22 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     return sent;
   }
 
+  /** Like notifyBusinessOwner, but stops at the first delivered message: a reply to it is the owner's answer. */
+  private async askOwner(businessId: string, text: string): Promise<{ chatId: string; messageId: number } | null> {
+    const bot = this.bot;
+    if (!bot) return null;
+    const accounts = await this.db.tgAccount.findMany({ where: { businessId, deletedAt: null }, orderBy: { connectedAt: 'desc' } });
+    for (const tgUserId of new Set(accounts.map((a) => a.tgUserId))) {
+      try {
+        const sent = await bot.api.sendMessage(Number(tgUserId), text);
+        return { chatId: tgUserId, messageId: sent.message_id };
+      } catch (e) {
+        this.logger.warn(`ask owner ${businessId}: ${errMsg(e)}`);
+      }
+    }
+    return null;
+  }
+
   onModuleDestroy(): void {
     this.login?.dispose();
     void this.bot?.stop();
@@ -95,6 +117,12 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     const res = await this.login.start(phone);
     this.loginOwner.set(res.loginId, owner);
     return res;
+  }
+
+  /** Business a pending login was started for; undefined for unknown or personal (/me) logins. */
+  loginBusinessId(loginId: string): string | undefined {
+    const owner = this.loginOwner.get(loginId);
+    return owner?.type === 'business' ? owner.id : undefined;
   }
 
   /** `owner` given → the login must have been started by that owner (/me endpoints). */
@@ -207,7 +235,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     const account = await this.db.tgAccount.findUnique({ where: { id: chat.accountId } });
     const biz = account?.businessId ? await this.db.business.findFirst({ where: { id: account.businessId, deletedAt: null } }) : null;
     if (!biz) return { text: '', confidence: 0, needsHuman: true };
-    const products = (await this.db.catalogItem.findMany({ where: { businessId: biz.id, deletedAt: null } })).map(toProduct);
+    const products = (await this.db.catalogItem.findMany({ where: { businessId: biz.id, deletedAt: null, inStock: true } })).map(toProduct);
     const agentHistory: AgentMessage[] = history.map((m) => ({
       id: m.id, role: m.direction === 'in' ? 'user' : 'biz_agent', text: m.text, at: m.sentAt,
     }));
@@ -215,7 +243,13 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
       sessionId: `tg:${chat.id}`, business: toAgentBusiness(biz), products, history: agentHistory, round: 1,
       lang: biz.lang === 'ru' ? 'ru' : 'uz',
     });
-    return { text: turn.reply, confidence: turn.confidence, needsHuman: turn.confidence < 0.5 || turn.violations.length > 0 };
+    const needsHuman = turn.confidence < 0.5 || turn.violations.length > 0 || Boolean(turn.unknownQuestion);
+    const lastIn = [...history].reverse().find((m) => m.direction === 'in');
+    if (lastIn && this.recordedTurn.get(chat.id) !== lastIn.id) { // re-drafting the same message is not a new turn
+      this.recordedTurn.set(chat.id, lastIn.id);
+      void this.turns.record(biz.id, 'inbox', { confidence: turn.confidence, unknownQuestion: turn.unknownQuestion, needsHuman });
+    }
+    return { text: turn.reply, confidence: turn.confidence, needsHuman };
   }
 
   private async reconnectAccounts(): Promise<void> {
@@ -247,6 +281,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
         });
         return chat ? { accountId: chat.accountId, chatId: chat.id } : null;
       },
+      answerQuestion: (chatId, messageId, text) => this.questions.answerByReply(String(chatId), messageId, text),
       confirmOffer: async (offerId) => {
         const offer = await this.db.agentOffer.findUnique({ where: { id: offerId } });
         if (!offer) return 'Taklif topilmadi';

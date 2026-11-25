@@ -10,6 +10,7 @@ import { ownsBusiness } from '../auth/ownership';
 import { ok } from '../common/http';
 import { toBusiness, toCatalogItem, toOrder } from '../db/mappers';
 import { PrismaService } from '../db/prisma.service';
+import { MetricsService } from '../knowledge/metrics.service';
 import { AnalyticsService } from './analytics.service';
 import { normalizeRows, readSheet } from './catalog-import';
 
@@ -22,6 +23,7 @@ export class BusinessesController {
   constructor(
     @Inject(PrismaService) private readonly db: PrismaService,
     @Inject(AnalyticsService) private readonly analytics: AnalyticsService,
+    @Inject(MetricsService) private readonly metrics: MetricsService,
   ) {}
 
   @Get()
@@ -77,6 +79,7 @@ export class BusinessesController {
     this.assertOwner(await this.business(id), user);
     if (!dto?.name || !validPrice(dto.price)) throw new BadRequestException('name and price (>= 0) are required');
     const row = await this.db.catalogItem.create({ data: { businessId: id, ...this.itemData(dto), name: dto.name, price: Math.round(Number(dto.price)) } });
+    await this.metrics.touchReady(id);
     return ok(toCatalogItem(row));
   }
 
@@ -124,6 +127,7 @@ export class BusinessesController {
     for (const r of rows) {
       await this.db.catalogItem.create({ data: { businessId: id, name: r.name, price: r.price, unit: r.unit, description: r.description, tags: JSON.stringify(r.tags) } });
     }
+    await this.metrics.touchReady(id);
     return ok<CatalogImportResult>({ ...result, imported: rows.length });
   }
 

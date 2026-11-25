@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { BusinessAgent, Lang } from './business-agent';
+import type { BusinessAgent, BusinessTurnResult, Lang } from './business-agent';
 import type { PersonalAgent } from './personal-agent';
 import type { AgentMessage, AgentRole, NegotiationEvent, NegotiationStatus, Offer } from './shared';
 import type { AgentStore } from './store/agent-store';
@@ -19,6 +19,8 @@ export interface NegotiationInput {
   memory?: string[]; // remembered user preferences, injected into the REQUEST
   competitors?: number; // other businesses negotiating the same task in parallel
   onEvent?: NegotiationEventHandler;
+  /** Every business-agent turn (metrics, unknown questions). Must not throw. */
+  onTurn?: (turn: BusinessTurnResult) => void;
 }
 
 export interface NegotiationResult {
@@ -70,6 +72,7 @@ export class Negotiator {
           sessionId, business: input.business, products, history: transcript, round, lang: input.lang,
           competitors: input.competitors,
         });
+        input.onTurn?.(turn);
         await say('biz_agent', turn.reply);
         for (const v of turn.violations) await say('system', `PolicyGuard: ${v}`);
         if (turn.offer) {

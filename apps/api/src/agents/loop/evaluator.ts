@@ -35,9 +35,10 @@ export class Evaluator {
     if (!business) throw new Error(`Evaluator: unknown business ${businessId}`);
     const products = await this.store.getProducts(businessId);
     const golden = await this.store.getGoldenCases(businessId);
+    const knowledge = await this.store.getKnowledge(businessId);
 
     const cases = await mapLimit(golden, CONCURRENCY, (c) =>
-      this.runCase(c, business, products, extraInstructions).catch((e: unknown) => ({
+      this.runCase(c, business, products, extraInstructions, knowledge).catch((e: unknown) => ({
         caseId: c.id, question: c.question, reply: '', pass: false,
         reason: `agent error: ${e instanceof Error ? e.message : String(e)}`,
       })),
@@ -47,7 +48,9 @@ export class Evaluator {
     return { businessId, score: golden.length ? passed / golden.length : 0, passed, total: golden.length, cases };
   }
 
-  private async runCase(c: GoldenCase, business: AgentBusiness, products: Product[], extraInstructions: string): Promise<CaseResult> {
+  private async runCase(
+    c: GoldenCase, business: AgentBusiness, products: Product[], extraInstructions: string, knowledge: string,
+  ): Promise<CaseResult> {
     const turn = await this.businessAgent.respond({
       sessionId: `eval-${randomUUID()}`,
       business,
@@ -59,13 +62,15 @@ export class Evaluator {
     });
     const base = { caseId: c.id, question: c.question, reply: turn.reply };
     // Deterministic checks first: no LLM needed to catch a wrong price or a guard violation.
-    const badPrice = findWrongPrice(turn.reply, products, turn.offer?.total);
+    const badPrice = findWrongPrice(turn.reply, products, turn.offer?.total, knowledge);
     if (badPrice !== undefined) return { ...base, pass: false, reason: `katalogda yo'q narx: ${badPrice}` };
     if (turn.violations.length) return { ...base, pass: false, reason: `policy: ${turn.violations.join('; ')}` };
-    return { ...base, ...(await this.judge(c, turn.reply, business, products)) };
+    return { ...base, ...(await this.judge(c, turn.reply, business, products, knowledge)) };
   }
 
-  private async judge(c: GoldenCase, reply: string, business: AgentBusiness, products: Product[]): Promise<{ pass: boolean; reason: string }> {
+  private async judge(
+    c: GoldenCase, reply: string, business: AgentBusiness, products: Product[], knowledge: string,
+  ): Promise<{ pass: boolean; reason: string }> {
     try {
       const { data } = await this.llm.completeJson<{ pass?: boolean; reason?: string }>({
         model: 'haiku',
@@ -74,6 +79,7 @@ export class Evaluator {
           'Sen qat\'iy baholovchisan. Biznes agentining mijozga javobini tekshir.',
           `Biznes faktlari: ish vaqti ${business.hours.open}–${business.hours.close}; maks chegirma ${business.maxDiscountPct}%; ${business.notes ?? ''}`,
           `Katalog: ${products.map((p) => `${p.name} = ${p.price} so'm`).join('; ')}.`,
+          ...(knowledge ? [`Egasi tasdiqlagan faktlar:\n${knowledge}`] : []),
           "Biznes faktlari va katalogdagi ma'lumotni aytish to'qish EMAS.",
           "FAQAT ikki narsani tekshir: (1) har bir kutilgan fakt javobda ma'nosi bo'yicha bormi, (2) taqiqlangan narsa bormi.",
           "Boshqa narsa uchun (qo'shimcha taklif, savol, ish vaqti, 'Taklif/Jami' qatori) FAIL qilma.",
@@ -94,14 +100,17 @@ export class Evaluator {
   }
 }
 
-/** Every money-like number (≥1000) in the reply must be a catalog price, its multiple, or the code-computed total. */
-export function findWrongPrice(reply: string, products: Product[], total?: number): number | undefined {
+/** Every money-like number (≥1000) in the reply must be a catalog price, its multiple, the code-computed total or in a confirmed fact. */
+export function findWrongPrice(reply: string, products: Product[], total?: number, knowledge = ''): number | undefined {
   const prices = products.map((p) => p.price).filter((p) => p > 0);
-  const numbers = (reply.match(/\d{1,3}(?:[\s  .,]\d{3})+|\d{4,}/g) ?? []).map((s) => Number(s.replace(/\D/g, '')));
-  return numbers.find(
-    (n) => n >= 1000 && n !== total && !prices.some((p) => n % p === 0 && n / p <= 100) && !isYear(n),
+  const known = new Set(moneyLike(knowledge)); // e.g. a delivery fee
+  return moneyLike(reply).find(
+    (n) => n >= 1000 && n !== total && !known.has(n) && !prices.some((p) => n % p === 0 && n / p <= 100) && !isYear(n),
   );
 }
+
+const moneyLike = (text: string): number[] =>
+  (text.match(/\d{1,3}(?:[\s  .,]\d{3})+|\d{4,}/g) ?? []).map((s) => Number(s.replace(/\D/g, '')));
 
 function isYear(n: number): boolean {
   return n >= 2020 && n <= 2035;

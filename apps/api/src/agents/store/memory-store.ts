@@ -48,6 +48,10 @@ export class MemoryStore implements AgentStore {
     return this.products.filter((p) => p.businessId === businessId);
   }
 
+  async getKnowledge(_businessId: string): Promise<string> {
+    return '';
+  }
+
   async saveMessage(sessionId: string, message: AgentMessage): Promise<void> {
     this.messages.push({ sessionId, message });
   }

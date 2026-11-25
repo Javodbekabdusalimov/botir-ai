@@ -8,7 +8,7 @@
  * `negotiation-memory` (sessionStorage). Bu fayl faqat endpointlarni e'lon qiladi.
  */
 import type {
-  AgentRequestResult, Analytics, AuthResult, Business, CatalogImportResult, CatalogRowInput, Chat, ChatMode,
+  AdminClient, AdminOverview, AdminPage, AdminPayment, AgentRequestResult, Analytics, AuthResult, BillingMe, Business, CatalogImportResult, CatalogRowInput, Chat, ChatMode,
   ConfirmResult, CreateBusinessDto, InboxMessage, KnowledgeFact, KnowledgeFactPatch, KnowledgeOverview, KnowledgeSource, LoopProposal, MeResponse, MeTgStatus, MemoryFact, Order,
   PaymentStatus, PendingQuestion, Plan as BillingPlan, RegisterDto, SyncKeyResult, SubscriptionResult, TgConnectCodeResult, TgConnectStartResult, UserAction,
 } from "../types";
@@ -18,7 +18,7 @@ import { delay, demoUnavailable, json, request } from "./http";
 import { rememberRequest } from "./negotiation-memory";
 
 export { modeStore } from "./config";
-export { ApiError, NotFoundError, UnauthorizedError, SERVER_DOWN, TOKEN_KEY, getToken, setToken } from "./http";
+export { ApiError, ForbiddenError, NotFoundError, UnauthorizedError, UpgradeRequiredError, SERVER_DOWN, TOKEN_KEY, getToken, setToken } from "./http";
 export { slowStore } from "./config";
 export { recallRequestText } from "./negotiation-memory";
 export { streamNegotiation } from "./stream";
@@ -145,6 +145,23 @@ export const rollbackLoop = (businessId: string) =>
 export const getPlans = () => request<BillingPlan[]>("/plans", undefined, () => mock.MOCK_PLANS);
 export const subscribePro = (businessId: string) =>
   request<SubscriptionResult>(`/businesses/${encodeURIComponent(businessId)}/subscription`, json("POST", { plan: "pro" }), demoUnavailable);
+
+/* ---- Tariflar (Pro/Max): mock yo'q, soxta narx yoki tarif chalg'itadi ---- */
+/** Tarif, bugungi tokenlar, narxlar (intro/to'liq). Kirmagan bo'lsa mehmon id bilan (doim FREE). */
+export const getBillingMe = () =>
+  request<BillingMe>(`/billing/me?userId=${encodeURIComponent(getUserId())}`, undefined, demoUnavailable);
+/** Pro/Max hisobi (faqat kirim); javobdagi `payUrl` ga o'tiladi, tarif to'lov ko'rilganda yoqiladi. */
+export const subscribePlan = (plan: "pro" | "max") =>
+  request<SubscriptionResult>("/billing/subscribe", json("POST", { plan }), demoUnavailable);
+
+/* ---- Admin (faqat egalar, ADMIN_PHONES): mock yo'q, soxta raqam chalg'itadi ---- */
+const qs = (p: Record<string, string | number | undefined>) =>
+  new URLSearchParams(Object.entries(p).filter((e): e is [string, string | number] => e[1] !== undefined && e[1] !== "").map(([k, v]) => [k, String(v)])).toString();
+export const getAdminOverview = () => request<AdminOverview>("/admin/overview", undefined, demoUnavailable);
+export const getAdminClients = (f: { q?: string; plan?: string; limit?: number }) =>
+  request<AdminPage<AdminClient>>(`/admin/clients?${qs(f)}`, undefined, demoUnavailable);
+export const getAdminPayments = (f: { q?: string; status?: string; kind?: string; test?: string; limit?: number }) =>
+  request<AdminPage<AdminPayment>>(`/admin/payments?${qs(f)}`, undefined, demoUnavailable);
 
 /* ---- Mijozning shaxsiy Telegrami: /me/tg-connect, /me/actions ---- */
 export const meTgStatus = () => request<MeTgStatus>("/me/tg-connect", undefined, () => mock.mockMeTg());

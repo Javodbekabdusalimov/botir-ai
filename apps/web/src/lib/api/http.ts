@@ -7,6 +7,10 @@ export class ApiError extends Error {}
 export class NotFoundError extends ApiError {}
 /** 401: token yaroqsiz (faqat shunda sessiya o'chiriladi). */
 export class UnauthorizedError extends ApiError {}
+/** 403: kirgan, lekin ruxsat yo'q (masalan /admin). */
+export class ForbiddenError extends ApiError {}
+/** 402: tarif kerak yoki bugungi limit/tokenlar tugadi (`{ ok:false, error, upgrade:true }`). Xabar = server matni. */
+export class UpgradeRequiredError extends ApiError {}
 
 /** Token `localStorage` da shu kalit ostida saqlanadi. */
 export const TOKEN_KEY = "botir_token";
@@ -49,7 +53,7 @@ export const demoUnavailable = (): never => {
  * Kontrakt (soxta muvaffaqiyat yo'q):
  * - `fallback` FAQAT `FORCE_DEMO` (`NEXT_PUBLIC_DEMO=1` yoki API manzili yo'q) da ishlaydi;
  * - tarmoq xatosi, timeout, 5xx, buzuq JSON: `ApiError(SERVER_DOWN)`;
- * - 404: `NotFoundError`;
+ * - 404: `NotFoundError`; 401/402/403: `UnauthorizedError` / `UpgradeRequiredError` / `ForbiddenError`;
  * - 4xx / `{ ok:false }`: serverning o'z xato matni bilan `ApiError`;
  * - so'rov 5 s dan oshsa `slowStore` "Server uyg'onmoqda" yozuvini yoqadi.
  */
@@ -98,6 +102,8 @@ export async function request<T>(
     throw new ApiError(SERVER_DOWN);
   }
   if (res.status === 401) throw new UnauthorizedError(textOf(body) || "Sessiya tugagan, qayta kiring");
+  if (res.status === 402) throw new UpgradeRequiredError(textOf(body) || "Bugungi limit tugadi");
+  if (res.status === 403) throw new ForbiddenError(textOf(body) || "Ruxsat yo'q");
   if (!res.ok || !body.ok) throw new ApiError(textOf(body) || "Xatolik yuz berdi");
   return body.data;
 }

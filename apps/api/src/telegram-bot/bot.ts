@@ -3,7 +3,7 @@ import { unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { Bot, InlineKeyboard, type Context } from 'grammy';
+import { Bot, GrammyError, InlineKeyboard, type Context } from 'grammy';
 import type { Message } from 'grammy/types';
 import { createLogger, errMsg } from '../tg-connect/logger';
 import type { Sender, Transport } from '../tg-connect/sender';
@@ -166,12 +166,25 @@ export function createBot(deps: BotDeps): CreateBotResult {
   return { bot };
 }
 
-/** Long polling with the update types we need (business updates included explicitly). */
-export function startBot(bot: Bot): void {
-  void bot.start({
-    allowed_updates: ['message', 'callback_query', 'business_connection', 'business_message'],
-    onStart: (me) => log.info(`bot @${me.username} started`),
-  });
+/**
+ * Long polling with the update types we need (business updates included explicitly).
+ * A bot failure must never take the API down: a bad token (401) switches the bot off, anything else (e.g. 409 = a
+ * second instance polls the same token during a deploy) retries later.
+ */
+export function startBot(bot: Bot, retryMs = 60_000): void {
+  bot
+    .start({
+      allowed_updates: ['message', 'callback_query', 'business_connection', 'business_message'],
+      onStart: (me) => log.info(`bot @${me.username} started`),
+    })
+    .catch((e: unknown) => {
+      if (e instanceof GrammyError && (e.error_code === 401 || e.error_code === 404)) {
+        log.error(`bot disabled (check TELEGRAM_BOT_TOKEN): ${errMsg(e)}`);
+        return;
+      }
+      log.error(`bot stopped: ${errMsg(e)}; retry in ${Math.round(retryMs / 1000)} s`);
+      setTimeout(() => startBot(bot, retryMs), retryMs).unref();
+    });
 }
 
 /** Transport for Sender: Business chats via Bot API, userbot chats via gramjs. */
@@ -196,7 +209,7 @@ async function handleCommand(ctx: Context, deps: BotDeps, name: string, text: st
   if (!ownerId) return;
   const target = await deps.resolveContact(ownerId, name);
   if (!target) {
-    await ctx.reply(`"${name}" degan mijoz topilmadi (u avval sizga yozgan bo'lishi kerak).`);
+    await ctx.reply(`"${name}" degan bitta mijoz topilmadi. Ismini to'liq yozing (u avval sizga yozgan bo'lishi kerak).`);
     return;
   }
   const res = await deps.sender.send(target.accountId, target.chatId, text, 'owner');

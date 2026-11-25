@@ -2,6 +2,7 @@
 import { strict as assert } from 'node:assert';
 import { MemoryTgStore } from './memory-store';
 import { ModeHandler, type DraftReply } from './modes';
+import { pickChatByName } from './self-command';
 import { isWithinHours, Sender, type Transport } from './sender';
 import type { Chat, TgMessage } from './types';
 
@@ -66,6 +67,39 @@ async function main(): Promise<void> {
   const limited = await s2.send('ub:1', chat.id, 'm20', 'owner', { now: DAY });
   assert.ok(!limited.ok && limited.reason.startsWith('rate limit'));
   assert.ok((await s2.send('ub:1', chat.id, 'later', 'owner', { now: new Date(DAY.getTime() + 61_000) })).ok);
+
+  // Parallel sends cannot all pass the 20/min check (the slot is taken before the transport is awaited)
+  const slow: Transport = async () => {
+    await new Promise((r) => setTimeout(r, 5));
+    return { tgMsgId: nextId++ };
+  };
+  const s3 = new Sender(store, slow);
+  const burst = await Promise.all(Array.from({ length: 50 }, (_, i) => s3.send('ub:1', chat.id, `p${i}`, 'owner', { now: DAY })));
+  assert.equal(burst.filter((r) => r.ok).length, 20, 'parallel burst respects the rate limit');
+  // A failed transport gives its slot back
+  const failing = new Sender(store, async () => { throw new Error('down'); });
+  for (let i = 0; i < 25; i++) assert.equal((await failing.send('ub:1', chat.id, 'x', 'owner', { now: DAY })).ok, false);
+  const sentAt = (failing as unknown as { sentAt: Map<string, number[]> }).sentAt.get('ub:1') ?? [];
+  assert.equal(sentAt.length, 0, 'failed sends do not use rate-limit slots');
+
+  // Autopilot with async business hours (TgService looks them up in the DB)
+  await store.setChatMode(chat.id, 'autopilot');
+  reply = { text: 'Ha, bor', confidence: 0.9, needsHuman: false };
+  const asyncHours = new ModeHandler(store, new Sender(store, transport), async () => reply, async () => ({ from: '00:00', to: '23:59' }));
+  const sentAuto = await asyncHours.handleIncoming(chat, inMsg);
+  assert.ok(sentAuto.action === 'sent' || (sentAuto.action === 'needs_human' && sentAuto.reason === 'outside business hours'), JSON.stringify(sentAuto));
+  const closed = new ModeHandler(store, new Sender(store, transport), async () => reply, async () => undefined);
+  const closedRes = await closed.handleIncoming(chat, inMsg);
+  assert.ok(closedRes.action === 'needs_human' && closedRes.reason === 'autopilot needs business hours');
+
+  // "Aliga yoz": exact person, never a substring guess, ambiguous → nobody
+  const chats = [{ title: 'Valijon (raqobatchi)' }, { title: 'Ali' }, { title: 'Aziza (namuna)' }, { title: 'Sardor Karimov' }, { title: 'Sardor Aliyev' }];
+  assert.equal(pickChatByName(chats, 'Ali')?.title, 'Ali');
+  assert.equal(pickChatByName(chats, 'ali')?.title, 'Ali', 'case-insensitive (Postgres contains is case-sensitive)');
+  assert.equal(pickChatByName(chats, 'Aziza')?.title, 'Aziza (namuna)');
+  assert.equal(pickChatByName(chats, 'Vali'), null, 'no substring match');
+  assert.equal(pickChatByName(chats, 'Sardor'), null, 'two Sardors → ask for the full name');
+  assert.equal(pickChatByName(chats, 'Sardor Aliyev')?.title, 'Sardor Aliyev');
 
   process.stdout.write('guards.test: OK\n');
 }

@@ -8,15 +8,19 @@ import type { CatalogImportResult, CatalogItemDto, CreateBusinessDto, MemoryFact
 import { Auth, CurrentUser } from '../auth/auth.guard';
 import { ownsBusiness } from '../auth/ownership';
 import { ok } from '../common/http';
-import { toBusiness, toCatalogItem, toOrder } from '../db/mappers';
+import { toBusiness, toCatalogItem, toOrder, toPublicBusiness } from '../db/mappers';
 import { PrismaService } from '../db/prisma.service';
+import { CatalogWriter } from '../knowledge/catalog-writer.service';
 import { MetricsService } from '../knowledge/metrics.service';
+import { parseSom } from '../knowledge/text-utils';
 import { AnalyticsService } from './analytics.service';
-import { normalizeRows, readSheet } from './catalog-import';
+import { MAX_IMPORT_ROWS, normalizeRows, readSheet } from './catalog-import';
 
 type CatalogPatch = Partial<CatalogItemDto> & { id?: string };
 
-const validPrice = (v: unknown): boolean => Number.isFinite(Number(v)) && Number(v) >= 0;
+/** Whole so'm 0..2 000 000 000 (the Int column limit: a bigger value breaks the whole catalog), or null. */
+const priceOf = (v: unknown): number | null => parseSom(typeof v === 'number' ? Math.round(v) : v);
+const BAD_PRICE = "narx 0 dan 2 000 000 000 so'mgacha butun son bo'lsin";
 
 @Controller('businesses')
 export class BusinessesController {
@@ -24,17 +28,18 @@ export class BusinessesController {
     @Inject(PrismaService) private readonly db: PrismaService,
     @Inject(AnalyticsService) private readonly analytics: AnalyticsService,
     @Inject(MetricsService) private readonly metrics: MetricsService,
+    @Inject(CatalogWriter) private readonly catalogWriter: CatalogWriter,
   ) {}
 
   @Get()
   async list() {
     const rows = await this.db.business.findMany({ where: { deletedAt: null }, orderBy: { createdAt: 'asc' } });
-    return ok(rows.map(toBusiness));
+    return ok(rows.map(toPublicBusiness));
   }
 
   @Get(':id')
   async get(@Param('id') id: string) {
-    return ok(toBusiness(await this.business(id)));
+    return ok(toPublicBusiness(await this.business(id)));
   }
 
   /** Login required; the creator becomes the owner (a business user without a business gets linked to it). */
@@ -77,8 +82,10 @@ export class BusinessesController {
   @Auth()
   async addItem(@Param('id') id: string, @Body() dto: CatalogItemDto, @CurrentUser() user: DbUser) {
     this.assertOwner(await this.business(id), user);
-    if (!dto?.name || !validPrice(dto.price)) throw new BadRequestException('name and price (>= 0) are required');
-    const row = await this.db.catalogItem.create({ data: { businessId: id, ...this.itemData(dto), name: dto.name, price: Math.round(Number(dto.price)) } });
+    const price = priceOf(dto?.price);
+    if (!dto?.name) throw new BadRequestException('name is required');
+    if (price === null) throw new BadRequestException(BAD_PRICE);
+    const row = await this.db.catalogItem.create({ data: { businessId: id, ...this.itemData(dto), name: dto.name, price } });
     await this.metrics.touchReady(id);
     return ok(toCatalogItem(row));
   }
@@ -95,7 +102,7 @@ export class BusinessesController {
   @Auth()
   async patchItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: CatalogPatch, @CurrentUser() user: DbUser) {
     this.assertOwner(await this.business(id), user);
-    if (dto?.price !== undefined && !validPrice(dto.price)) throw new BadRequestException('price must be a number >= 0');
+    if (dto?.price !== undefined && priceOf(dto.price) === null) throw new BadRequestException(BAD_PRICE);
     const item = await this.db.catalogItem.findFirst({ where: { id: itemId, businessId: id, deletedAt: null } });
     if (!item) throw new NotFoundException('catalog item not found');
     const row = await this.db.catalogItem.update({ where: { id: itemId }, data: this.itemData(dto) });
@@ -123,12 +130,12 @@ export class BusinessesController {
     this.assertOwner(await this.business(id), user);
     const raw = file ? readSheet(file.buffer) : Array.isArray(body?.rows) ? body.rows : null;
     if (!raw) throw new BadRequestException('send multipart "file" (csv/xlsx) or JSON {rows}');
+    if (raw.length > MAX_IMPORT_ROWS) throw new BadRequestException(`Bir martada ko'pi bilan ${MAX_IMPORT_ROWS} qator yuklang`);
     const { rows, result } = normalizeRows(raw);
-    for (const r of rows) {
-      await this.db.catalogItem.create({ data: { businessId: id, name: r.name, price: r.price, unit: r.unit, description: r.description, tags: JSON.stringify(r.tags) } });
-    }
+    // One transaction, matched by name: a re-upload updates prices instead of doubling the catalog.
+    const written = await this.catalogWriter.upsert(id, rows.map((r) => ({ name: r.name, price: r.price, unit: r.unit, description: r.description })));
     await this.metrics.touchReady(id);
-    return ok<CatalogImportResult>({ ...result, imported: rows.length });
+    return ok<CatalogImportResult>({ ...result, imported: written.created + written.updated });
   }
 
   @Get(':id/orders')
@@ -187,7 +194,7 @@ export class BusinessesController {
     return {
       ...(dto.name !== undefined && { name: dto.name }),
       ...(dto.description !== undefined && { description: dto.description }),
-      ...(dto.price !== undefined && { price: Math.round(Number(dto.price)) }),
+      ...(dto.price !== undefined && { price: priceOf(dto.price) ?? 0 }), // validated by the caller
       ...(dto.unit !== undefined && { unit: dto.unit }),
       ...(dto.durationMin !== undefined && { durationMin: dto.durationMin }),
       ...(dto.inStock !== undefined && { inStock: dto.inStock }),

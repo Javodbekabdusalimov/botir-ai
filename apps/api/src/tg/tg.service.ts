@@ -3,18 +3,19 @@ import type { Bot } from 'grammy';
 import type { Chat as SharedChat, InboxMessage, MeTgStatus, TgConnectCodeResult } from '@botir/shared';
 import type { AgentMessage } from '../agents/shared';
 import { errMsg } from '../common/http';
-import { toAgentBusiness, toProduct } from '../db/mappers';
+import { toAgentBusiness, toProduct, workHoursOf } from '../db/mappers';
 import { splitSessionId } from '../db/prisma-agent-store';
 import { PrismaService } from '../db/prisma.service';
 import { PrismaTgStore } from '../db/prisma-tg-store';
 import { QuestionsService } from '../knowledge/questions.service';
 import { TurnRecorder } from '../knowledge/turn-recorder.service';
 import { AGENTS, type Agents } from '../negotiations/agents.provider';
+import { OrderExistsError } from '../negotiations/confirm-rules';
 import { NegotiationsService } from '../negotiations/negotiations.service';
 import { createBot, makeTransport, startBot } from '../telegram-bot/bot';
 import {
-  loadTgApiCreds, ModeHandler, Sender, TgSync, UserbotLogin,
-  type Chat, type DraftReply, type OnSelf, type SendResult, type TgMessage, type Transport,
+  loadTgApiCreds, ModeHandler, pickChatByName, Sender, TgSync, UserbotLogin,
+  type BusinessHours, type Chat, type DraftReply, type OnSelf, type SendOptions, type SendResult, type TgMessage, type Transport,
 } from '../tg-connect';
 
 /** Who owns a connected Telegram account: a business (inbox) or a site user (personal Botir). */
@@ -23,6 +24,11 @@ export type TgOwner = { type: 'business' | 'user'; id: string };
 const ownerWhere = (o: TgOwner) => (o.type === 'business' ? { businessId: o.id } : { ownerType: 'user', userId: o.id });
 const ownerData = (o: TgOwner) =>
   o.type === 'business' ? { ownerType: 'business', businessId: o.id, userId: null } : { ownerType: 'user', userId: o.id, businessId: null };
+
+const HHMM = /^\d{2}:\d{2}$/;
+type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+const tashkentWeekday = (now: Date): Weekday =>
+  new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tashkent', weekday: 'short' }).format(now).toLowerCase() as Weekday;
 
 @Injectable()
 export class TgService implements OnModuleInit, OnModuleDestroy {
@@ -65,7 +71,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     };
     const transport: Transport = this.sync ? makeTransport(this.store, () => this.bot, this.sync) : noUserbot;
     this.sender = new Sender(this.store, transport);
-    this.modes = new ModeHandler(this.store, this.sender, (chat, history) => this.draftReply(chat, history), () => undefined);
+    this.modes = new ModeHandler(this.store, this.sender, (chat, history) => this.draftReply(chat, history), (id) => this.hoursFor(id));
     this.questions.setNotifier((businessId, text) => this.askOwner(businessId, text));
     await this.reconnectAccounts();
     this.startBot(onIncoming);
@@ -139,11 +145,18 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     return { status: 'connected' };
   }
 
+  /** "Uzish": revoke the session and hide the imported chats and messages too (soft delete): they are private. */
   async disconnect(owner: TgOwner): Promise<{ disconnected: number }> {
     const accounts = await this.db.tgAccount.findMany({ where: { ...ownerWhere(owner), deletedAt: null } });
     for (const a of accounts) {
       if (this.sync) await this.sync.disconnect(a.id, true);
-      await this.db.tgAccount.update({ where: { id: a.id }, data: { deletedAt: new Date(), sessionEnc: null } });
+      const now = new Date();
+      const chats = await this.db.chat.findMany({ where: { accountId: a.id }, select: { id: true } });
+      await this.db.$transaction([
+        this.db.inboxMessage.updateMany({ where: { chatId: { in: chats.map((c) => c.id) }, deletedAt: null }, data: { deletedAt: now } }),
+        this.db.chat.updateMany({ where: { accountId: a.id, deletedAt: null }, data: { deletedAt: now } }),
+        this.db.tgAccount.update({ where: { id: a.id }, data: { deletedAt: now, sessionEnc: null } }),
+      ]);
     }
     return { disconnected: accounts.length };
   }
@@ -160,8 +173,19 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Owner-approved send through PolicyGuard (Sender). */
-  sendAsOwner(accountId: string, chatId: string, text: string): Promise<SendResult> {
-    return this.sender.send(accountId, chatId, text, 'owner');
+  sendAsOwner(accountId: string, chatId: string, text: string, opts: SendOptions = {}): Promise<SendResult> {
+    return this.sender.send(accountId, chatId, text, 'owner', opts);
+  }
+
+  /** Outreach: resolve a business's Telegram @username through the user's connected account. */
+  async resolvePeer(accountId: string, username: string): Promise<{ peerId: string; title: string }> {
+    if (!this.sync?.isConnected(accountId)) throw new ServiceUnavailableException('Telegram hozir ulanmagan, keyinroq urinib ko\'ring');
+    try {
+      return await this.sync.resolvePeer(accountId, username);
+    } catch (e) {
+      this.logger.warn(`resolve @${username}: ${errMsg(e)}`);
+      throw new NotFoundException(`@${username} Telegramda topilmadi`);
+    }
   }
 
   async sendToSelf(accountId: string, text: string): Promise<void> {
@@ -252,6 +276,17 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     return { text: turn.reply, confidence: turn.confidence, needsHuman };
   }
 
+  /** Autopilot window = today's work hours of the business that owns the account (Asia/Tashkent). */
+  private async hoursFor(accountId: string): Promise<BusinessHours | undefined> {
+    const account = await this.db.tgAccount.findFirst({ where: { id: accountId, deletedAt: null } });
+    const biz = account?.businessId ? await this.db.business.findFirst({ where: { id: account.businessId, deletedAt: null } }) : null;
+    if (!biz) return undefined;
+    const week: unknown = workHoursOf(biz);
+    const today: unknown = week && typeof week === 'object' ? (week as Record<string, unknown>)[tashkentWeekday(new Date())] : null;
+    if (!Array.isArray(today) || today.length !== 2 || !today.every((t) => typeof t === 'string' && HHMM.test(t))) return undefined;
+    return { from: String(today[0]), to: String(today[1]) };
+  }
+
   private async reconnectAccounts(): Promise<void> {
     if (!this.sync) return;
     const accounts = await this.db.tgAccount.findMany({ where: { kind: 'userbot', deletedAt: null, sessionEnc: { not: null } } });
@@ -276,9 +311,10 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
       },
       resolveContact: async (ownerTgId, name) => {
         const accounts = await this.db.tgAccount.findMany({ where: { tgUserId: String(ownerTgId), deletedAt: null } });
-        const chat = await this.db.chat.findFirst({
-          where: { accountId: { in: accounts.map((a) => a.id) }, title: { contains: name }, deletedAt: null },
+        const chats = await this.db.chat.findMany({
+          where: { accountId: { in: accounts.map((a) => a.id) }, deletedAt: null }, select: { id: true, accountId: true, title: true },
         });
+        const chat = pickChatByName(chats, name);
         return chat ? { accountId: chat.accountId, chatId: chat.id } : null;
       },
       answerQuestion: (chatId, messageId, text) => this.questions.answerByReply(String(chatId), messageId, text),
@@ -286,8 +322,13 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
         const offer = await this.db.agentOffer.findUnique({ where: { id: offerId } });
         if (!offer) return 'Taklif topilmadi';
         const { negotiationId, businessId } = splitSessionId(offer.sessionId);
-        const r = await this.negotiations.confirm(negotiationId, businessId);
-        return `✅ Buyurtma tasdiqlandi. To'lov havolasi: ${r.paymentLink}`;
+        try {
+          const r = await this.negotiations.confirm(negotiationId, businessId);
+          return `✅ Buyurtma tasdiqlandi. To'lov havolasi: ${r.paymentLink}`;
+        } catch (e) {
+          if (e instanceof OrderExistsError) return e.paymentLink ? `✅ Buyurtma allaqachon tasdiqlangan. To'lov havolasi: ${e.paymentLink}` : '✅ Buyurtma allaqachon tasdiqlangan.';
+          throw e;
+        }
       },
     });
     if (!res.bot) return;

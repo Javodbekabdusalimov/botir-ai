@@ -6,7 +6,7 @@ import { BusinessAgent, detectLang, parseQty, tashkentNow } from './business-age
 import { LlmClient } from './llm/llm-client';
 import type { AgentLogger } from './logger';
 import { Memory } from './memory';
-import { checkClientConditions, PersonalAgent } from './personal-agent';
+import { catalogScore, checkClientConditions, PersonalAgent } from './personal-agent';
 import { PolicyGuard } from './policy-guard';
 import type { AgentMessage, Offer } from './shared';
 import type { AgentStore } from './store/agent-store';
@@ -128,6 +128,32 @@ async function badBusinessIsSkipped(): Promise<void> {
   assert.deepEqual(toAgentBusiness({ ...row, workHours: '{"mon":null,"tue":["10:00","20:00"]}' } as DbBusiness).hours, { open: '10:00', close: '20:00' });
 }
 
+async function catalogMatchRanksFirst(): Promise<void> {
+  const store = new MemoryStore(false);
+  const agent = new PersonalAgent(new FakeLlm(store, () => ({})), store);
+  const biz = (id: string, isDemo: boolean): AgentBusiness => ({
+    id, name: id, category: 'restaurant', area: 'Chilonzor', maxDiscountPct: 5, hours: { open: '10:00', close: '23:00' }, isDemo,
+  });
+  const sell = (businessId: string, ...names: string[]): void => {
+    names.forEach((name, i) => store.products.push({ id: `${businessId}-${i}`, businessId, name, price: 45_000, unit: 'porsiya' }));
+  };
+  // Store order: demo C first, then the real ones. Real A and D have no osh.
+  store.businesses.push(biz('C', true), biz('A', false), biz('B', false), biz('D', false));
+  sell('C', 'Osh (porsiya)', '8 kishilik stol band qilish');
+  sell('A', "Lag'mon", 'Choy', '8 kishilik stol band qilish');
+  sell('B', 'Osh', 'Non');
+  sell('D', 'Shashlik');
+  const top3 = async (task: UserTask): Promise<string[]> => (await agent.findBusinesses(task)).slice(0, 3).map((b) => b.id);
+  // "6 kishilik osh": catalog match first, real before demo at equal score, then store order.
+  const osh: UserTask = { category: 'restaurant', need: 'osh', people: 6, area: 'Chilonzor', items: [{ name: 'osh' }] };
+  assert.deepEqual(await top3(osh), ['B', 'C', 'A']);
+  // No items: each comma part of `need` counts. C has both (2); A (stol) and B (osh) tie at 1 → store order.
+  assert.deepEqual(await top3({ category: 'restaurant', need: 'osh, stol band qilish' }), ['C', 'A', 'B']);
+  // Nothing matches → the old order (real first, store order), still capped.
+  assert.deepEqual(await top3({ category: 'restaurant', need: 'pitsa', items: [{ name: 'pitsa' }] }), ['A', 'B', 'D']);
+  assert.equal(catalogScore({ category: 'restaurant', need: '' }, store.products), 0);
+}
+
 async function parserKeepsTasksApart(): Promise<void> {
   const store = new MemoryStore(false);
   const llm = new FakeLlm(store, () => ({
@@ -207,6 +233,7 @@ async function main(): Promise<void> {
   await budgetAndQuantityGuard();
   await businessAgentQuantity();
   await badBusinessIsSkipped();
+  await catalogMatchRanksFirst();
   await parserKeepsTasksApart();
   await memoryKeepsOnlyHumanFacts();
   process.stdout.write('personal-agent tests passed\n');

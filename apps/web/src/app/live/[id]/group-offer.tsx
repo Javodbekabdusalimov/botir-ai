@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { OfferCard } from "@/components/negotiation";
-import { confirmNegotiation } from "@/lib/api";
+import { UpgradeCard } from "@/components/upgrade-card";
+import { UpgradeRequiredError, confirmNegotiation } from "@/lib/api";
 import { friendlyError } from "@/lib/friendly-error";
 import type { BestOffer, ConfirmResult } from "@/lib/types";
 
@@ -38,6 +39,7 @@ export function GroupOffer({
   const [result, setResult] = useState<ConfirmResult | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState<string | null>(null);
 
   const forced = focusId && skip === 0 ? offers.find((b) => b.businessId === focusId) : undefined;
   const current = forced ?? offers[skip % offers.length];
@@ -47,27 +49,32 @@ export function GroupOffer({
     if (confirming) return;
     setConfirming(true);
     setError(null);
+    setUpgrade(null);
     try {
       setResult(await confirmNegotiation(negotiationId, current.businessId));
     } catch (e) {
-      setError(`${CONFIRM_FAILED} ${friendlyError(e instanceof Error ? e.message : null)}`);
+      if (e instanceof UpgradeRequiredError) setUpgrade(e.message);
+      else setError(`${CONFIRM_FAILED} ${friendlyError(e instanceof Error ? e.message : null)}`);
     } finally {
       setConfirming(false);
     }
   }
 
   return (
-    <OfferCard
-      key={ready ? "final" : "live"}
-      focusConfirm={!!forced}
-      best={current}
-      ready={ready}
-      confirming={confirming}
-      result={result}
-      error={error}
-      onConfirm={onConfirm}
-      onOther={() => setSkip((s) => s + 1)}
-      othersLeft={!result && offers.length > 1}
-    />
+    <>
+      {upgrade && <UpgradeCard message={upgrade} className="mb-3" />}
+      <OfferCard
+        key={ready ? "final" : "live"}
+        focusConfirm={!!forced}
+        best={current}
+        ready={ready}
+        confirming={confirming}
+        result={result}
+        error={error}
+        onConfirm={onConfirm}
+        onOther={() => setSkip((s) => s + 1)}
+        othersLeft={!result && offers.length > 1}
+      />
+    </>
   );
 }

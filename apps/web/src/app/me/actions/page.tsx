@@ -1,3 +1,4 @@
+import { PlanTokens } from "@/components/plan-tokens";
 import { MeActions } from "./me-actions";
 import { pageMeta } from "@/lib/seo";
 
@@ -9,6 +10,7 @@ export default function MeActionsPage() {
       <p className="text-sm font-semibold text-agent">Shaxsiy agent</p>
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">Ruxsat kutayotgan amallar</h1>
       <p className="mt-3 text-muted-foreground">Agent sizning Telegramingizdan xabar yuborishdan oldin ruxsat so&apos;raydi. Siz tasdiqlamaguncha hech narsa ketmaydi.</p>
+      <PlanTokens />
       <MeActions />
     </div>
   );

@@ -434,8 +434,9 @@ export function mockMe(token: string): MeResponse | null {
 }
 
 export const MOCK_PLANS: BillingPlan[] = [
-  { id: "start", name: "Start", price: 0, aiCredits: 100, periodDays: 30 },
-  { id: "pro", name: "Pro", price: 1000, aiCredits: 1000, periodDays: 30 },
+  { id: "free", name: "Free", price: 0, aiCredits: 100, periodDays: 30 },
+  { id: "pro", name: "Pro", price: 82000, aiCredits: 1000, dailyTokens: 100000, periodDays: 30 },
+  { id: "max", name: "Max", price: 163000, aiCredits: 1000, dailyTokens: 200000, periodDays: 30 },
 ];
 export function mockSubscribe(): SubscriptionResult {
   const ref = `sub-${rid()}`;

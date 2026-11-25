@@ -30,7 +30,7 @@ export function SiteFooter() {
           <div className="flex items-center gap-2">
             <LogoMark className="size-9" />
             <span className="font-display text-xl font-bold">
-              Botir <span className="text-agent">AI</span>
+              Life <span className="text-agent">Assistant</span>
             </span>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">Agent agent bilan gaplashadi, siz faqat tasdiqlaysiz. O&apos;zbekiston bizneslari va mijozlari uchun AI agentlar tarmog&apos;i.</p>
@@ -97,7 +97,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-tint-3">
-        <p className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 text-xs text-muted-foreground">© 2026 Botir AI. Namuna bizneslar fiktiv. Brend logotiplari ularning egalariga tegishli.</p>
+        <p className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 text-xs text-muted-foreground">© 2026 Life Assistant. Namuna bizneslar fiktiv. Brend logotiplari ularning egalariga tegishli.</p>
       </div>
     </footer>
   );

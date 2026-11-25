@@ -1,4 +1,4 @@
-# botir-ai
+# Life Assistant (botir-ai)
 
 Mars IT Hackathon monorepo — O'zbekistonning AI agentlar tarmog'i: biznes agenti + shaxsiy agent, agent↔agent muzokara.
 

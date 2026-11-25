@@ -181,7 +181,7 @@ export function TelegramConnect() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {(
                   [
-                    { id: "business", title: "Telegram Business", tag: "Premium, rasmiy", desc: "Sozlamalar, Telegram Business, Chatbotlar bo'limida Botir AI botini tanlaysiz." },
+                    { id: "business", title: "Telegram Business", tag: "Premium, rasmiy", desc: "Sozlamalar, Telegram Business, Chatbotlar bo'limida Life Assistant botini tanlaysiz." },
                     { id: "account", title: "Akkaunt ulash", tag: "Premium shart emas", desc: "Telefon raqam, SMS kod va (bo'lsa) 2FA paroli orqali." },
                   ] as const
                 ).map((o) => (

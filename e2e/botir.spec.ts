@@ -21,7 +21,7 @@ async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${SHOT_DIR}/${name}-${width}.png`, fullPage: true });
 }
 
-test.describe('Botir AI — assistant to payment', () => {
+test.describe('Life Assistant — assistant to payment', () => {
   test('personal agent negotiates and reaches the payment page', async ({ page }) => {
     await page.goto('/');
     await shot(page, '01-landing');

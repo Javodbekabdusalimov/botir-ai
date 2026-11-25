@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Botir AI: agent agent bilan gaplashadi, siz faqat tasdiqlaysiz";
+export const alt = "Life Assistant: agent agent bilan gaplashadi, siz faqat tasdiqlaysiz";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -15,7 +15,7 @@ export default function OgImage() {
             <div style={{ position: "absolute", width: 56, height: 56, border: "7px solid #fbbf24", transform: "rotate(45deg)" }} />
             <div style={{ width: 16, height: 16, borderRadius: 16, background: "#f4f6f4" }} />
           </div>
-          <div style={{ fontSize: 48, fontWeight: 800 }}>Botir AI</div>
+          <div style={{ fontSize: 48, fontWeight: 800 }}>Life Assistant</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.08, letterSpacing: -2 }}>Agent agent bilan gaplashadi, siz faqat tasdiqlaysiz</div>

@@ -1,4 +1,4 @@
-# Botir AI
+# Life Assistant
 
 > Uzbek agent-to-agent commerce network: every business has an AI seller agent, every person a personal agent. Agents negotiate (REQUEST → OFFER → COUNTER → ACCEPT, max 3 rounds); the human only confirms. Money is inbound only (TezCheck).
 

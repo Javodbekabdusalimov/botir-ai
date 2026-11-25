@@ -25,7 +25,7 @@ export function GuidePage({ slug }: { slug: string }) {
       <article className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
           <ol className="flex flex-wrap items-center gap-1.5">
-            <li><Link href="/" className="hover:text-green-800 hover:underline">Botir AI</Link></li>
+            <li><Link href="/" className="hover:text-green-800 hover:underline">Life Assistant</Link></li>
             <li aria-hidden="true">/</li>
             <li aria-current="page" className="text-foreground">{g.h1}</li>
           </ol>

@@ -129,7 +129,7 @@ function NegotiationTurn({ id, names, onDone }: { id: string; names: Record<stri
 
 const CHIPS = ["Ertaga 18:00 ga 6 kishilik osh joy band qil", "Chilonzorda moy almashtirish", "Narxlarni solishtir", "Eng arzon taklifni top"];
 
-/** "Botir AI bilan chat": /agent/request + SSE oqimi chat pufakchalari sifatida. */
+/** "Life Assistant bilan chat": /agent/request + SSE oqimi chat pufakchalari sifatida. */
 export function BotirChat({ businessName, className, chips = CHIPS }: { businessName?: string; className?: string; chips?: string[] }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
@@ -171,7 +171,7 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
         <div className="flex items-end gap-2">
           <AgentAvatar size={28} />
           <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-border bg-card px-3.5 py-2 text-[14px] shadow-sm">
-            Salom! Men Botir AI{businessName ? `, ${businessName} agentiman` : " yordamchisiman"}. Nima kerak? Bizneslar bilan o&apos;zim gaplashaman, siz faqat tasdiqlaysiz.
+            Salom! Men Life Assistant{businessName ? `, ${businessName} agentiman` : " yordamchisiman"}. Nima kerak? Bizneslar bilan o&apos;zim gaplashaman, siz faqat tasdiqlaysiz.
           </div>
         </div>
         {turns.map((m) =>

@@ -1,8 +1,8 @@
-# AGENTS.md — Botir AI, for AI agents and reviewers
+# AGENTS.md — Life Assistant, for AI agents and reviewers
 
 > O'zbekcha qisqa: bu fayl AI agentlar (Claude, Codex, Cursor, hakam-AI) uchun loyiha xaritasi. Kodni o'zgartirishdan oldin to'liq o'qing.
 
-Botir AI is an Uzbek **agent-to-agent commerce network**. Every business gets an AI seller agent; every person
+Life Assistant is an Uzbek **agent-to-agent commerce network**. Every business gets an AI seller agent; every person
 gets a personal agent. The person types one sentence ("6 kishilik osh + Chilonzorda moy almashtirish"); the personal agent
 splits it into tasks, negotiates with each matching business agent in parallel (REQUEST → OFFER → COUNTER → ACCEPT,
 max 3 rounds), and the human only presses **Tasdiqlayman**. Money moves only after that press, and only inbound (TezCheck).

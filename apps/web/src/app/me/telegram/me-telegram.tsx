@@ -74,7 +74,7 @@ export function MeTelegram() {
         </p>
         {st.data.username && <p className="text-sm text-green-900/80">Akkaunt: @{st.data.username}</p>}
         <p className="rounded-2xl border border-tint-3 bg-card p-4 text-[15px] leading-relaxed shadow-sm">
-          Endi Telegramdagi <strong>Saqlangan xabarlar</strong>ga <span className="rounded-md bg-tint-2 px-1.5 font-semibold">&quot;Botir, ...&quot;</span> deb yozing.
+          Endi Telegramdagi <strong>Saqlangan xabarlar</strong>ga <span className="rounded-md bg-tint-2 px-1.5 font-semibold">&quot;Assistant, ...&quot;</span> deb yozing.
         </p>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <div className="flex flex-col gap-2 sm:flex-row">

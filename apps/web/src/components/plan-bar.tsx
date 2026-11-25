@@ -8,6 +8,7 @@ import { getPaymentStatus, getPlans, subscribePro } from "@/lib/api";
 import { useAsync } from "@/hooks/use-async";
 import { formatSom } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { openExternal, tg } from "@/lib/telegram";
 
 const until = (iso: string) => {
   const d = new Date(iso);
@@ -64,9 +65,12 @@ export function PlanBar() {
     setErr(null);
     try {
       const r = await subscribePro(business.id);
-      try {
-        window.open(r.payUrl, "_blank", "noopener");
-      } catch {}
+      // Telegram ichida openLink, brauzerda yangi tab (popup bloklansa — pastdagi havola qoladi)
+      if (tg()) openExternal(r.payUrl);
+      else
+        try {
+          window.open(r.payUrl, "_blank", "noopener");
+        } catch {}
       setRef(r.paymentRef);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Obunani boshlab bo'lmadi");

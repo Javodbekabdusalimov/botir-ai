@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, Module } from '@nestjs/common';
 import { AuthController } from './auth/auth.controller';
+import { TelegramAuthController } from './auth/telegram-auth.controller';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
 import { BusinessesController } from './businesses/businesses.controller';
@@ -53,7 +54,7 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController],
+  controllers: [HealthController, AuthController, TelegramAuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
     PrismaActionStore, TgUserService, MetricsService, QuestionsService, TurnRecorder,

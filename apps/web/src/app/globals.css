@@ -328,3 +328,4 @@
 
 /* Ilova ichi: qalin "display" (raqam, karta sarlavhasi) = sans semibold; serif faqat yengil katta sarlavhalarda */
 .font-display:is(.font-bold, .font-extrabold, .font-black) { font-family: var(--font-sans-ui), ui-sans-serif, system-ui, sans-serif; font-weight: 650 !important; letter-spacing: -0.02em; }
+

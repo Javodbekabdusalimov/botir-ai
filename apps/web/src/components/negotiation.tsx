@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Copy, ExternalLink, Loader2, Repeat, ShieldCheck, Trophy } from "lucide-react";
 import Image from "next/image";
 import { getPaymentStatus } from "@/lib/api";
@@ -13,6 +14,7 @@ import { PriceBlock } from "@/components/price-block";
 import { bizPhoto } from "@/lib/photos";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/telegram";
 import type { A2AType, BestOffer, ConfirmResult, Lane, NegotiationState } from "@/lib/types";
 
 export const MAX_ROUNDS = 3;
@@ -299,6 +301,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
   const [copied, setCopied] = useState(false);
   const { offer } = best;
   const [paidAt] = useState(() => Date.now());
+  const router = useRouter();
 
   useEffect(() => {
     if (OPENED.has(result.orderId)) return; // StrictMode / qayta render: faqat bir marta ochamiz
@@ -309,9 +312,11 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
         `botir.checkout.${result.orderId}`,
         JSON.stringify({ businessId: best.businessId, businessName: best.businessName, items: offer.items, total: offer.price, discountPct: offer.discountPct, link: result.paymentLink }),
       );
-      window.open(`/pay/${encodeURIComponent(result.orderId)}`, "_blank", "noopener");
     } catch {}
-  }, [result.orderId, result.paymentLink, best.businessId, best.businessName, offer.items, offer.price, offer.discountPct]);
+    haptic("success");
+    // Shu tabda: yangi oyna telefonda va Telegram ichida bloklanadi (B4)
+    router.push(`/pay/${encodeURIComponent(result.orderId)}`);
+  }, [router, result.orderId, result.paymentLink, best.businessId, best.businessName, offer.items, offer.price, offer.discountPct]);
 
   useEffect(() => {
     if (status !== "pending") return;

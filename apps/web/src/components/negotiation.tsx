@@ -337,6 +337,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
               total: offer.price,
               discountPct: offer.discountPct,
               paidAt: new Date().toISOString(),
+              isTest: typeof r.isTest === "boolean" ? r.isTest : result.paymentLink.includes("/pay/test/"),
             });
         }
       } catch {
@@ -349,7 +350,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
       alive = false;
       clearInterval(t);
     };
-  }, [status, result.orderId, best.businessName, offer]);
+  }, [status, result.orderId, result.paymentLink, best.businessName, offer]);
 
   const copy = () => {
     try {
@@ -405,7 +406,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
         <Loader2 className="size-5 shrink-0 animate-spin text-green-700 motion-reduce:animate-none" aria-hidden="true" />
         <div>
           <p className="font-semibold text-green-900">To&apos;lov kutilmoqda…</p>
-          <p className="text-xs text-green-900/80">To&apos;lov sahifasi ochildi. To&apos;lagach bu yerga qaytasiz, holat avtomatik yangilanadi.</p>
+          <p className="text-xs text-green-900/80">To&apos;lov sahifasiga o&apos;tilmoqda. Ochilmasa pastdagi tugmani bosing; holat avtomatik yangilanadi.</p>
         </div>
       </div>
       {netError && <p className="text-xs text-destructive">Holatni tekshirib bo&apos;lmadi, qayta urinilmoqda…</p>}

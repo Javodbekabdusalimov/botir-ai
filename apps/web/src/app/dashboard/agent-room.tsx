@@ -91,7 +91,7 @@ export function AgentRoom() {
 
   const flow = [
     { icon: MessageCircle, k: "Mijoz yozadi", v: chats.data ? `${list.length} ta suhbat` : "…" },
-    { icon: Bot, k: "Botir javob beradi", v: kb.data ? (aiTurns ? `${aiTurns} ta javob` : "Hali javob yo'q") : "…" },
+    { icon: Bot, k: "Agent javob beradi", v: kb.data ? (aiTurns ? `${aiTurns} ta javob` : "Hali javob yo'q") : "…" },
     { icon: Check, k: "Siz tasdiqlaysiz", v: chats.data ? (waitingCount ? `${waitingCount} ta qaror kutmoqda` : "Hammasi hal qilingan") : "…", warn: waitingCount > 0 },
   ];
 
@@ -166,7 +166,7 @@ export function AgentRoom() {
         </header>
 
         <p className="px-4 pt-1 text-sm text-muted-foreground sm:px-5">
-          Botir: <span className="font-semibold text-green-950">{status}</span> · {list.length} mijoz · {activeOrders.length} buyurtma
+          Agent: <span className="font-semibold text-green-950">{status}</span> · {list.length} mijoz · {activeOrders.length} buyurtma
         </p>
 
         {/* Sizdan kerak: sahna USTIDA emas, alohida qatorda */}
@@ -205,7 +205,7 @@ export function AgentRoom() {
 
         <div className="relative px-2 pt-8 sm:px-6">
           <IsoScene seats={seats} botirActive={need.kind === "proposal" || !current}>
-            <Tag pos={toPct(BOTIR_POS[0], BOTIR_POS[1], 2.75)} label="Botir" tone="green" />
+            <Tag pos={toPct(BOTIR_POS[0], BOTIR_POS[1], 2.75)} label="Agent" tone="green" />
             {seated.map((c, i) => (
               <button
                 key={c.id}
@@ -268,7 +268,7 @@ export function AgentRoom() {
                 <Bot className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Botir <span className="font-normal text-muted-foreground">· biznes agenti</span></p>
+                <p className="text-sm font-semibold">Life Assistant <span className="font-normal text-muted-foreground">· biznes agenti</span></p>
                 <p className="truncate text-xs text-muted-foreground">{status}</p>
               </div>
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider", need.kind === "none" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800")}>
@@ -316,8 +316,8 @@ function Tag({ label, tone, pos, inline }: { label: string; tone: "green" | "red
 }
 
 function stepOf(m: InboxMessage, name: string) {
-  if (m.isDraft) return { who: "Botir", title: "Javob qoralamasi tayyor", tone: "wait" as const };
-  if (m.author === "ai") return { who: "Botir", title: "Mijozga javob berdi", tone: "done" as const };
+  if (m.isDraft) return { who: "Agent", title: "Javob qoralamasi tayyor", tone: "wait" as const };
+  if (m.author === "ai") return { who: "Agent", title: "Mijozga javob berdi", tone: "done" as const };
   if (m.author === "owner") return { who: "Siz", title: "Siz yozdingiz", tone: "done" as const };
   return { who: name, title: m.voiceUrl ? "Ovozli xabar yubordi" : "Xabar yozdi", tone: "in" as const };
 }

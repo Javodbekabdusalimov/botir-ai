@@ -2,7 +2,7 @@
 
 import { friendlyError, TECH_ERROR_TEXT } from "@/lib/friendly-error";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, CheckCheck, Loader2, Mic, Send, Sparkles } from "lucide-react";
+import { Bot, CheckCheck, Loader2, Send, Sparkles } from "lucide-react";
 import { OfferCard } from "@/components/negotiation";
 import { BizAvatar } from "@/components/biz-avatar";
 import { useNegotiation } from "@/hooks/use-negotiation";
@@ -237,9 +237,6 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
             autoComplete="off"
             className="h-11 min-w-0 flex-1 rounded-full border border-input bg-background px-4 text-base outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 sm:text-sm"
           />
-          <button type="button" disabled title="Ovoz bilan yozish: tez orada" aria-label="Mikrofon: tez orada" className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-muted text-muted-foreground opacity-70">
-            <Mic className="size-4" aria-hidden="true" />
-          </button>
           <button type="submit" disabled={busy || !text.trim()} aria-label="Yuborish" className="grid size-11 shrink-0 place-items-center rounded-full bg-green-600 text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ring">
             <Send className="size-4" aria-hidden="true" />
           </button>

@@ -14,7 +14,7 @@ import type {
 } from "../types";
 import * as mock from "../mock";
 import { AGENT_TIMEOUT_MS, LOOP_TIMEOUT_MS, TIMEOUT_MS } from "./config";
-import { delay, demoUnavailable, json, request } from "./http";
+import { AlreadyConfirmedError, delay, demoUnavailable, json, request } from "./http";
 import { rememberRequest } from "./negotiation-memory";
 
 export { modeStore } from "./config";
@@ -79,7 +79,11 @@ export async function agentRequest(text: string): Promise<AgentRequestResult> {
 export const confirmNegotiation = (id: string, businessId: string) =>
   id.startsWith("demo")
     ? delay(600, mock.mockConfirm())
-    : request<ConfirmResult>(`/negotiations/${id}/confirm`, json("POST", { businessId }), demoUnavailable, AGENT_TIMEOUT_MS);
+    : request<ConfirmResult>(`/negotiations/${id}/confirm`, json("POST", { businessId }), demoUnavailable, AGENT_TIMEOUT_MS).catch((e: unknown) => {
+        // Ikki marta "Tasdiqlayman" (yoki reload): yangi buyurtma yo'q, mavjudiga o'tamiz
+        if (e instanceof AlreadyConfirmedError) return { orderId: e.orderId, paymentLink: e.paymentLink ?? `/pay/${e.orderId}` } as ConfirmResult;
+        throw e;
+      });
 
 /* ---- Telegram ulash (soxta "ulangan" yo'q: faqat server javobi) ---- */
 export const tgStart = (businessId: string, phone: string) =>

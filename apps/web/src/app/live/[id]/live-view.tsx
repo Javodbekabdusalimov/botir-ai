@@ -112,6 +112,12 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Shaxsiy agentingiz sizning nomingizdan gaplashadi. Yakuniy qaror sizda.</p>
         <Stepper active={stepIndex(state.status, false)} />
+        {id.startsWith("demo") && (
+          <p role="note" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <b>Namuna.</b> Bu tayyor ssenariy: bizneslar bilan haqiqiy muzokara va buyurtma yo&apos;q. O&apos;z so&apos;rovingiz uchun{" "}
+            <Link href="/assistant" className="font-semibold underline">yordamchiga yozing</Link>.
+          </p>
+        )}
       </header>
 
       {state.error && (

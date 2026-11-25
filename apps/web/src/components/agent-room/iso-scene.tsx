@@ -232,7 +232,7 @@ export function IsoScene({ seats, botirActive, children, className }: { seats: S
 
   return (
     <div className={cn("relative w-full", className)} style={{ aspectRatio: `${VB.w} / ${VB.h}` }}>
-      <svg viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`} className="absolute inset-0 size-full" role="img" aria-label="Agent xonasi: Botir peshtaxta ortida, mijoz agentlari stollarda">
+      <svg viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`} className="absolute inset-0 size-full" role="img" aria-label="Agent xonasi: Life Assistant peshtaxta ortida, mijoz agentlari stollarda">
         <defs>
           <radialGradient id="lampGlow" cx="40%" cy="35%" r="70%">
             <stop offset="0%" stopColor="#fffaf0" />

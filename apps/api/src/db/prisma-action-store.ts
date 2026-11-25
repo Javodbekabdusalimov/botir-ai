@@ -6,6 +6,7 @@ import { PrismaService } from './prisma.service';
 const toAction = (a: DbAction): TgAction => ({
   id: a.id, userId: a.userId, accountId: a.accountId, chatId: a.chatId, peerTitle: a.peerTitle, text: a.text,
   status: a.status as ActionStatus, reason: a.reason ?? undefined, createdAt: a.createdAt.toISOString(),
+  ...(a.firstContact ? { firstContact: true } : {}), ...(a.externalBusinessId ? { externalBusinessId: a.externalBusinessId } : {}),
 });
 
 @Injectable()
@@ -26,6 +27,13 @@ export class PrismaActionStore implements ActionStore {
       where: { userId, status: 'pending', deletedAt: null }, orderBy: { createdAt: 'desc' },
     });
     return rows.map(toAction);
+  }
+
+  /** Approved (sending/sent) first-contact messages of the user since `since`, not counting `exceptId` (the one being sent now). */
+  countFirstContact(userId: string, exceptId: string | undefined, since: Date): Promise<number> {
+    return this.db.userAction.count({
+      where: { userId, firstContact: true, status: { in: ['sending', 'sent'] }, updatedAt: { gte: since }, deletedAt: null, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    });
   }
 
   async claim(id: string): Promise<boolean> {

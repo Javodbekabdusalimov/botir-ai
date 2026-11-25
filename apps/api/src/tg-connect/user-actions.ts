@@ -15,9 +15,13 @@ export interface TgAction {
   status: ActionStatus;
   reason?: string;
   createdAt: string; // ISO
+  /** Outreach: first message to a peer that never wrote to us (the one PolicyGuard exception, see Sender). */
+  firstContact?: boolean;
+  externalBusinessId?: string;
 }
 
-export type NewTgAction = Pick<TgAction, 'userId' | 'accountId' | 'chatId' | 'peerTitle' | 'text'>;
+export type NewTgAction = Pick<TgAction, 'userId' | 'accountId' | 'chatId' | 'peerTitle' | 'text'> &
+  Partial<Pick<TgAction, 'firstContact' | 'externalBusinessId'>>;
 
 export interface ActionStore {
   create(a: NewTgAction): Promise<TgAction>;
@@ -30,7 +34,7 @@ export interface ActionStore {
 }
 
 /** Guarded send (PolicyGuard Sender, by 'owner' since the user approved it). */
-export type ActionSend = (accountId: string, chatId: string, text: string) => Promise<SendResult>;
+export type ActionSend = (accountId: string, chatId: string, text: string, action: TgAction) => Promise<SendResult>;
 
 export type Decision = { ok: true; action: TgAction } | { ok: false; reason: string };
 
@@ -48,7 +52,7 @@ export class ActionGate {
     const claimed = await this.claim(userId, id);
     if (!claimed.ok) return claimed;
     const a = claimed.action;
-    const res = await this.send(a.accountId, a.chatId, a.text);
+    const res = await this.send(a.accountId, a.chatId, a.text, a);
     if (!res.ok) {
       await this.store.finish(id, 'failed', res.reason);
       return { ok: false, reason: res.reason };

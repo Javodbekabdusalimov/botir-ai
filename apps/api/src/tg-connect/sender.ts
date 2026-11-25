@@ -21,7 +21,21 @@ export interface BusinessHours {
 export interface SendOptions {
   hours?: BusinessHours;
   now?: Date;
+  /**
+   * The ONE exception to "no first message to unknown peers" (outreach): set only for an approved UserAction flagged
+   * firstContact. `sentToday` = the user's other approved first contacts in the last 24 h.
+   */
+  firstContact?: { sentToday: number };
 }
+
+export const FIRST_CONTACT_PER_DAY = 5;
+const FLOOD_DEFAULT_S = 3600;
+
+/** Seconds to wait if the error is Telegram FLOOD_WAIT (gramjs: "A wait of N seconds is required"), else undefined. */
+const floodSeconds = (e: unknown): number | undefined => {
+  const m = /FLOOD_WAIT_?(\d+)|wait of (\d+) seconds/i.exec(errMsg(e));
+  return m ? Number(m[1] ?? m[2]) : /FLOOD/i.test(errMsg(e)) ? FLOOD_DEFAULT_S : undefined;
+};
 
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
@@ -48,6 +62,7 @@ export function isWithinHours(hours: BusinessHours, now: Date = new Date()): boo
 
 export class Sender {
   private readonly sentAt = new Map<string, number[]>(); // accountId → timestamps
+  private readonly floodUntil = new Map<string, number>(); // accountId → ms; blocks first contacts only
 
   constructor(
     private readonly store: TgStore,
@@ -63,7 +78,11 @@ export class Sender {
     const chat = await this.store.getChat(chatId);
     if (!chat || chat.accountId !== accountId) return this.deny('unknown chat (first message to a new peer is not allowed)');
     const history = await this.store.listMessages(chatId);
-    if (!history.some((m) => m.direction === 'in')) return this.deny('peer never wrote to us (no first message to unknown peers)');
+    if (!history.some((m) => m.direction === 'in')) {
+      if (!opts.firstContact) return this.deny('peer never wrote to us (no first message to unknown peers)');
+      const why = this.firstContactDenial(accountId, chat.mode, by, history, opts);
+      if (why) return this.deny(why);
+    }
 
     if (by === 'ai') {
       if (chat.mode !== 'autopilot') return this.deny(`AI may send only in autopilot mode (chat is ${chat.mode})`);
@@ -74,16 +93,22 @@ export class Sender {
     const now = (opts.now ?? new Date()).getTime();
     const recent = (this.sentAt.get(accountId) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
     if (recent.length >= RATE_LIMIT) return this.deny(`rate limit ${RATE_LIMIT}/min reached`);
+    // Take the slot before awaiting the transport: parallel sends must not all pass the check above.
+    recent.push(now);
+    this.sentAt.set(accountId, recent);
 
     let tgMsgId: number;
     try {
       ({ tgMsgId } = await this.transport(chat, body));
     } catch (e) {
       log.error(`transport failed for ${chatId}: ${errMsg(e)}`);
+      const flood = floodSeconds(e);
+      if (flood !== undefined) this.floodUntil.set(accountId, now + flood * 1000); // stop writing to new peers
+      const slots = this.sentAt.get(accountId) ?? [];
+      const i = slots.indexOf(now);
+      if (i >= 0) slots.splice(i, 1); // a failed send does not count
       return { ok: false, reason: 'telegram send failed' };
     }
-    recent.push(now);
-    this.sentAt.set(accountId, recent);
 
     const message: TgMessage = {
       id: messageKey(chatId, tgMsgId),
@@ -97,6 +122,15 @@ export class Sender {
     await this.store.saveMessage(message);
     await this.store.upsertChat({ ...chat, draft: undefined, needsHuman: false });
     return { ok: true, message };
+  }
+
+  /** Why a first contact is refused; undefined = allowed. Owner-approved only, never autopilot, new peers only, capped, stops on FLOOD_WAIT. */
+  private firstContactDenial(accountId: string, mode: string, by: SendBy, history: TgMessage[], opts: SendOptions): string | undefined {
+    if (by !== 'owner' || mode === 'autopilot') return 'first contact needs the owner approval, never autopilot';
+    if (history.length > 0) return 'already wrote to this peer: wait for a reply';
+    if ((opts.firstContact?.sentToday ?? FIRST_CONTACT_PER_DAY) >= FIRST_CONTACT_PER_DAY) return `first-contact limit ${FIRST_CONTACT_PER_DAY} new peers/day reached`;
+    if ((this.floodUntil.get(accountId) ?? 0) > (opts.now ?? new Date()).getTime()) return 'Telegram FLOOD_WAIT: first contacts are paused';
+    return undefined;
   }
 
   private deny(reason: string): SendResult {

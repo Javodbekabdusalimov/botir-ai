@@ -1,8 +1,9 @@
 import { BadRequestException, Body, Controller, Get, Inject, Post } from '@nestjs/common';
 import type { User as DbUser } from '@prisma/client';
-import type { AuthResponse, LoginDto, MeResponse, PlanId, RegisterDto } from '@botir/shared';
+import type { AuthResponse, LoginDto, MeResponse, RegisterDto } from '@botir/shared';
 import { ok } from '../common/http';
 import { PrismaService } from '../db/prisma.service';
+import { effectivePlan } from '../payments/plans';
 import { Auth, CurrentUser } from './auth.guard';
 import { AuthService, toAuthUser } from './auth.service';
 import { hashPassword, normalizePhone, verifyPassword } from './auth.util';
@@ -46,7 +47,7 @@ export class AuthController {
     return ok<MeResponse>({
       user: toAuthUser(user),
       ...(user.businessId ? { businessId: user.businessId } : {}),
-      ...(b ? { business: { id: b.id, name: b.name, plan: b.plan as PlanId, planUntil: b.planUntil?.toISOString() ?? null, aiCredits: b.aiCredits } } : {}),
+      ...(b ? { business: { id: b.id, name: b.name, plan: effectivePlan(b), planUntil: b.planUntil?.toISOString() ?? null, aiCredits: b.aiCredits } } : {}),
     });
   }
 

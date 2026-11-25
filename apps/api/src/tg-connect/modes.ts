@@ -28,8 +28,8 @@ export class ModeHandler {
     private readonly store: TgStore,
     private readonly sender: Sender,
     private readonly draftReply: DraftReplyFn,
-    /** Business hours for autopilot (per account). */
-    private readonly hoursFor: (accountId: string) => BusinessHours | undefined,
+    /** Today's business hours for autopilot (per account); undefined = closed / unknown → never auto-sends. */
+    private readonly hoursFor: (accountId: string) => BusinessHours | undefined | Promise<BusinessHours | undefined>,
   ) {}
 
   setMode(chatId: string, mode: ChatMode): Promise<Chat | undefined> {
@@ -64,7 +64,7 @@ export class ModeHandler {
       return { action: 'needs_human', draft, reason: draft.needsHuman ? 'agent asked for human' : 'low confidence' };
     }
     const res = await this.sender.send(current.accountId, current.id, draft.text, 'ai', {
-      hours: this.hoursFor(current.accountId),
+      hours: await this.hoursFor(current.accountId),
     });
     if (res.ok) return { action: 'sent', draft };
     await saveDraft(true);

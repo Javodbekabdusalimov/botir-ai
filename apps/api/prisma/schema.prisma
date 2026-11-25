@@ -32,8 +32,8 @@ model Business {
   geoLng         Float?
   workHours      String // JSON WorkHours
   maxDiscountPct Int       @default(0)
-  rating         Float     @default(4.5)
-  distanceKm     Float     @default(3)
+  rating         Float     @default(4.5) // unused: kept so plain `prisma db push` works on existing DBs
+  distanceKm     Float     @default(3) // unused, same reason
   lang           String    @default("uz")
   ownerUserId    String    @default("demo-owner")
   isDemo         Boolean   @default(false)
@@ -43,6 +43,7 @@ model Business {
   aiCredits      Int       @default(100) // monthly AI dialog quota
   agentReadyAt   DateTime? // first time the agent had a catalog + confirmed knowledge (onboarding time metric)
   syncKeyHash    String? // sha256 of the catalog sync API key (POS/1C/iiko push); plain key is shown once
+  landmark       String? // nearest well-known place (geoLat/geoLng above hold the coordinates)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -76,6 +77,7 @@ model Order {
   total         Int
   discountPct   Int       @default(0)
   status        String    @default("draft")
+  details       String? // JSON {when?, people?, wishes?} from the negotiated task
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -111,6 +113,9 @@ model Payment {
   status     String    @default("pending")
   isTest     Boolean   @default(false)
   paidAt     DateTime?
+  ownerType  String? // billing: who gets the plan when paid (user | business); null = legacy business subscription
+  ownerId    String?
+  plan       String? // billing: pro | max
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   deletedAt  DateTime?
@@ -163,6 +168,7 @@ model AgentOffer {
   discountPct   Int
   status        String
   upsell        String? // JSON {productId,name,price}, not in total
+  taskId        String? // NegotiationTask.taskId, set when the lane finishes
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -197,6 +203,8 @@ model UserAction {
   text      String
   status    String    @default("pending") // pending | sending | sent | rejected | failed
   reason    String?
+  firstContact       Boolean   @default(false) // outreach: first message to a peer that never wrote to us (PolicyGuard exception, max 5 new peers/day)
+  externalBusinessId String? // outreach: ExternalBusiness this message is addressed to
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -313,13 +321,19 @@ model PolicyViolation {
 }
 
 model LlmCall {
-  id      String   @id @default(uuid())
-  model   String
-  ms      Int
-  chars   Int
-  purpose String
-  ok      Boolean
-  at      DateTime
+  id           String   @id @default(uuid())
+  model        String
+  ms           Int
+  chars        Int
+  purpose      String
+  ok           Boolean
+  at           DateTime
+  errorKind    String? // auth | limit | overloaded | timeout | bad_output | other (only when ok=false)
+  inputTokens  Int?
+  outputTokens Int?
+  costUsd      Float?
+  userId       String? // billing owner of the call (billing/billing-context.ts), null = background work
+  businessId   String?
 }
 
 // ---- Business knowledge: sources → draft facts → owner confirms → agent context ----
@@ -386,4 +400,72 @@ model AgentTurn {
   createdAt  DateTime @default(now())
 
   @@index([businessId])
+}
+
+// ---- Billing: plan per owner + daily usage (see src/billing) ----
+/// Paid plan of a user or a business. No row / expired = FREE. tokens are a DAILY allowance (DailyUsage), plan lasts 30 days per payment.
+model PlanAccount {
+  id        String    @id @default(uuid())
+  ownerType String // user | business
+  ownerId   String
+  plan      String    @default("free") // free | pro | max
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([ownerType, ownerId])
+}
+
+/// Per owner and Asia/Tashkent day: FREE search requests used and tokens debited (real Claude input + output tokens).
+model DailyUsage {
+  id         String    @id @default(uuid())
+  ownerType  String
+  ownerId    String
+  day        String // YYYY-MM-DD in Asia/Tashkent
+  requests   Int       @default(0)
+  tokensUsed Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@unique([ownerType, ownerId, day])
+}
+
+/// Public directory of businesses that are NOT Botir partners (imported from prisma/directory.json, create-only).
+/// Unknown values stay null: nothing is guessed. The personal agent contacts them through `contacts`.
+model ExternalBusiness {
+  id          String    @id @default(uuid())
+  dedupeKey   String    @unique // normalized name|address: importer idempotency
+  name        String
+  category    String
+  district    String?
+  address     String?
+  landmark    String?
+  lat         Float?
+  lng         Float?
+  workHours   String?
+  contacts    String // JSON { telegramUser, telegramBot, telegramChannel, instagram, phone, website }
+  sources     String // JSON string[] (at least one URL)
+  retrievedAt String // ISO date the sources were read
+  isDemo      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([category])
+}
+
+/// The user asked for a business we could not reach (no contact): the invite list.
+model WantedBusiness {
+  id        String    @id @default(uuid())
+  userId    String
+  category  String
+  district  String?
+  need      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([category, district])
 }

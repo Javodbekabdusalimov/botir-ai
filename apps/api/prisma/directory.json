@@ -1,0 +1,1281 @@
+[
+ {
+  "name": "Besh Qozon — Yunusobod",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "Iftixor ko'chasi, 1",
+  "landmark": "Yunusobod davlat tennis klubi, Autocity avtosaloni",
+  "lat": 41.347629943149116,
+  "lng": 69.28532928042594,
+  "workHours": "09:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@BeshqozonBot",
+   "telegramChannel": null,
+   "instagram": "@beshqozon",
+   "phone": "+998983079404",
+   "website": "https://beshqozon.uz"
+  },
+  "sources": [
+   "https://beshqozon.uz/uz/branches",
+   "https://beshqozon.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=108145"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Besh Qozon — Nurafshon",
+  "category": "restaurant",
+  "district": "Shayxontohur",
+  "address": "3-Aklan ko'chasi, 1",
+  "landmark": null,
+  "lat": 41.316564617904014,
+  "lng": 69.20965673743439,
+  "workHours": "09:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@BeshqozonBot",
+   "telegramChannel": null,
+   "instagram": "@beshqozon",
+   "phone": "+998981404045",
+   "website": "https://beshqozon.uz"
+  },
+  "sources": [
+   "https://beshqozon.uz/uz/branches",
+   "https://beshqozon.uz/uz/contacts"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Besh Qozon — Glinka",
+  "category": "restaurant",
+  "district": "Yakkasaroy",
+  "address": "Glinka ko'chasi, 41A",
+  "landmark": "GAI Glinka chorrahasi, Slovakiya elchixonasi",
+  "lat": 41.284869039357204,
+  "lng": 69.26440516908104,
+  "workHours": "09:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@BeshqozonBot",
+   "telegramChannel": null,
+   "instagram": "@beshqozon",
+   "phone": "+998772509444",
+   "website": "https://beshqozon.uz"
+  },
+  "sources": [
+   "https://beshqozon.uz/uz/branches",
+   "https://beshqozon.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=108145"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Besh Qozon — Sergeli",
+  "category": "restaurant",
+  "district": "Sergeli",
+  "address": "Sohibkiron mahalla fuqarolar yig'ini hududi",
+  "landmark": null,
+  "lat": 41.22049382875687,
+  "lng": 69.22308481501628,
+  "workHours": "09:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@BeshqozonBot",
+   "telegramChannel": null,
+   "instagram": "@beshqozon",
+   "phone": "+998983137177",
+   "website": "https://beshqozon.uz"
+  },
+  "sources": [
+   "https://beshqozon.uz/uz/branches",
+   "https://beshqozon.uz/uz/contacts"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Besh Qozon — Risovyy (Fitrat)",
+  "category": "restaurant",
+  "district": null,
+  "address": "Abdurauf Fitrat ko'chasi, 3A",
+  "landmark": null,
+  "lat": 41.27235127119531,
+  "lng": 69.30919444047535,
+  "workHours": "09:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@BeshqozonBot",
+   "telegramChannel": null,
+   "instagram": "@beshqozon",
+   "phone": "+998954944541",
+   "website": "https://beshqozon.uz"
+  },
+  "sources": [
+   "https://beshqozon.uz/uz/branches",
+   "https://beshqozon.uz/uz/contacts"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — So'galli-Ota ko'chasi",
+  "category": "restaurant",
+  "district": "Chilonzor",
+  "address": "So'galli-Ota ko'chasi, 54",
+  "landmark": "Zarhal saroyi restorani, 585-sonli bolalar bog'chasi",
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=74899",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — Chilonzor-10 mavzesi",
+  "category": "restaurant",
+  "district": "Chilonzor",
+  "address": "Chilonzor-10 mavzesi, Qatortol va Kichik Halqa Yo'li ko'chalari kesishmasi",
+  "landmark": "Shuxrat chorrahasi, Andalus supermarket",
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=73338",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — Ahmad Donish ko'chasi",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "Ahmad Donish ko'chasi, Yunusobod-5 mavzesi, 11/1",
+  "landmark": "Shohsaroy restorani, Garnet hotel",
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=74902",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — Bobur ko'chasi",
+  "category": "restaurant",
+  "district": "Yakkasaroy",
+  "address": "Bobur ko'chasi, 6",
+  "landmark": "NEXT savdo markazi, Yakkasaroy tuman hokimiyati",
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-22:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=92337",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — Sh. Rustaveli ko'chasi",
+  "category": "restaurant",
+  "district": "Yakkasaroy",
+  "address": "Sh. Rustaveli ko'chasi, 36",
+  "landmark": "Shota Rustaveli haykali",
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=97345",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — Muxammad Yusuf ko'chasi",
+  "category": "restaurant",
+  "district": "Mirzo Ulug'bek",
+  "address": "Muxammad Yusuf ko'chasi, 1A",
+  "landmark": "Parkent biznes-markazi",
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-03:45",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=73337",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "EVOS — Feruza ko'chasi",
+  "category": "restaurant",
+  "district": "Mirzo Ulug'bek",
+  "address": "Feruza ko'chasi, 42A",
+  "landmark": "Oxbridge International School",
+  "lat": null,
+  "lng": null,
+  "workHours": "08:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@evosdeliverybot",
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712031212",
+   "website": "https://evos.uz"
+  },
+  "sources": [
+   "https://evos.uz/uz/contacts",
+   "https://www.goldenpages.uz/uz/company/?Id=96628",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=4806"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Les Ailes — Chilonzor",
+  "category": "restaurant",
+  "district": "Chilonzor",
+  "address": "Chilonzor 2-2",
+  "landmark": "Makro Chilonzor",
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-00:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712004242",
+   "website": "https://lesailes.uz"
+  },
+  "sources": [
+   "https://lesailes.uz/uz/tashkent/branch",
+   "https://yandex.ru/maps/org/les_ailes/179014787778/",
+   "https://www.goldenpages.uz/uz/company/?Id=85592"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Les Ailes — Yunusobod",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "A. Donish ko'chasi, 80",
+  "landmark": "Shoxsaroy",
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712004242",
+   "website": "https://lesailes.uz"
+  },
+  "sources": [
+   "https://lesailes.uz/uz/tashkent/branch",
+   "https://yandex.ru/maps/org/les_ailes/179014787778/",
+   "https://www.goldenpages.uz/uz/company/?Id=89221"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Les Ailes — Next",
+  "category": "restaurant",
+  "district": "Yakkasaroy",
+  "address": "Bobur ko'chasi, 6",
+  "landmark": "Next",
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-22:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712004242",
+   "website": "https://lesailes.uz"
+  },
+  "sources": [
+   "https://lesailes.uz/uz/tashkent/branch",
+   "https://yandex.ru/maps/org/les_ailes/179014787778/",
+   "https://www.goldenpages.uz/uz/company/?Id=92337"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Les Ailes — Parus",
+  "category": "restaurant",
+  "district": null,
+  "address": "Qatortol ko'chasi, 60A",
+  "landmark": "Parus",
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712004242",
+   "website": "https://lesailes.uz"
+  },
+  "sources": [
+   "https://lesailes.uz/uz/tashkent/branch",
+   "https://yandex.ru/maps/org/les_ailes/179014787778/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Oqtepa Lavash — Chilonzor-7",
+  "category": "restaurant",
+  "district": "Chilonzor",
+  "address": "Chilonzor-7 mavzesi (Qatortol)",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": "https://oqtepalavash.uz"
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=100576",
+   "https://oqtepalavash.uz/uz/filial"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Chopar Pizza — Yunusobod 7-kvartal",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "Yunusobod massivi, 7-kvartal, 49",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": "@Chopar_bot",
+   "telegramChannel": null,
+   "instagram": "@choparpizza",
+   "phone": "+998712051111",
+   "website": "https://choparpizza.uz"
+  },
+  "sources": [
+   "https://yandex.ru/maps/org/chopar_pizza/55679249249/",
+   "https://choparpizza.uz/en/tashkent",
+   "https://www.instagram.com/choparpizza/?hl=en"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Payshanba Zig'ir Osh",
+  "category": "restaurant",
+  "district": "Yakkasaroy",
+  "address": "Qo'shbegi ko'chasi, 8/1-3",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998946560086",
+   "website": null
+  },
+  "sources": [
+   "https://www.yellowpages.uz/uz/korxona/payshanba-zigir-osh"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Toshkent Family Restaurant",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "Yunusota ko'chasi",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998555102255",
+   "website": null
+  },
+  "sources": [
+   "https://joy-top.uz/en/r/toshkent-family-restaurant-nluz83s",
+   "https://www.goldenpages.uz/en/company/?Id=120627",
+   "https://yandex.com/maps/org/toshkent_family_restaurant/184171537864/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Lali Restaurant",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "Kiyot massivi, 57B",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "11:00-00:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998503335757",
+   "website": null
+  },
+  "sources": [
+   "https://harada-oturaq.az/en/places/lali-restaurant-tashkent"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Bellissimo Pizza — Yunusobod",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "Amir Temur shoh ko'chasi, 2",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.tripadvisor.com/Restaurant_Review-g293968-d26457838-Reviews-Bellissimo_Pizza_Yunusobod-Tashkent_Tashkent_Province.html"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Davlatbek Zig'ir Osh",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "4-proezd, Turkqo'rg'on, 22-2-3",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@davlatbek_zigirosh",
+   "phone": "+998983607690",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/davlatbek_zigirosh/?hl=en"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Chavandoz Oilaviy Restoran",
+  "category": "restaurant",
+  "district": null,
+  "address": null,
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-03:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@chavandoz_uz",
+   "phone": "+998999203333",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/chavandoz_uz/?hl=en"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Nurafshon Choyxona",
+  "category": "restaurant",
+  "district": "Chilonzor",
+  "address": "Oq Tepa, Rahmat Fayziy ko'chasi, 73",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@nurafshon__choyxona",
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/nurafshon__choyxona/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Kamolon Osh Markazi",
+  "category": "restaurant",
+  "district": null,
+  "address": null,
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998555001661",
+   "website": "https://kamolonosh.uz"
+  },
+  "sources": [
+   "https://kamolonosh.uz/uz/menu/product/zig-ir-osh-1-d"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Qashqadaryo Zig'ir Oshi",
+  "category": "restaurant",
+  "district": "Uchtepa",
+  "address": "Chilonzor dahasi, 26-mavze, 27",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://yandex.uz/maps/org/qashqadaryo_zig_ir_oshi/198157533138/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Luna Lounge Bar",
+  "category": "restaurant",
+  "district": "Chilonzor",
+  "address": "Pionerskiy ko'chasi",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@luna_lounge__bar",
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.google.com/goto?url=CAESZwHEIkXXHkGVzDb10sIFeIe7lvrJIsI5ziv2vh3H3KMrfBGpq3_Dv9qn4zv9melKtzbnNh-8TIgD8IS8hUexzHwuaYgeSwLRiC_HPj7x4gw9h309cUVxG39SxQpifkViPvXrUx8hN-E&gsessionid=tOJ2HvJIVuwu2Aygz7yQv_SgnZW-5xAaK9ZpLdwgKEBxnCnMsv3K1w"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Yunusobod Osh Markazi",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": "O'lkabod ko'chasi, 25-uy",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998935187132",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/popular/yunusobod-osh-markazi/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Mohriddin Osh",
+  "category": "restaurant",
+  "district": "Yunusobod",
+  "address": null,
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "10:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": "@mohriddinosh",
+   "instagram": null,
+   "phone": "+998990400094",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/popular/osh-markazi/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Mexanik Avto Xizmat",
+  "category": "autoservice",
+  "district": "Mirzo Ulug'bek",
+  "address": "Qorasuv-6 dahasi, Avayhon ko'chasi, 98A",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-18:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=40213",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=3964"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Avtotexxizmat (Bunyodkor)",
+  "category": "autoservice",
+  "district": "Chilonzor",
+  "address": "Bunyodkor shoh ko'chasi, 118",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "08:00-17:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712794191",
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=10984",
+   "https://uzautomotors.com/dillers/cat/1/gorod_tashkent"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Avtotexxizmat STO-2 (Amir Temur)",
+  "category": "autoservice",
+  "district": "Yunusobod",
+  "address": "Amir Temur ko'chasi, 79",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712794191",
+   "website": null
+  },
+  "sources": [
+   "https://uzautomotors.com/dillers/cat/1/gorod_tashkent"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Best Service Station",
+  "category": "autoservice",
+  "district": "Chilonzor",
+  "address": "Arnasoy ko'chasi, 7",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-18:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=110475",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=3964"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Humo-A-Servis (avtoservis va AYOQSH)",
+  "category": "autoservice",
+  "district": "Yunusobod",
+  "address": "Nurmakon ko'chasi, 2",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "06:00-23:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=100631",
+   "https://www.goldenpages.uz/uz/rubrics/?Id=3964"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Damas avtoservis",
+  "category": "autoservice",
+  "district": "Chilonzor",
+  "address": "Chilonzor dahasi, 10-mavze, 23/1",
+  "landmark": "Chilonzor metrosi",
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://yandex.uz/maps/org/damas/209373929998/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Korzinka — Yunusobod 14-kvartal",
+  "category": "shop",
+  "district": "Yunusobod",
+  "address": "Yunusobod massivi, 14-kvartal, 62",
+  "landmark": "Turkiston metrosi",
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998781401414",
+   "website": "https://korzinka.uz"
+  },
+  "sources": [
+   "https://yandex.ru/maps/org/korzinka/60411980525/",
+   "https://korzinka.uz/uz/stores"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Korzinka — Yangi Yunusobod ko'chasi",
+  "category": "shop",
+  "district": "Yunusobod",
+  "address": "Yangi Yunusobod ko'chasi",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "08:00-22:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": "https://korzinka.uz"
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=101956"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Makro — Chilonzor",
+  "category": "shop",
+  "district": "Chilonzor",
+  "address": "Chilonzor ko'chasi, 55",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "08:00-22:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": "@makrosupermarket_uz",
+   "instagram": null,
+   "phone": "+998712051205",
+   "website": "https://makromarket.uz"
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=85592",
+   "https://makromarket.uz/contacts",
+   "https://yandex.ru/maps/org/makro/176112360541/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Makro — Yunusobod Beg'ubor",
+  "category": "shop",
+  "district": "Yunusobod",
+  "address": "Beg'ubor MFY, 18-daha, 1B",
+  "landmark": null,
+  "lat": 41.369172,
+  "lng": 69.315247,
+  "workHours": "08:00-00:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": "@makrosupermarket_uz",
+   "instagram": null,
+   "phone": "+998712051205",
+   "website": "https://makromarket.uz"
+  },
+  "sources": [
+   "https://makromarket.uz/contacts"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Makro — Yunusobod Uch Qahramon",
+  "category": "shop",
+  "district": "Yunusobod",
+  "address": "9-kvartal, Uch Qahramon ko'chasi, 27",
+  "landmark": null,
+  "lat": 41.379256,
+  "lng": 69.280886,
+  "workHours": "08:00-00:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": "@makrosupermarket_uz",
+   "instagram": null,
+   "phone": "+998712051205",
+   "website": "https://makromarket.uz"
+  },
+  "sources": [
+   "https://makromarket.uz/contacts"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Chorsu Buyum Savdo Kompleksi",
+  "category": "shop",
+  "district": "Shayxontohur",
+  "address": "Zarqaynar ko'chasi, 1",
+  "landmark": "Seoul Plaza savdo majmuasi, 42-sonli maktab",
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/company/?Id=58141"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Shox International Hospital",
+  "category": "clinic",
+  "district": "Yakkasaroy",
+  "address": "Kichik Halqa Yo'li, 70A",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "00:00-24:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712070017",
+   "website": "https://shox.hospital"
+  },
+  "sources": [
+   "https://shox.hospital/en",
+   "https://www.facebook.com/Shox.Hospital/",
+   "https://yandex.com/maps/org/shox_international_hospital/192073714049/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Akfa Medline",
+  "category": "clinic",
+  "district": null,
+  "address": null,
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998712033003",
+   "website": "https://akfamedline.uz"
+  },
+  "sources": [
+   "https://akfamedline.uz/en"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "DiaLab Medical Service",
+  "category": "clinic",
+  "district": null,
+  "address": null,
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": "07:30-23:59",
+  "contacts": {
+   "telegramUser": "@dialab_8288",
+   "telegramBot": null,
+   "telegramChannel": "@DiaLabMedicalService",
+   "instagram": "@dialab.uz",
+   "phone": "+998998928288",
+   "website": null
+  },
+  "sources": [
+   "https://t.me/DiaLabMedicalService"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Sap Med",
+  "category": "clinic",
+  "district": "Chilonzor",
+  "address": "Qatortol ko'chasi, 1-uy",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998507997740",
+   "website": null
+  },
+  "sources": [
+   "https://clinics.uz/uzb/catalog/medical-centers/pediatrics/pediatr-kruglosutochno_Chilonzor_tumani"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Doktor Bubnovskiy markazi",
+  "category": "clinic",
+  "district": "Chilonzor",
+  "address": "Gagarin ko'chasi, 41",
+  "landmark": "103-sonli maktab, Gagarin xiyoboni",
+  "lat": null,
+  "lng": null,
+  "workHours": "08:00-21:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/rubrics/?Id=107121",
+   "https://www.goldenpages.uz/uz/company/?Id=57650"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Astigmati-Servis (ko'z klinikasi)",
+  "category": "clinic",
+  "district": "Chilonzor",
+  "address": "Muqimiy ko'chasi, 106/46-47",
+  "landmark": "Chilanzar Biznes Center",
+  "lat": null,
+  "lng": null,
+  "workHours": "09:00-18:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/rubrics/?Id=107121",
+   "https://www.goldenpages.uz/uz/company/?Id=46231"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Darmon Servis xususiy klinikasi",
+  "category": "clinic",
+  "district": "Chilonzor",
+  "address": "Cho'ponota ko'chasi, 18/19",
+  "landmark": "Korzinka Choponota",
+  "lat": null,
+  "lng": null,
+  "workHours": "00:00-24:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/rubrics/?Id=107121",
+   "https://www.goldenpages.uz/uz/company/?Id=66698"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Star Med Center",
+  "category": "clinic",
+  "district": "Chilonzor",
+  "address": "Chilonzor-6 mavzesi, 6/1",
+  "landmark": "285-sonli bolalar bog'chasi, 178-sonli maktab",
+  "lat": null,
+  "lng": null,
+  "workHours": "00:00-24:00",
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.goldenpages.uz/uz/rubrics/?Id=107121",
+   "https://www.goldenpages.uz/uz/company/?Id=73390"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Beauty Me",
+  "category": "beauty",
+  "district": null,
+  "address": "Iftixor ko'chasi, 11",
+  "landmark": "Malika, Oq masjid",
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": "@beautyme_uz",
+   "instagram": null,
+   "phone": "+998981256886",
+   "website": null
+  },
+  "sources": [
+   "https://t.me/beautyme_uz",
+   "https://www.instagram.com/reel/DaDNWimNXDU/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "ARA Beauty Salon",
+  "category": "beauty",
+  "district": null,
+  "address": "Chilonzor ko'chasi, 2/2",
+  "landmark": "Zamin to'yxona, O'zbekfilm",
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": "+998987005058",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/reel/DbELJnwtJqH/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "AURA saloni (Yunusobod 18-kvartal)",
+  "category": "beauty",
+  "district": "Yunusobod",
+  "address": "Yunusobod 18-kvartal",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@nur__academy1",
+   "phone": "+998955365155",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/reel/DTdcPrzjBfj/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Sephora salon",
+  "category": "beauty",
+  "district": null,
+  "address": "Chorsu 2A",
+  "landmark": "Suzuk ota masjidi",
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@salon_sephora_uz",
+   "phone": "+998951222221",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/salon_sephora_uz/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "Beauty Sharm",
+  "category": "beauty",
+  "district": "Yakkasaroy",
+  "address": "Yakkasaroy, 30",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": null,
+   "phone": null,
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/reel/DNXqfHot7ZE/"
+  ],
+  "retrievedAt": "2026-11-25"
+ },
+ {
+  "name": "LaRoSE beauty studio",
+  "category": "beauty",
+  "district": null,
+  "address": "Qoraqamish",
+  "landmark": null,
+  "lat": null,
+  "lng": null,
+  "workHours": null,
+  "contacts": {
+   "telegramUser": null,
+   "telegramBot": null,
+   "telegramChannel": null,
+   "instagram": "@la_rose__beauty_studio",
+   "phone": "+998930068484",
+   "website": null
+  },
+  "sources": [
+   "https://www.instagram.com/la_rose__beauty_studio/"
+  ],
+  "retrievedAt": "2026-11-25"
+ }
+]

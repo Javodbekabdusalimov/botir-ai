@@ -59,6 +59,8 @@ export interface Business extends Base {
   address: string;
   district: string;
   geo?: { lat: number; lng: number };
+  /** Nearest well-known place ("Autocity avtosaloni yonida"). */
+  landmark?: string;
   workHours: WorkHours;
   maxDiscountPct: number; // default 0
   lang: Lang;
@@ -68,16 +70,30 @@ export interface Business extends Base {
   planUntil?: ISODate | null; // pro active until
   aiCredits?: number; // AI dialog quota left
 }
+/** GET /businesses, GET /businesses/:id (ochiq): chegirma chegarasi, egasi id va AI kvota ko'rsatilmaydi (faqat egasiga). */
+export type PublicBusiness = Omit<Business, 'maxDiscountPct' | 'ownerUserId' | 'aiCredits'>;
 
 // ---------- Obuna (Botir daromadi: oylik obuna, TezCheck orqali, faqat KIRIM) ----------
-export type PlanId = 'start' | 'pro';
+/** 'start' = legacy alias of 'free' (older clients / saved rows). */
+export type PlanId = 'free' | 'pro' | 'max' | 'start';
 /** GET /plans */
 export interface Plan {
   id: PlanId;
   name: string;
   price: number; // so'm / oy
-  aiCredits: number; // oylik AI dialog kvotasi
+  aiCredits: number; // oylik AI dialog kvotasi (eski, biznes obunasi)
+  dailyTokens?: number; // Pro/Max: kunlik token (00:00 Asia/Tashkent da yangilanadi); free: 0
   periodDays: number;
+  introPrice?: number; // Pro: birinchi to'langan oy narxi (har biznesga 1 marta), keyin `price`
+}
+/** GET /businesses/:id/plan (owner, Bearer): biznes obunasi va keyingi Pro oyi narxi. */
+export interface BusinessPlanStatus {
+  plan: PlanId; // amaldagi tarif: 'pro' faqat expiresAt kelajakda bo'lsa
+  expiresAt: ISODate | null; // to'langan Pro davri tugashi (o'tmishda = muddati tugagan); null = hech to'lanmagan
+  introPrice: number; // birinchi to'langan oy (har biznesga 1 marta)
+  fullPrice: number; // keyingi har bir oy
+  nextPrice: number; // POST /businesses/:id/subscription hozir shu summaga hisob ochadi
+  introAvailable: boolean;
 }
 /** POST /businesses/:id/subscription {plan:'pro'} (owner, Bearer) */
 export interface SubscribeDto {
@@ -138,6 +154,8 @@ export interface Order extends Base {
   total: number;
   discountPct: number;
   status: OrderStatus;
+  /** What the client asked for (from the negotiated task), so the business can serve it. */
+  details?: { when?: string; people?: number; wishes?: string };
 }
 
 export type BookingStatus = 'pending_confirm' | 'confirmed' | 'cancelled';
@@ -178,6 +196,7 @@ export interface NegotiationTask {
   where?: string;
   people?: number;
   budget?: number;
+  wishes?: string; // client's own words: "piyozsiz", "deraza yonida"
 }
 
 export type A2APayload =
@@ -213,15 +232,12 @@ export interface UpsellSuggestion {
   price: number; // catalog price, computed by code
 }
 
-/** One competitor in a task's competition (sorted best first). score = 0.6 price + 0.25 rating + 0.15 distance. */
+/** One competitor in a task's competition (sorted best first): lowest price, then higher discount. */
 export interface CompetitionEntry {
   businessId: UUID;
   businessName: string;
   price: number;
   discountPct: number;
-  rating: number;
-  distanceKm: number;
-  score: number; // 0..1
 }
 
 export interface NegotiationMessage {
@@ -248,13 +264,15 @@ export type NegotiationEvent =
   | { type: 'message'; message: NegotiationMessage }
   | {
       type: 'best_offer';
+      /** NegotiationTask.taskId: groups offers per task when one request has several tasks. */
+      taskId?: string;
       businessId: UUID;
       businessName: string;
       offer: Extract<A2APayload, { type: 'OFFER' }>;
       /** true = winner of the task's competition (emitted after all lanes of the task finished). */
       winner?: boolean;
       ranking?: CompetitionEntry[];
-      reason?: string; // e.g. "eng arzon + reyting 4.8"
+      reason?: string; // e.g. "3 ta joy raqobatlashdi → eng arzon"
       appliedMemory?: string[];
     }
   | { type: 'status'; status: NegotiationStatus }
@@ -263,16 +281,30 @@ export type NegotiationEvent =
 export interface AgentRequestDto {
   userId: UUID;
   text: string;
+  /** Optional district chosen in the UI ("Chilonzor"); fills tasks whose text names no district. */
+  district?: string;
 }
 export interface AgentRequestResult {
   negotiationId: UUID;
   tasks: NegotiationTask[];
+}
+/** POST /negotiations/:id/confirm body. Bearer required when the negotiation belongs to a registered user. */
+export interface ConfirmDto {
+  businessId: UUID;
+  acceptUpsell?: boolean;
+  /** best_offer.taskId: which task's offer to confirm (needed when one business serves two tasks). */
+  taskId?: string;
 }
 export interface ConfirmResult {
   orderId: UUID;
   paymentLink: string;
   total?: number; // order total computed from the catalog (includes upsell if accepted)
   upsellAccepted?: boolean;
+}
+/** confirm → 409 when this offer already has an order: body is { ok:false, error, ...ConfirmConflict }. */
+export interface ConfirmConflict {
+  orderId: UUID;
+  paymentLink?: string;
 }
 
 // ---------- Telegram Connect + Inbox (§4) ----------
@@ -402,7 +434,11 @@ export const API = {
   negotiationConfirm: 'POST /negotiations/:id/confirm',
   paymentStatus: 'GET /payments/:orderId/status',
   plans: 'GET /plans',
+  billingMe: 'GET /billing/me',
+  billingSubscribe: 'POST /billing/subscribe',
+  agentSearch: 'POST /agent/search',
   subscribe: 'POST /businesses/:id/subscription',
+  businessPlan: 'GET /businesses/:id/plan',
   loopRun: 'POST /loop/run',
   loopApprove: 'POST /loop/proposals/:id/approve',
   loopReject: 'POST /loop/proposals/:id/reject',
@@ -411,7 +447,8 @@ export const API = {
 // ---------- Biznes bilimi (B2B onboarding: manbalar → qoralama faktlar → egasi tasdiqlaydi → agent konteksti) ----------
 export type KnowledgeSourceKind = 'photo' | 'pdf' | 'text' | 'telegram' | 'website' | 'voice' | 'sync' | 'question';
 export type KnowledgeFactKind = 'profile' | 'policy' | 'faq' | 'catalog' | 'style';
-export type KnowledgeFactStatus = 'draft' | 'confirmed' | 'rejected';
+/** 'superseded' = a newer confirmed fact about the same product / question / topic replaced it (agent no longer sees it). */
+export type KnowledgeFactStatus = 'draft' | 'confirmed' | 'rejected' | 'superseded';
 
 export interface KnowledgeSource {
   id: UUID;
@@ -476,8 +513,15 @@ export interface KnowledgeTelegramDto {
   chatIds: UUID[];
 }
 // POST /businesses/:id/knowledge/sources/file — multipart "file": rasm (jpg/png/webp), PDF, audio. → KnowledgeSource (processing)
-/** PATCH /businesses/:id/knowledge/facts/:factId */
-export type KnowledgeFactPatch = Partial<Pick<KnowledgeFact, 'topic' | 'question' | 'content' | 'price' | 'unit' | 'status'>>;
+/**
+ * PATCH /businesses/:id/knowledge/facts/:factId — confirmed facts too (a catalog price/name edit updates the CatalogItem).
+ * price: number or the owner's raw text ("45.000", "45 000", "45 ming"), parsed on the server. status 'confirmed' on a superseded fact restores it.
+ * DELETE /businesses/:id/knowledge/facts/:factId → { id } — soft delete; a confirmed catalog fact also removes its CatalogItem.
+ */
+export type KnowledgeFactPatch = Partial<Pick<KnowledgeFact, 'topic' | 'question' | 'content' | 'unit'>> & {
+  price?: number | string;
+  status?: Exclude<KnowledgeFactStatus, 'superseded'>;
+};
 /** POST /businesses/:id/knowledge/facts/confirm — ko'pini birdan */
 export interface KnowledgeConfirmDto {
   ids: UUID[];
@@ -498,4 +542,153 @@ export interface SyncCatalogResult {
   updated: number;
   created: number;
   errors: string[];
+}
+
+// ---------- Tariflar va tokenlar (billing) ----------
+/** Token = haqiqiy Claude tokeni (kirish + chiqish). Pro/Max tokenlari KUNLIK, 00:00 (Asia/Tashkent) da yangilanadi. */
+export type BillingOwnerType = 'user' | 'business';
+export interface BillingPrices {
+  pro: { price: number; introPrice: number; dailyTokens: number };
+  max: { price: number; dailyTokens: number };
+  freeDailyRequests: number;
+  periodDays: number;
+}
+/** GET /billing/me (Bearer yoki ?userId=<mehmon id>) */
+export interface BillingMe {
+  ownerType: BillingOwnerType;
+  ownerId: string;
+  plan: 'free' | 'pro' | 'max'; // amaldagi tarif: pro/max faqat expiresAt kelajakda bo'lsa
+  expiresAt: ISODate | null;
+  tokensToday: number; // bugun ishlatilgan
+  tokensLeftToday: number; // free: 0
+  dailyTokens: number; // kunlik limit (free: 0)
+  freeLeftToday: number; // free: qolgan bepul qidiruv; pro/max: 0
+  resetsAt: ISODate; // keyingi 00:00 Asia/Tashkent
+  introAvailable: boolean; // birinchi Pro oyi arzon narxda
+  prices: BillingPrices;
+}
+/** POST /billing/subscribe */
+export interface BillingSubscribeDto {
+  plan: 'pro' | 'max';
+}
+/** 402 body (Pro kerak yoki tokenlar tugadi): { ok:false, error, upgrade:true } */
+export interface UpgradeRequired {
+  ok: false;
+  error: string;
+  upgrade: true;
+}
+/** POST /agent/search {text, userId?} — FREE va undan yuqori; muzokara/buyurtma yo'q. 429: kunlik 3 ta bepul so'rov tugadi. */
+export interface AgentSearchDto {
+  text: string;
+  userId?: string;
+}
+export interface AgentSearchMatch {
+  name: string;
+  price: number; // so'm, katalog narxi
+  unit: string;
+}
+export interface AgentSearchBusiness {
+  id: string;
+  name: string;
+  category: BusinessCategory;
+  district: string;
+  address: string;
+  matches: AgentSearchMatch[]; // so'ralgan narsaga mos katalog pozitsiyalari
+  total: number | null; // so'ralgan miqdor x katalog narxi, chegirmasiz; mos pozitsiya yo'q bo'lsa null
+}
+export interface AgentSearchResult {
+  tasks: { need: string; category: BusinessCategory; businesses: AgentSearchBusiness[] }[];
+}
+
+// ---------- Outreach: biznes partner bo'lmasa ham agent murojaat qiladi (PRO/MAX) ----------
+/** telegram_user: agent foydalanuvchi Telegramidan yozadi · telegram_bot: /start + so'rov botga · handoff: foydalanuvchi o'zi bosadigan havola · none: kontakt yo'q */
+export type OutreachChannel = 'telegram_user' | 'telegram_bot' | 'handoff' | 'none';
+export type OutreachHandoffKind = 'telegram_channel' | 'instagram' | 'phone' | 'website';
+
+/** POST /outreach/plan — text YOKI negotiationId. */
+export interface OutreachPlanDto {
+  text?: string;
+  negotiationId?: UUID;
+  district?: string;
+}
+export interface OutreachOption {
+  /** ExternalBusiness id; /outreach/:optionId/draft va /send shu id bilan */
+  optionId: UUID;
+  name: string;
+  category: BusinessCategory;
+  district?: string;
+  address?: string;
+  landmark?: string;
+  geo?: { lat: number; lng: number };
+  workHours?: string;
+  sameDistrict: boolean;
+  channel: OutreachChannel;
+  handoffKind?: OutreachHandoffKind;
+  /** t.me / ig.me / tel: / sayt havolasi (telegram kanallarida ham: Telegram ulanmagan bo'lsa shu bilan o'tiladi) */
+  link?: string;
+  /** Tayyor o'zbekcha xabar (LLMsiz): handoff kartada nusxalash uchun */
+  message: string;
+  sources: string[];
+  retrievedAt: string;
+}
+export interface OutreachPartnerAlternative {
+  businessId: UUID;
+  name: string;
+  district: string;
+  address: string;
+  landmark?: string;
+}
+export interface OutreachTaskPlan {
+  category: BusinessCategory;
+  need: string;
+  district?: string;
+  options: OutreachOption[];
+  /** Hech bir variantda kontakt yo'q: halol xabar + eng yaqin partnerlar + taklif ro'yxatiga yozildi */
+  notFound?: { message: string; alternatives: OutreachPartnerAlternative[]; wantedId: UUID };
+}
+export interface OutreachPlan {
+  /** false → telegram_user/telegram_bot variantlari `link` orqali handoff bo'ladi */
+  telegramConnected: boolean;
+  /** Doim: to'lov biznesga to'g'ridan-to'g'ri, Life Assistant to'lov havolasi yaratmaydi */
+  paymentNote: string;
+  tasks: OutreachTaskPlan[];
+}
+/** POST /outreach/:optionId/draft */
+export interface OutreachDraftDto {
+  text: string;
+  district?: string;
+}
+export interface OutreachDraft {
+  optionId: UUID;
+  channel: OutreachChannel;
+  /** Birinchi xabar; "Life Assistant yordamchisi orqali yozilmoqda" kodda kafolatlanadi */
+  text: string;
+  link?: string;
+  /** telegram_bot: avval /start yuboriladi, matn bot javob bergach /send bilan */
+  startFirst?: boolean;
+}
+/** POST /outreach/:optionId/send — pending UserAction yaratadi; yuborish `POST /me/actions/:id/approve` bilan */
+export interface OutreachSendDto {
+  text: string;
+}
+export interface OutreachSendResult {
+  action: UserAction;
+  /** telegram_bot: action = /start; shu matn bot javob bergach qayta /send qilinadi */
+  sendTextAfterReply?: string;
+}
+export interface OutreachReply {
+  id: string;
+  direction: 'in' | 'out';
+  text: string;
+  sentAt: ISODate;
+}
+/** GET /outreach/threads */
+export interface OutreachThread {
+  optionId: UUID;
+  name: string;
+  chatId: string;
+  replies: OutreachReply[];
+  /** Javoblardagi narx/band-bo'sh haqida qisqa xulosa; javob yo'q yoki ma'lumot yo'q bo'lsa null */
+  summary: string | null;
+  lastReplyAt?: ISODate;
 }

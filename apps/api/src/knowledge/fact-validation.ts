@@ -1,6 +1,6 @@
 // LLM output is untrusted: every field is checked and clamped here before it can become a draft fact.
 import type { KnowledgeFactKind } from '@botir/shared';
-import { cleanLine, normalizeName, parseSom, redactPii, somInText } from './text-utils';
+import { cleanLine, MAX_SOM, normalizeName, parseSom, redactPii, somAmounts, somInText } from './text-utils';
 
 export interface DraftFact {
   kind: KnowledgeFactKind;
@@ -15,10 +15,9 @@ export interface DraftFact {
 
 export const FACT_KINDS: readonly KnowledgeFactKind[] = ['profile', 'policy', 'faq', 'catalog', 'style'];
 export const LIMITS = { topic: 80, question: 300, content: 1000, unit: 30, evidence: 200, facts: 200 } as const;
-const MAX_PRICE = 2_000_000_000; // fits the SQLite/Prisma Int column
 const UNGROUNDED_CONFIDENCE = 0.3;
 
-export const isValidPrice = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_PRICE;
+export const isValidPrice = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_SOM;
 
 export type ComparableFact = Pick<DraftFact, 'kind' | 'topic' | 'question' | 'content' | 'price' | 'evidence'>;
 
@@ -39,6 +38,12 @@ function quoteKey(f: ComparableFact): string {
 export function dropKnown(facts: DraftFact[], existing: ComparableFact[]): DraftFact[] {
   const known = new Set(existing.flatMap((f) => [factKey(f), quoteKey(f)]).filter(Boolean));
   return facts.filter((f) => !known.has(factKey(f)) && !known.has(quoteKey(f)));
+}
+
+/** "Cola 1.5 l" is sold per bottle: a size already in the name is not the selling unit (null → catalog default "dona"). */
+function sellingUnit(topic: string, unit: string): string | null {
+  const u = normalizeName(unit);
+  return !u || new RegExp(`\\d ?${u}(?!\\p{L})`, 'u').test(normalizeName(topic)) ? null : unit;
 }
 
 /**
@@ -68,6 +73,8 @@ function toFact(raw: unknown, grounding?: string): DraftFact | null {
   // A quote that is not in the source is not evidence, and the fact is shown to the owner as low-confidence.
   const quote = cleanLine(r.evidence, 400);
   const grounded = grounding === undefined || (quote !== '' && grounding.includes(normalizeName(quote)));
+  // "Osh 45 000" with price 4500: the quote is real, the number is not. Kept visible so the owner sees the mismatch.
+  const priceInQuote = price === null || quote === '' || somAmounts(quote).has(price);
   const rawConfidence = typeof r.confidence === 'number' && Number.isFinite(r.confidence) ? r.confidence : 0.5;
   const confidence = Math.min(1, Math.max(0, rawConfidence));
   return {
@@ -76,9 +83,9 @@ function toFact(raw: unknown, grounding?: string): DraftFact | null {
     question: question || null,
     content,
     price,
-    unit: kind === 'catalog' ? cleanLine(r.unit, LIMITS.unit) || null : null,
+    unit: kind === 'catalog' ? sellingUnit(topic, cleanLine(r.unit, LIMITS.unit)) : null,
     evidence: (grounded && redactPii(quote).slice(0, LIMITS.evidence)) || null,
-    confidence: grounded ? confidence : Math.min(confidence, UNGROUNDED_CONFIDENCE),
+    confidence: grounded && priceInQuote ? confidence : Math.min(confidence, UNGROUNDED_CONFIDENCE),
   };
 }
 

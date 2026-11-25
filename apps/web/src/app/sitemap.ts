@@ -15,10 +15,10 @@ const PAGES: { path: string; priority: number; changeFrequency: "weekly" | "mont
   { path: "/ai-yordamchi", priority: 0.8, changeFrequency: "monthly" },
   { path: "/connect", priority: 0.7, changeFrequency: "monthly" },
   { path: "/register", priority: 0.6, changeFrequency: "monthly" },
-  { path: "/login", priority: 0.3, changeFrequency: "monthly" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  // Har so'rovda yangi sana = soxta "yangilik" signali; kontent o'zgarganda shu sanani yangilang.
+  const lastModified = new Date("2026-11-25");
   return PAGES.map((p) => ({ url: `${SITE_URL}${p.path}`, lastModified, changeFrequency: p.changeFrequency, priority: p.priority }));
 }

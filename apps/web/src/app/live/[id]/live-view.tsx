@@ -1,7 +1,7 @@
 "use client";
 
 import { friendlyError } from "@/lib/friendly-error";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Check, MessageSquareText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -94,6 +94,12 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
   const groups = useMemo(() => groupOffers(state.best, (bid) => cats[bid] ?? "other"), [state.best, cats]);
   const ready = state.status === "agreed" || state.status === "confirmed";
   const notFound = state.error === NEGOTIATION_NOT_FOUND;
+  const offersRef = useRef<HTMLDivElement>(null);
+  // Telefonda takliflar chat ostida qoladi: kelishilganda "Tasdiqlayman" ga o'zi tushadi (lg da ikki ustun, kerak emas)
+  useEffect(() => {
+    if (!ready || window.matchMedia("(min-width: 1024px)").matches) return;
+    offersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [ready]);
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col px-4 sm:px-6 lg:px-8 py-5 lg:h-[calc(100dvh-5.9rem)] lg:py-6">
@@ -111,7 +117,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
               : "Agentlar kelishmoqda"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Shaxsiy agentingiz sizning nomingizdan gaplashadi. Yakuniy qaror sizda.</p>
-        <Stepper active={stepIndex(state.status, false)} />
+        <Stepper active={stepIndex(state.status, state.status === "confirmed")} />
         {id.startsWith("demo") && (
           <p role="note" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <b>Namuna.</b> Bu tayyor ssenariy: bizneslar bilan haqiqiy muzokara va buyurtma yo&apos;q. O&apos;z so&apos;rovingiz uchun{" "}
@@ -136,6 +142,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
         </div>
       )}
 
+      {!notFound && (
       <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_25rem]">
         <div className="min-h-0 lg:overflow-y-auto lg:pr-2">
           <NegotiationStage state={state} names={names} initialLane={confirmFor ?? undefined} />
@@ -144,7 +151,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
           </p>
         </div>
 
-        <div className="min-h-0 lg:overflow-y-auto lg:pb-2">
+        <div ref={offersRef} className="min-h-0 scroll-mt-20 lg:overflow-y-auto lg:pb-2">
           {state.status === "rejected" || state.status === "failed" ? (
             <div role="status" className="rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm">
               <p className="font-display text-base font-bold text-amber-900">{state.status === "failed" ? "Texnik xato, qayta urinib ko'ring" : "Agentlar kelisha olmadi"}</p>
@@ -178,6 +185,7 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -166,7 +166,7 @@ export function Overview() {
 const AV = ["bg-green-100 text-green-800", "bg-amber-100 text-amber-800", "bg-sky-100 text-sky-800", "bg-violet-100 text-violet-800", "bg-rose-100 text-rose-800"];
 const hash = (t: string) => [...t].reduce((a, c) => a + c.charCodeAt(0), 0);
 const TONES = { green: "bg-green-100 text-green-700", amber: "bg-amber-100 text-amber-700", blue: "bg-sky-100 text-sky-700", violet: "bg-violet-100 text-violet-700" } as const;
-const STROKE = { green: "#16a34a", amber: "#d97706", blue: "#0284c7", violet: "#7c3aed" } as const;
+const STROKE = { green: "#556158", amber: "#d97706", blue: "#0284c7", violet: "#7c3aed" } as const;
 
 function Spark({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data), min = Math.min(...data), r = max - min || 1;
@@ -186,7 +186,7 @@ function Stat({ icon: Icon, label, value, display, money, suffix, tone, hint, sp
         <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", TONES[tone])}>
           <Icon className="size-[18px]" aria-hidden="true" />
         </span>
-        <span className="truncate">{label}</span>
+        <span className="line-clamp-2 leading-tight">{label}</span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-2">
         {value === undefined ? (

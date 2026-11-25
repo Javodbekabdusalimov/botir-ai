@@ -106,8 +106,8 @@ export function ConnectForm() {
 
   return (
     <form onSubmit={submit} noValidate className="mt-8 space-y-8">
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
-        <legend className="px-2 font-display text-lg font-bold">1. Biznes haqida</legend>
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6 [&>legend+*]:clear-both">
+        <legend className="float-left mb-4 w-full font-sans text-lg font-semibold tracking-tight">1. Biznes haqida</legend>
         <Field id="name" label="Biznes nomi" error={errors.name}>
           <Input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" aria-invalid={!!errors.name} aria-describedby={errors.name ? "name-err" : undefined} placeholder="Masalan: Chilonzor Osh Markazi" />
         </Field>
@@ -142,8 +142,8 @@ export function ConnectForm() {
         </div>
       </fieldset>
 
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
-        <legend className="px-2 font-display text-lg font-bold">2. Katalog</legend>
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6 [&>legend+*]:clear-both">
+        <legend className="float-left mb-4 w-full font-sans text-lg font-semibold tracking-tight">2. Katalog</legend>
         <p className="text-sm text-muted-foreground">Excel (.xlsx) yoki CSV: ustunlar <code>nomi, narx, birlik</code>.</p>
         <div
           onDragOver={(e) => {

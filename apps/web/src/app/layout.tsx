@@ -7,9 +7,16 @@ import { BottomNav, SiteHeader } from "@/components/site-nav";
 import { Analytics } from "@/components/analytics";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-// Shrift lokal (src/app/fonts): Inter — TezDetal bilan bir xil UI tizimi; sarlavhalar ham Inter (Google Fonts SIL OFL). Offline build ishlaydi.
+// Shriftlar lokal (src/app/fonts): Inter (matn) + Instrument Serif (sarlavhalar, kursiv urg'u), Google Fonts SIL OFL. Offline build ishlaydi.
 const sans = localFont({ src: "./fonts/Inter-latin.woff2", variable: "--font-sans-ui", weight: "300 800", display: "swap" });
-const display = localFont({ src: "./fonts/Inter-latin.woff2", variable: "--font-display-ui", weight: "300 800", display: "swap" });
+const display = localFont({
+  src: [
+    { path: "./fonts/InstrumentSerif-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/InstrumentSerif-Italic.woff2", weight: "400", style: "italic" },
+  ],
+  variable: "--font-display-ui",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

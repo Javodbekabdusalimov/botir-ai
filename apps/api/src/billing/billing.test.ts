@@ -117,17 +117,35 @@ async function main(): Promise<void> {
   assert.match(notes[0] ?? '', /TEST/);
   assert.equal(await settle.markPaid(testSub, T0), false, 'idempotent');
 
-  // 9. subscribe: intro price once per account (only a real paid PRO uses it); MAX is the full price; ledger columns set
+  // 9. subscribe: intro price once per account for ANY plan (only a real paid subscription uses it up); ledger columns set
   const carol = { id: 'carol', role: 'user', businessId: null } as never;
   const first = await billing.subscribe(carol, { plan: 'pro' });
   assert.equal(first.amount, 1000);
   assert.equal((await billing.subscribe(carol, { plan: 'pro' })).paymentRef, first.paymentRef, 'double click = same bill');
-  assert.equal((await billing.subscribe(carol, { plan: 'max' })).amount, 163000);
+  assert.equal((await billing.subscribe(carol, { plan: 'max' })).amount, 1000, 'MAX first month is the intro price too');
+  assert.equal((await billing.status({ ownerType: 'user', ownerId: 'carol' }, T0)).introAvailable, true);
   const row = await db.payment.findFirst({ where: { orderId: first.paymentRef } });
   assert.deepEqual([row?.ownerType, row?.ownerId, row?.plan, row?.businessId], ['user', 'carol', 'pro', null]);
   await db.payment.create({ data: { orderId: 'sub-x', kind: 'subscription', billId: 'b-x', link: 'l', amount: 1000, status: 'paid', ownerType: 'user', ownerId: 'carol', plan: 'pro' } });
   assert.equal((await billing.subscribe(carol, { plan: 'pro' })).amount, 82000, 'second PRO month is the full price');
+  assert.equal((await billing.subscribe(carol, { plan: 'max' })).amount, 163000, 'intro used up by a real PRO payment: MAX is full');
   await assert.rejects(billing.subscribe(carol, { plan: 'free' as never }));
+  // a TEST paid subscription never uses up the intro; a business owner's legacy payment (businessId only) does
+  const dan = { id: 'dan', role: 'business', businessId: 'biz-d' } as never;
+  await db.payment.create({ data: { orderId: 'sub-d', kind: 'subscription', billId: 'b-d', link: 'l', amount: 1000, status: 'paid', isTest: true, businessId: 'biz-d' } });
+  assert.equal((await billing.subscribe(dan, { plan: 'max' })).amount, 1000);
+  await db.payment.create({ data: { orderId: 'sub-d2', kind: 'subscription', billId: 'b-d2', link: 'l', amount: 1000, status: 'paid', businessId: 'biz-d' } });
+  assert.equal((await billing.subscribe(dan, { plan: 'max' })).amount, 163000);
+  // env: PLAN_INTRO_PRICE, PLAN_PRO_INTRO_PRICE kept as a fallback alias; prices expose intro for both plans
+  const { billingPrices } = await import('./billing-plans');
+  const { plans } = await import('../payments/plans');
+  assert.deepEqual([billingPrices().pro.introPrice, billingPrices().max.introPrice, billingPrices().max.price], [1000, 1000, 163000]);
+  process.env.PLAN_PRO_INTRO_PRICE = '2000';
+  assert.equal(billingPrices().max.introPrice, 2000);
+  process.env.PLAN_INTRO_PRICE = '1500';
+  assert.deepEqual(plans().filter((p) => p.id !== 'free').map((p) => [p.id, p.introPrice, p.price]), [['pro', 1500, 82000], ['max', 1500, 163000]]);
+  delete process.env.PLAN_INTRO_PRICE;
+  delete process.env.PLAN_PRO_INTRO_PRICE;
 
   // 10. LlmClient: reads the context, stores userId/businessId, calls onCost; a failing hook never breaks the call
   const sdkQuery: SdkQuery = () =>

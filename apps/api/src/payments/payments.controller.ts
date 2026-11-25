@@ -31,7 +31,7 @@ export class PaymentsController {
     return ok(await this.poller.status(orderId));
   }
 
-  /** Owner's subscription: effective plan, expiry, intro/full price and what the next Pro month costs. */
+  /** Owner's subscription: effective plan, expiry, intro/full price and what the next Pro month costs (intro once per account). */
   @Get('businesses/:id/plan')
   @Auth()
   async businessPlan(@Param('id') id: string, @CurrentUser() user: DbUser) {
@@ -63,9 +63,8 @@ export class PaymentsController {
     return ok<SubscriptionResult>({ paymentRef: ref, payUrl: link.payUrl, amount: price });
   }
 
-  /** Paid Pro months in the current payment mode: TEST payments never use up the real intro price. */
+  /** Real paid subscriptions of this business, any plan (same once-per-account intro rule as /billing/subscribe). */
   private paidSubscriptions(businessId: string): Promise<number> {
-    const isTest = !process.env.TEZCHECK_API_KEY;
-    return this.db.payment.count({ where: { businessId, kind: 'subscription', status: 'paid', isTest, deletedAt: null } });
+    return this.db.payment.count({ where: { businessId, kind: 'subscription', status: 'paid', isTest: false, deletedAt: null } });
   }
 }

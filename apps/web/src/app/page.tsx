@@ -9,8 +9,9 @@ import { HeroSage } from "@/components/hero-sage";
 import { HomeRedirect } from "@/components/home-redirect";
 import { NetworkDiagram } from "@/components/network-diagram";
 import { SiteFooter } from "@/components/site-footer";
-import { BUSINESS_PRICE_COPY, FAQ, MAX_ROUNDS_COPY, PRO_PRICE_COPY, landingJsonLd } from "@/lib/landing-content";
+import { FAQ, FREE_DAILY_SEARCHES, INTRO_PRICE_UZS, MAX_PRICE_UZS, MAX_ROUNDS_COPY, MAX_TOKENS_COPY, PRO_PRICE_UZS, PRO_TOKENS_COPY, landingJsonLd } from "@/lib/landing-content";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { formatSom } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ const TRUST: BrandKey[] = ["payme", "click", "uzum", "telegram"];
 const FACTS = [
   { value: String(MAX_ROUNDS_COPY), unit: "raund", label: "muzokara ko'pi bilan shuncha davom etadi" },
   { value: "0", unit: "komissiya", label: "Hech qaysi tarifda sotuvdan foiz olinmaydi" },
-  { value: "0", unit: "so'm", label: "Start tarifi va mijoz yordamchisi bepul" },
+  { value: "0", unit: "so'm", label: `Free tarifi: kuniga ${FREE_DAILY_SEARCHES} ta qidiruv bepul` },
   { value: "1", unit: "tasdiq", label: "to'lov faqat sizning tasdig'ingizdan keyin" },
 ];
 
@@ -38,11 +39,12 @@ const STEPS = [
   { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. To'lov faqat shundan keyin." },
 ];
 
-/** Narxlar landing-content.ts da (egasi tasdiqlagan, 2026-11-25). Biznes rejasi backendda hali yo'q: to'lov tugmasi yo'q. */
+/** Narxlar landing-content.ts da (egasi tasdiqlagan, 2026-11-25). Sotib olish /narxlar sahifasida (narx API'dan). */
+const intro = `1-oy ${formatSom(INTRO_PRICE_UZS)}, keyin`;
 const PLANS = [
-  { name: "Start", price: "bepul", note: "Boshlash uchun", features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Agentlar muzokarasi va to'lov havolasi"], featured: false, cta: "Bepul boshlash" },
-  { name: "Biznes", price: BUSINESS_PRICE_COPY, note: "Taklif: tez orada", features: ["Start'dagi hammasi", "Bilimlar bazasi: matn, sayt, fayl", "Inbox: AI javob qoralamalari"], featured: false, cta: null },
-  { name: "Pro", price: PRO_PRICE_COPY, note: "Hech qaysi tarifda komissiya yo'q", features: ["Biznes'dagi hammasi", "Analitika va buyurtmalar paneli", "Agentni yaxshilash takliflari (siz tasdiqlaysiz)"], featured: true, cta: "Pro'ni tanlash" },
+  { name: "Free", price: "bepul", note: "Boshlash uchun", features: [`Kuniga ${FREE_DAILY_SEARCHES} ta qidiruv`, "Joylar, narx va reytingni solishtirish", "Biznes uchun katalog yuklash (Excel/CSV)"], featured: false, cta: { href: "/register", label: "Bepul boshlash" } },
+  { name: "Pro", price: `${formatSom(PRO_PRICE_UZS)}/oy`, note: intro, features: [PRO_TOKENS_COPY, "Agent siz uchun savdolashadi va buyurtma beradi", "Telegram akkauntini ulash"], featured: true, cta: { href: "/narxlar", label: `Pro olish: 1-oy ${formatSom(INTRO_PRICE_UZS)}` } },
+  { name: "Max", price: `${formatSom(MAX_PRICE_UZS)}/oy`, note: intro, features: [MAX_TOKENS_COPY, "Pro'dagi hammasi", "Pro'dan 2 baravar ko'p token"], featured: false, cta: { href: "/narxlar", label: `Max olish: 1-oy ${formatSom(INTRO_PRICE_UZS)}` } },
 ];
 
 export default function Home() {
@@ -197,9 +199,9 @@ export default function Home() {
         <div className="text-center">
           <Eyebrow>Narxlar</Eyebrow>
           <h2 id="price-h" className="mt-4 text-4xl text-green-950 sm:text-5xl">
-            Biznes <span className="text-grad">obunasi</span>
+            Oddiy <span className="text-grad">tariflar</span>
           </h2>
-          <p className="mt-3 text-muted-foreground">Mijozlar uchun yordamchi bepul.</p>
+          <p className="mt-3 text-muted-foreground">Mijozlar ham, bizneslar ham shu tariflardan foydalanadi. Komissiya yo&apos;q.</p>
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {PLANS.map((p) => (
@@ -215,13 +217,9 @@ export default function Home() {
                   <li key={f} className="flex gap-2.5"><Check className={cn("mt-0.5 size-4 shrink-0", p.featured ? "text-[#f6c27a]" : "text-green-800")} aria-hidden="true" />{f}</li>
                 ))}
               </ul>
-              {p.cta ? (
-                <Link href="/register" className={cn("mt-7 grid h-12 place-items-center rounded-full text-sm font-semibold transition-colors", p.featured ? "bg-white text-green-950 hover:bg-white/90" : "bg-green-900 text-white hover:bg-green-950")}>
-                  {p.cta}
-                </Link>
-              ) : (
-                <p className="mt-7 grid h-12 place-items-center rounded-full border border-border text-sm font-semibold text-muted-foreground">Tez orada</p>
-              )}
+              <Link href={p.cta.href} className={cn("mt-7 grid h-12 place-items-center rounded-full text-sm font-semibold transition-colors", p.featured ? "bg-white text-green-950 hover:bg-white/90" : "bg-green-900 text-white hover:bg-green-950")}>
+                {p.cta.label}
+              </Link>
             </article>
           ))}
         </div>
@@ -254,7 +252,7 @@ export default function Home() {
           <h2 className="mx-auto max-w-2xl text-balance text-4xl text-white sm:text-6xl">
             Agentlar <span className="text-grad">siz uchun</span> gaplashsin
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-white/75">Ro&apos;yxatdan o&apos;tish bir daqiqa oladi. Start tarifi bepul.</p>
+          <p className="mx-auto mt-4 max-w-md text-white/75">Ro&apos;yxatdan o&apos;tish bir daqiqa oladi. Free tarifi bepul.</p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/register" className="group inline-flex h-14 items-center gap-3 rounded-2xl bg-white py-2 pl-2 pr-5 text-sm font-semibold uppercase tracking-wide text-green-950 transition-transform hover:-translate-y-0.5">
               <span className="grid size-10 place-items-center rounded-xl bg-green-900 text-white transition-transform duration-300 group-hover:rotate-12"><Handshake className="size-5" aria-hidden="true" /></span>

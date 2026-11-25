@@ -68,21 +68,34 @@ export function Checkout({ orderId }: { orderId: string }) {
   const [serverTest, setServerTest] = useState<boolean | null>(null);
   const [checkErr, setCheckErr] = useState(false);
 
+  // Birinchi holat (summa, havola, TEST): server uxlab qolgan bo'lsa javob berguncha qayta so'raymiz
   useEffect(() => {
-    getPaymentStatus(orderId)
-      .then((r) => {
-        if (typeof r.amount === "number") setAmount(r.amount);
-        if (r.payUrl) setServerLink(r.payUrl);
-        if (typeof r.isTest === "boolean") setServerTest(r.isTest);
-        if (r.status === "paid") {
-          setPhase("paid");
-          setPaidAt(r.paidAt ?? new Date().toISOString());
-        }
-      })
-      .catch((e) => {
-        if (e instanceof NotFoundError) setNotFound(true);
-        else setCheckErr(true);
-      });
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const load = () =>
+      getPaymentStatus(orderId)
+        .then((r) => {
+          if (!alive) return;
+          setCheckErr(false);
+          if (typeof r.amount === "number") setAmount(r.amount);
+          if (r.payUrl) setServerLink(r.payUrl);
+          if (typeof r.isTest === "boolean") setServerTest(r.isTest);
+          if (r.status === "paid") {
+            setPhase("paid");
+            setPaidAt(r.paidAt ?? new Date().toISOString());
+          }
+        })
+        .catch((e) => {
+          if (!alive) return;
+          if (e instanceof NotFoundError) return setNotFound(true);
+          setCheckErr(true);
+          timer = setTimeout(load, 4000);
+        });
+    void load();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
   }, [orderId]);
 
   useEffect(() => {
@@ -191,7 +204,6 @@ export function Checkout({ orderId }: { orderId: string }) {
               {[
                 ["Summa", formatSom(total)],
                 ["Biznes", sum?.businessName ?? "-"],
-                ...(isTest ? [] : [["Usul", METHODS.find((m) => m.key === method)?.key.toUpperCase() ?? ""]]),
                 ["Vaqt", paidAt ? formatWhen(paidAt) : ""],
                 ["Buyurtma", `#${orderId.slice(-6).toUpperCase()}`],
               ].map(([k, v]) => (

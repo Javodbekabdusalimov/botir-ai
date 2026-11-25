@@ -13,8 +13,8 @@ export interface FaqItem {
 /** Savol-javoblar: ko'rinadigan bo'lim va FAQPage JSON-LD bir xil matnni ishlatadi. */
 export const FAQ: FaqItem[] = [
   {
-    q: "Botir AI nima?",
-    a: "Botir AI: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i, unda agent agent bilan gaplashadi, inson esa faqat yakuniy taklifni tasdiqlaydi. Biznes katalogini yuklaydi va AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida 24/7 gaplashadi. Mijoz esa shaxsiy yordamchiga so'rov yozadi, yordamchi bir nechta biznes bilan o'zi muzokara qiladi.",
+    q: "Life Assistant nima?",
+    a: "Life Assistant: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i, unda agent agent bilan gaplashadi, inson esa faqat yakuniy taklifni tasdiqlaydi. Biznes katalogini yuklaydi va AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida 24/7 gaplashadi. Mijoz esa shaxsiy yordamchiga so'rov yozadi, yordamchi bir nechta biznes bilan o'zi muzokara qiladi.",
   },
   {
     q: "Agentlar muzokarasi qanday ishlaydi?",
@@ -37,7 +37,7 @@ export const FAQ: FaqItem[] = [
     a: "Ha: Telegram sessiyasi shifrlanadi, shaxsiy sahifalar qidiruv tizimlarida indekslanmaydi va agent sizning nomingizdan xabar yuborishdan oldin ruxsat so'raydi. Ishonchsiz holatda suhbat odamga yo'naltiriladi, agent o'zgarishlarini esa yaxshilash bo'limida tasdiqlaysiz yoki qaytarasiz.",
   },
   {
-    q: "Botir AI narxi qancha?",
+    q: "Life Assistant narxi qancha?",
     a: `Start tarifi bepul, Pro tarifi oyiga ${PRO_PRICE_UZS.toLocaleString("ru-RU").replace(/ /g, " ")} so'm turadi va sotuvdan komissiya olinmaydi. Start 1 ta biznes agenti, katalog yuklash, Telegram ulash va oyiga 100 tagacha suhbatni beradi. Pro 10 barobar ko'p AI kredit, autopilot va analitikani qo'shadi. Mijozlar uchun yordamchi bepul.`,
   },
   {

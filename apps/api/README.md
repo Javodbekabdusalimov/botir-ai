@@ -1,4 +1,4 @@
-# apps/api — Botir AI backend (NestJS + Prisma/SQLite)
+# apps/api — Life Assistant backend (NestJS + Prisma/SQLite)
 
 Modullar va kontrakt: `docs/ARCHITECTURE.md`, `packages/shared/src/index.ts` (API kontrakti).
 Javob formati: `{ ok: true, data } | { ok: false, error }`.

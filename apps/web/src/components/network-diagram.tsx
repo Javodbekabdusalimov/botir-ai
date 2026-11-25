@@ -28,7 +28,7 @@ export function NetworkDiagram() {
         ))}
         <circle cx="320" cy="150" r="70" fill="#f4f6f4" />
         <circle cx="320" cy="150" r="56" fill="#e8ece8" stroke="#556158" strokeWidth="2" className="node-pulse" />
-        <text x="320" y="146" textAnchor="middle" fontSize="15" fontWeight="700" fill="#2b312d">Botir</text>
+        <text x="320" y="146" textAnchor="middle" fontSize="13" fontWeight="700" fill="#2b312d">Life Assistant</text>
         <text x="320" y="166" textAnchor="middle" fontSize="12" fill="#444e47">tarmog&apos;i</text>
         <text x="50" y="288" textAnchor="middle" fontSize="12" fill="#404040">Mijozlar</text>
         <text x="590" y="288" textAnchor="middle" fontSize="12" fill="#404040">Bizneslar</text>

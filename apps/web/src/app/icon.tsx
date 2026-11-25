@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
-/** Brauzer ikonkasi: Botir AI belgisi (ikki burchak + markaz). */
+/** Brauzer ikonkasi: Life Assistant belgisi (ikki burchak + markaz). */
 export default function Icon() {
   return new ImageResponse(
     (

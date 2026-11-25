@@ -1,4 +1,4 @@
-# Botir AI — flows (sequence diagrams)
+# Life Assistant — flows (sequence diagrams)
 
 Companion to `AGENTS.md`. Each diagram names the real files involved, so a reader can jump straight to the code.
 

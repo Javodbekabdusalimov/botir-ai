@@ -1,7 +1,7 @@
 import { TelegramConnect } from "./telegram-connect";
 import { pageMeta } from "@/lib/seo";
 
-export const metadata = pageMeta({ title: "Telegramni ulash", description: "Telegram akkauntingizni Botir AI agentiga ulang.", path: "/connect/telegram", noindex: true });
+export const metadata = pageMeta({ title: "Telegramni ulash", description: "Telegram akkauntingizni Life Assistant agentiga ulang.", path: "/connect/telegram", noindex: true });
 
 export default function TelegramPage() {
   return (

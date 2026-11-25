@@ -1,6 +1,6 @@
-# Botir AI
+# Life Assistant
 
-> Botir AI: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i. Agent agent bilan gaplashadi, inson faqat yakuniy taklifni tasdiqlaydi.
+> Life Assistant: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i. Agent agent bilan gaplashadi, inson faqat yakuniy taklifni tasdiqlaydi.
 
 ## Nima qiladi
 - Biznes: katalog (Excel/CSV) va maksimal chegirmani kiritadi. AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida 24/7 gaplashadi.

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 import { pageMeta } from "@/lib/seo";
 
-export const metadata = pageMeta({ title: "Kirish", description: "Botir AI hisobingizga telefon raqam va parol bilan kiring: buyurtmalar, muzokaralar va biznes paneli bir joyda.", path: "/login" });
+export const metadata = pageMeta({ title: "Kirish", description: "Life Assistant hisobingizga telefon raqam va parol bilan kiring: buyurtmalar, muzokaralar va biznes paneli bir joyda.", path: "/login" });
 
 export default function LoginPage() {
   return (

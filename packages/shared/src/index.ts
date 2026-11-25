@@ -1,4 +1,4 @@
-// Botir AI — umumiy tiplar va API kontrakti (apps/web ↔ apps/api).
+// Life Assistant — umumiy tiplar va API kontrakti (apps/web ↔ apps/api).
 // Manba: docs/ARCHITECTURE.md §3.3, §5, §6. O'zgartirishdan oldin Ibrat + Javod kelishadi.
 
 // ---------- Umumiy ----------

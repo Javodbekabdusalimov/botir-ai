@@ -83,7 +83,7 @@ function open(url: URL, ip: ResolvedIp, signal: AbortSignal): Promise<IncomingMe
       url,
       {
         agent: false, signal, lookup: pinned,
-        headers: { 'user-agent': 'BotirAI/1.0 (business page import)', accept: 'text/html', 'accept-encoding': 'identity' },
+        headers: { 'user-agent': 'LifeAssistant/1.0 (business page import)', accept: 'text/html', 'accept-encoding': 'identity' },
       },
       resolve,
     );

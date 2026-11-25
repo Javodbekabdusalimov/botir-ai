@@ -13,8 +13,9 @@ datasource db {
 model User {
   id           String    @id @default(uuid())
   name         String
-  phone        String    @unique // +998XXXXXXXXX
-  passwordHash String // scrypt: salt:hash (hex)
+  phone        String?   @unique // +998XXXXXXXXX; null for a Telegram-only (Mini App / bot) user
+  passwordHash String? // scrypt: salt:hash (hex); null = no password login (Telegram-only)
+  telegramId   String?   @unique // Telegram user id (decimal string), set by POST /auth/telegram or the bot
   role         String    @default("user")
   businessId   String?
   createdAt    DateTime  @default(now())

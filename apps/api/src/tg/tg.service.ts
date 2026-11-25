@@ -12,7 +12,8 @@ import { TurnRecorder } from '../knowledge/turn-recorder.service';
 import { AGENTS, type Agents } from '../negotiations/agents.provider';
 import { OrderExistsError } from '../negotiations/confirm-rules';
 import { NegotiationsService } from '../negotiations/negotiations.service';
-import { createBot, makeTransport, startBot } from '../telegram-bot/bot';
+import { AuthService } from '../auth/auth.service';
+import { createBot, makeTransport, setupMenuButton, startBot } from '../telegram-bot/bot';
 import {
   loadTgApiCreds, ModeHandler, pickChatByName, Sender, TgSync, UserbotLogin,
   type BusinessHours, type Chat, type DraftReply, type OnSelf, type SendOptions, type SendResult, type TgMessage, type Transport,
@@ -50,6 +51,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     @Inject(NegotiationsService) private readonly negotiations: NegotiationsService,
     @Inject(QuestionsService) private readonly questions: QuestionsService,
     @Inject(TurnRecorder) private readonly turns: TurnRecorder,
+    @Inject(AuthService) private readonly auth: AuthService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -305,9 +307,16 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
       store: this.store,
       sender: this.sender,
       onIncoming,
-      personalAgent: async (userId, text) => {
-        const r = await this.negotiations.request(`tg:${userId}`, text);
-        return `Qabul qildim! Agentlarim bizneslar bilan gaplashmoqda. Jonli kuzating: ${webUrl}/live/${r.negotiationId}`;
+      webUrl,
+      // Same account as the Mini App (POST /auth/telegram): one plan, one token budget for bot and app.
+      personalAgent: async (tgId, text, profile) => {
+        const user = await this.auth.telegramUser({ id: tgId, ...profile });
+        if (user.deletedAt) return 'Akkauntingiz o‘chirilgan.';
+        const r = await this.negotiations.request(user.id, text);
+        return {
+          text: 'Qabul qildim! Agentlarim bizneslar bilan gaplashmoqda.',
+          webApp: { label: '👀 Jonli kuzatish', path: `/live/${r.negotiationId}` },
+        };
       },
       resolveContact: async (ownerTgId, name) => {
         const accounts = await this.db.tgAccount.findMany({ where: { tgUserId: String(ownerTgId), deletedAt: null } });
@@ -333,6 +342,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
     });
     if (!res.bot) return;
     this.bot = res.bot;
+    void setupMenuButton(res.bot, webUrl);
     startBot(res.bot);
   }
 }

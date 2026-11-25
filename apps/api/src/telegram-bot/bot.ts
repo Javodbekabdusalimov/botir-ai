@@ -19,8 +19,10 @@ export interface BotDeps {
   token?: string;
   store: TgStore;
   sender: Sender;
-  /** Personal agent reply for a plain text/voice message. */
-  personalAgent(userId: number, text: string): Promise<string>;
+  /** Personal agent reply for a plain text/voice message. `profile` = the Telegram sender (for the shared account). */
+  personalAgent(userId: number, text: string, profile?: { first_name?: string; last_name?: string }): Promise<BotReply>;
+  /** Public web origin (https) for Mini App buttons. Without an https URL the bot sends plain text links only. */
+  webUrl?: string;
   /** Voice → text. Default: `bash ~/.claude/scripts/stt.sh <file>`. */
   transcribe?(filePath: string): Promise<string>;
   /** Command mode: "Aliga yoz: ..." → which chat of this owner. null = not found / not allowed. */
@@ -35,6 +37,43 @@ export interface BotDeps {
 }
 
 export type CreateBotResult = { bot: Bot; reason?: undefined } | { bot: null; reason: string };
+
+/** A bot reply; `webApp.path` is an internal web path ("/live/<id>") opened inside the Mini App. */
+export type BotReply = string | { text: string; webApp?: { label: string; path: string } };
+
+/** Telegram accepts web_app buttons only for https URLs. */
+export const miniAppOrigin = (webUrl: string | undefined): string | null => {
+  const u = (webUrl ?? '').trim().replace(/\/+$/, '');
+  return /^https:\/\/[^/\s]+$/i.test(u) ? u : null;
+};
+
+/** `${WEB_URL}/tg?to=<internal path>` — only internal paths, never an external redirect. */
+export function miniAppUrl(origin: string, path = ''): string {
+  if (!path) return `${origin}/tg`;
+  if (!/^\/(?!\/)[A-Za-z0-9/_\-.?=&%]*$/.test(path)) throw new Error(`not an internal path: ${path}`);
+  return `${origin}/tg?to=${encodeURIComponent(path)}`;
+}
+
+/** Text + optional web_app keyboard. Without an https origin the internal path is appended as a plain link. */
+export function renderReply(reply: BotReply, webUrl: string | undefined): { text: string; reply_markup?: InlineKeyboard } {
+  if (typeof reply === 'string') return { text: reply };
+  const { text, webApp } = reply;
+  if (!webApp) return { text };
+  const origin = miniAppOrigin(webUrl);
+  if (!origin) return { text: `${text}\n${(webUrl ?? '').replace(/\/+$/, '')}${webApp.path}` };
+  return { text, reply_markup: new InlineKeyboard().webApp(webApp.label, miniAppUrl(origin, webApp.path)) };
+}
+
+const OPEN_APP_LABEL = 'Life Assistant ochish';
+
+/** Chat menu button → Mini App. No-op without an https origin; failure is logged, never fatal. */
+export async function setupMenuButton(bot: Bot, webUrl: string | undefined): Promise<void> {
+  const origin = miniAppOrigin(webUrl);
+  if (!origin) return void log.warn('WEB_URL is not https — Mini App menu button skipped');
+  await bot.api
+    .setChatMenuButton({ menu_button: { type: 'web_app', text: 'Life Assistant', web_app: { url: miniAppUrl(origin) } } })
+    .catch((e: unknown) => log.warn(`setChatMenuButton failed: ${errMsg(e)}`));
+}
 
 const GREETING =
   'Assalomu alaykum! Men Life Assistant — sizning AI yordamchingiz. 🤝\n\n' +
@@ -64,7 +103,12 @@ export function createBot(deps: BotDeps): CreateBotResult {
   const bot = new Bot(token);
   const transcribe = deps.transcribe ?? defaultTranscribe;
 
-  bot.command('start', (ctx) => ctx.reply(GREETING));
+  const send = (ctx: Context, reply: BotReply) => {
+    const { text, reply_markup } = renderReply(reply, deps.webUrl);
+    return ctx.reply(text, reply_markup ? { reply_markup } : undefined);
+  };
+
+  bot.command('start', (ctx) => send(ctx, { text: GREETING, webApp: { label: OPEN_APP_LABEL, path: '' } }));
 
   bot.on('message:text', async (ctx) => {
     const text = ctx.message.text;
@@ -77,7 +121,7 @@ export function createBot(deps: BotDeps): CreateBotResult {
     const cmd = COMMAND_RE.exec(text);
     if (cmd) return handleCommand(ctx, deps, cmd[1] ?? '', cmd[2] ?? '');
     await ctx.replyWithChatAction('typing');
-    await ctx.reply(await deps.personalAgent(ctx.from.id, text));
+    await send(ctx, await deps.personalAgent(ctx.from.id, text, ctx.from));
   });
 
   bot.on(['message:voice', 'message:audio'], async (ctx) => {
@@ -92,7 +136,7 @@ export function createBot(deps: BotDeps): CreateBotResult {
       if (!text) return ctx.reply('Ovozni tushunolmadim, qaytadan yuboring.');
       const cmd = COMMAND_RE.exec(text);
       if (cmd) return handleCommand(ctx, deps, cmd[1] ?? '', cmd[2] ?? '');
-      await ctx.reply(await deps.personalAgent(ctx.from.id, text));
+      await send(ctx, await deps.personalAgent(ctx.from.id, text, ctx.from));
     } catch (e) {
       log.error(`voice failed: ${errMsg(e)}`);
       await ctx.reply("Ovozni qayta ishlashda xato bo'ldi, matn bilan yozib ko'ring.");

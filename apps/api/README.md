@@ -21,7 +21,7 @@ pnpm dev:api                                   # prisma db push + seed + tsx wat
 | `DATABASE_URL` | `file:./dev.db` → SQLite; `postgres://…`/`postgresql://…` → Postgres (`scripts/prisma.mjs` provider'ni tanlaydi) | majburiy |
 | `SEED_DEMO_PASSWORD` | 2 ta demo akkaunt paroli; berilsa har startda shu parol qo'yiladi | `botir123` (ommaviy! prodda bering) |
 | `PORT`, `CORS_ORIGINS` | 4000, `http://localhost:3000` | default |
-| `TELEGRAM_BOT_TOKEN` | grammY bot | bot o'chiq (warn log) |
+| `TELEGRAM_BOT_TOKEN` | grammY bot + Mini App `initData` tekshiruvi | bot o'chiq (warn log), `POST /auth/telegram` → 503 |
 | `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_KEY` | userbot login / inbox | `/tg-connect/*` → 503 |
 | `PUBLIC_API_URL` | TEST to'lov havolasi bazasi | `http://localhost:4000` |
 | `TEZCHECK_API_KEY`, `TEZCHECK_CASH_DESK_CODE`, `TEZCHECK_API_URL` | haqiqiy TezCheck hisob (bill) | TEST havola (`/pay/test`) |
@@ -60,6 +60,9 @@ curl -X POST localhost:4000/negotiations/<id>/confirm -H 'Content-Type: applicat
 - `GET /health`
 - `POST /auth/register {name, phone, password, role:'business'|'user'}`, `POST /auth/login {phone, password}` → `{token, user}`;
   `GET /auth/me` (Bearer) → `{user, businessId?}`. Telefon → `+998XXXXXXXXX`. Parol: scrypt, token: JWT HS256 (7 kun).
+- `POST /auth/telegram {initData}` (Mini App) → 200 `{token, user}`; imzo `HMAC("WebAppData", TELEGRAM_BOT_TOKEN)` bilan tekshiriladi,
+  `auth_date` ≤ 24 soat, aks holda 401; token yo'q → 503. Bitta Telegram user = bitta `User` (`telegramId`), bot ham shu akkauntdan
+  ishlaydi (tarif/token bitta). Bunday user'da `phone`/parol yo'q → `/auth/login` orqali kira olmaydi.
   Login talab qiladi (`@Auth()`): `POST /businesses`, `PATCH|DELETE /businesses/:id` (faqat egasi). Qolganlari ochiq.
 - `GET|POST /businesses`, `GET|PATCH|DELETE /businesses/:id` (soft delete). Ochiq `GET` → `PublicBusiness`: `maxDiscountPct`,
   `ownerUserId`, `aiCredits` qaytarilmaydi (mijoz chegirma chegarasini ko'rmasin); `POST`/`PATCH` javobi (egasiga) to'liq.

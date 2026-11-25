@@ -3,9 +3,9 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import type { SyncCatalogResult } from '@botir/shared';
 import { PrismaService } from '../db/prisma.service';
 import { CatalogWriter, type CatalogUpsert } from './catalog-writer.service';
-import { isValidPrice, LIMITS } from './fact-validation';
+import { LIMITS } from './fact-validation';
 import { MetricsService } from './metrics.service';
-import { cleanLine, normalizeName } from './text-utils';
+import { cleanLine, normalizeName, parseSom } from './text-utils';
 
 const MAX_ITEMS = 500;
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
@@ -44,10 +44,11 @@ export class SyncService {
       const name = cleanLine(r.name, LIMITS.topic);
       const key = normalizeName(name);
       if (!key) return errors.push(`${i + 1}: name noto'g'ri`);
-      if (!isValidPrice(r.price)) return errors.push(`${i + 1}: price 0 yoki undan katta butun son bo'lsin`);
+      const price = parseSom(r.price); // 45000 or a POS string like "45 000" / "45.000"
+      if (price === null) return errors.push(`${i + 1}: price 0 yoki undan katta butun son bo'lsin`);
       if (r.unit !== undefined && typeof r.unit !== 'string') return errors.push(`${i + 1}: unit matn bo'lsin`);
       if (r.inStock !== undefined && typeof r.inStock !== 'boolean') return errors.push(`${i + 1}: inStock true/false bo'lsin`);
-      return rows.set(key, { name, price: r.price, unit: cleanLine(r.unit, LIMITS.unit) || undefined, inStock: r.inStock });
+      return rows.set(key, { name, price, unit: cleanLine(r.unit, LIMITS.unit) || undefined, inStock: r.inStock });
     });
     if (!rows.size) return { updated: 0, created: 0, errors };
     const { created, updated } = await this.catalog.upsert(businessId, [...rows.values()]);

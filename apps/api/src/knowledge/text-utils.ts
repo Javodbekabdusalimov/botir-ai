@@ -9,6 +9,61 @@ const APOSTROPHES = /[ʻʼ‘’`´']/g;
 export const normalizeName = (s: string): string =>
   s.normalize('NFKC').toLowerCase().replace(APOSTROPHES, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
+// Uzbek suffixes that do not change the item: go'sht-i, go'sht-li, choy-lar. "-siz" (without) is NOT here on purpose.
+const SUFFIX = /(?:lari|lar|li|si|i)$/;
+const nameWords = (s: string): string[] =>
+  normalizeName(s).replace(/(\d)(?=\p{L})|(\p{L})(?=\d)/gu, '$1$2 ').split(' ').filter(Boolean)
+    .map((w) => (/^\d+$/.test(w) || w.length < 5 ? w : w.replace(SUFFIX, '')));
+
+/**
+ * Same item written differently: word order, brackets, "1.5L" / "1,5 l", "go'shtli" / "go'shti".
+ * Same words only: "Lavash kichik" vs "Lavash tovuq kichik" is a different product, so an extra word never matches.
+ */
+export function sameItemName(a: string, b: string): boolean {
+  const [x, y] = [nameWords(a), nameWords(b)];
+  const digits = (w: string[]) => w.filter((t) => /^\d+$/.test(t)).join(' '); // in order: "0.5 l" ≠ "5.0 l"
+  return x.length > 0 && digits(x) === digits(y) && x.slice().sort().join(' ') === y.slice().sort().join(' ');
+}
+
+export const MAX_SOM = 2_000_000_000; // fits the SQLite/Prisma Int column
+const MULTIPLIERS: Record<string, number> = { ming: 1e3, k: 1e3, 'тыс': 1e3, mln: 1e6, million: 1e6, 'млн': 1e6 };
+// "45 000" | "45.000" | "1,250,000" (3-digit groups) or plain digits, then optional decimals, multiplier and currency word.
+const SOM = /^(\d{1,3}(?:[ .,]\d{3})+|\d+)(?:[.,](\d+))?(?: ?(ming|k|тыс|mln|million|млн)\.?)?(?: ?(?:so'?m|sum|сум|uzs)\.?)?$/u;
+
+/** Owner-typed price → whole so'm: "45.000", "45 000", "45,000 so'm", "45 ming", "1,5 mln". Anything else → null. */
+export function parseSom(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isInteger(v) && v >= 0 && v <= MAX_SOM ? v : null;
+  if (typeof v !== 'string') return null;
+  const m = SOM.exec(v.normalize('NFKC').toLowerCase().replace(APOSTROPHES, "'").replace(/\s+/g, ' ').trim());
+  if (!m) return null;
+  const [, int = '', frac = '', unit] = m;
+  if (frac && !unit && /[^0]/.test(frac)) return null; // "45.5 so'm" is not a price, "45.5 ming" is
+  const value = Math.round(Number(`${int.replace(/[ .,]/g, '')}.${frac || '0'}`) * (unit ? (MULTIPLIERS[unit] ?? 1) : 1));
+  return value <= MAX_SOM ? value : null;
+}
+
+const AMOUNT = /(\d+(?:[ .,]\d+)*)(?: ?(ming|k|тыс|mln|million|млн)(?!\p{L}))?/gu;
+
+/** Every amount a quote can mean. "100 000 200 000" → 100000 and 200000 too, "000" alone never starts one. */
+export function somAmounts(text: string): Set<number> {
+  const out = new Set<number>();
+  for (const m of text.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').matchAll(AMOUNT)) {
+    const groups = (m[1] ?? '').split(/[ .,]/);
+    const mult = m[2] ? (MULTIPLIERS[m[2]] ?? 0) : 0;
+    groups.forEach((first, i) => {
+      if (i > 0 && /^0\d/.test(first)) return;
+      for (let j = i; j < groups.length; j++) {
+        if (j > i && (first.length > 3 || groups[j]?.length !== 3)) break;
+        const n = Number(groups.slice(i, j + 1).join(''));
+        out.add(n);
+        if (mult && j === groups.length - 1) out.add(n * mult);
+      }
+    });
+    if (mult && groups.length >= 2) out.add(Math.round(Number(`${groups.at(-2)}.${groups.at(-1)}`) * mult)); // "1,5 mln"
+  }
+  return out;
+}
+
 /** Trim, drop control characters, collapse whitespace, cut. Non-strings → ''. */
 export const cleanLine = (v: unknown, max: number): string =>
   typeof v === 'string' ? v.replace(/[\p{Cc}\p{Cf}\s]+/gu, ' ').trim().slice(0, max).trim() : '';

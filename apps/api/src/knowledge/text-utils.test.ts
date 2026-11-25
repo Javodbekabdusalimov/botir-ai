@@ -1,6 +1,6 @@
 // Run: pnpm exec tsx apps/api/src/knowledge/text-utils.test.ts
 import { strict as assert } from 'node:assert';
-import { htmlToText, normalizeName, redactPii } from './text-utils';
+import { htmlToText, normalizeName, parseSom, redactPii, sameItemName, somAmounts } from './text-utils';
 
 // Phones, cards, emails go away in every usual spelling
 for (const phone of [
@@ -38,5 +38,34 @@ for (const bomb of ['9', '90 ', '+9', 'a@', 'a.', '(((', '+998   ']) {
   redactPii(bomb.repeat(Math.floor(200_000 / bomb.length)));
   assert.ok(Date.now() - started < 3000, `slow redact on ${bomb}`);
 }
+
+// parseSom: every usual way an owner types 45 000
+for (const v of [45000, '45000', '45.000', '45 000', '45,000', "45,000 so'm", '45 000 so‘m', '45 ming', '45ming', '45 ming so\'m', '45k', ' 45\u00a0000 ', '45 000 сум', '45000 UZS', '45000.00']) {
+  assert.equal(parseSom(v), 45000, String(v));
+}
+assert.equal(parseSom('1.250.000'), 1_250_000);
+assert.equal(parseSom('1 250 000 so\'m'), 1_250_000);
+assert.equal(parseSom('45.5 ming'), 45_500);
+assert.equal(parseSom('1,5 mln'), 1_500_000);
+assert.equal(parseSom('0'), 0);
+for (const v of ['', 'abc', '-45000', '45.5', '12.50', '45 000 000 000', 3e9, 1.5, -1, NaN, null, undefined, {}, '45 00', '4 5000']) {
+  assert.equal(parseSom(v), null, String(v));
+}
+
+// somAmounts: what a quote can mean (price grounding)
+assert.ok(somAmounts('Osh 45 000').has(45000) && !somAmounts('Osh 45 000').has(4500) && !somAmounts('Osh 45 000').has(0));
+assert.ok(somAmounts('Osh 45 ming').has(45000) && somAmounts('Choy 5k').has(5000) && somAmounts('Paket 1,5 mln').has(1_500_000));
+const list = somAmounts('100 000 200 000');
+assert.ok(list.has(100000) && list.has(200000));
+assert.ok(somAmounts('Cola 1.5 l 15 000').has(15000) && !somAmounts('Go‘sht 1 kg 90 000').has(1000));
+
+// sameItemName: spelling, order, brackets, suffixes; never a different size, number or extra word
+for (const [a, b] of [
+  ["Lavash go'shtli (kichik)", "Lavash kichik go‘shti"], ['Coca-Cola 1.5L', 'coca cola 1,5 l'], ["Choy ko'k", "Ko‘k choy"], ['Osh', 'OSH!'],
+]) assert.ok(sameItemName(a, b), `${a} = ${b}`);
+for (const [a, b] of [
+  ['Cola 0.5 l', 'Cola 1.5 l'], ['Osh 1', 'Osh 2'], ['Lavash kichik', 'Lavash tovuq kichik'], ["Lavash go'shtli", "Lavash go'shtsiz"],
+  ['Lavash katta', 'Lavash kichik'], ["Lavash mol go'shti kichik", "Lavash go'shtli (kichik)"],
+]) assert.ok(!sameItemName(a, b), `${a} ≠ ${b}`);
 
 process.stdout.write('text-utils.test: OK\n');

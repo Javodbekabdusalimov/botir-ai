@@ -3,13 +3,24 @@ import type { KnowledgeFact as DbFact, Prisma } from '@prisma/client';
 import type { KnowledgeFact, KnowledgeFactKind, KnowledgeFactStatus, KnowledgeSource, KnowledgeSourceKind } from '@botir/shared';
 import { PrismaService } from '../db/prisma.service';
 import { CatalogWriter } from './catalog-writer.service';
-import { isValidPrice, LIMITS } from './fact-validation';
+import { LIMITS } from './fact-validation';
 import { MetricsService } from './metrics.service';
+import { normalizeQuestion } from './questions.service';
 import { toSource } from './sources.service';
-import { cleanLine, normalizeName } from './text-utils';
+import { cleanLine, normalizeName, parseSom } from './text-utils';
 
+/** What the owner may set; 'superseded' is set only by a newer confirmed fact. */
 const STATUSES: readonly KnowledgeFactStatus[] = ['draft', 'confirmed', 'rejected'];
 const MAX_CONFIRM = 500;
+// Topics that hold many independent facts: a new one adds to them and replaces nothing.
+const OPEN_TOPICS = new Set(['other', 'about']);
+
+/** Two confirmed facts with one key cannot both be true (same product, question or topic). null = never conflicts. */
+function conflictKey(f: Pick<DbFact, 'kind' | 'topic' | 'question' | 'catalogItemId'>): string | null {
+  if (f.kind === 'catalog') return f.catalogItemId ? `catalog|${f.catalogItemId}` : null;
+  if (f.kind === 'faq') return `faq|${normalizeQuestion(f.question ?? '')}`;
+  return OPEN_TOPICS.has(f.topic) ? null : `${f.kind}|${normalizeName(f.topic)}`;
+}
 
 const toFact = (f: DbFact, sourceKind: KnowledgeSourceKind): KnowledgeFact => ({
   id: f.id,
@@ -79,24 +90,59 @@ export class KnowledgeFactsService {
     return out;
   }
 
-  /** Catalog facts become CatalogItems (create or update by name), then everything is marked confirmed. */
+  /** Soft delete. A confirmed price leaves the catalog too: hiding only the fact would leave the agent selling it. */
+  async remove(businessId: string, factId: string): Promise<{ id: string }> {
+    const [fact] = await this.find(businessId, [factId]);
+    if (!fact) throw new NotFoundException('fact not found');
+    const itemId = fact.status === 'confirmed' ? fact.catalogItemId : null; // older (superseded) facts share the live item
+    const now = new Date();
+    await this.db.$transaction([
+      this.db.knowledgeFact.update({ where: { id: fact.id }, data: { deletedAt: now } }),
+      ...(itemId ? [this.db.catalogItem.updateMany({ where: { id: itemId, businessId, deletedAt: null }, data: { deletedAt: now } })] : []),
+    ]);
+    return { id: fact.id };
+  }
+
+  /**
+   * Catalog facts become CatalogItems (create or update by name), then everything is marked confirmed.
+   * Older confirmed facts about the same product / question / topic become 'superseded', so the agent sees only the newest.
+   */
   private async activate(businessId: string, facts: DbFact[]): Promise<void> {
     if (!facts.length) return;
     const priced = facts.filter((f): f is DbFact & { price: number } => f.kind === 'catalog' && f.price !== null);
     if (priced.length !== facts.filter((f) => f.kind === 'catalog').length) throw new BadRequestException('Katalog fakti uchun narx kerak');
     const { ids } = await this.catalog.upsert(
       businessId, priced.map((f) => ({
-        name: f.topic, price: f.price, unit: f.unit ?? undefined, itemId: f.catalogItemId,
+        name: f.topic, price: f.price, unit: f.unit ?? undefined, itemId: f.catalogItemId, similar: true,
         description: normalizeName(f.content) === normalizeName(f.topic) ? undefined : f.content,
       })),
     );
+    const itemOf = new Map(priced.map((f, i) => [f.id, ids[i] ?? null]));
+    const batch = facts.map((f) => ({ ...f, catalogItemId: itemOf.get(f.id) ?? f.catalogItemId }));
+    // Only facts becoming confirmed (new or restored) replace others: editing a confirmed fact must not archive its batch-mates.
+    const stale = await this.staleBy(businessId, batch.filter((f) => f.status !== 'confirmed'));
     const now = new Date();
     await this.db.$transaction([
-      ...priced.map((f, i) => this.db.knowledgeFact.update({ where: { id: f.id }, data: { catalogItemId: ids[i] } })),
+      ...priced.map((f) => this.db.knowledgeFact.update({ where: { id: f.id }, data: { catalogItemId: itemOf.get(f.id) ?? null } })),
       this.db.knowledgeFact.updateMany({ where: { id: { in: facts.map((f) => f.id) } }, data: { status: 'confirmed' } }),
-      this.db.knowledgeFact.updateMany({ where: { id: { in: facts.map((f) => f.id) }, confirmedAt: null }, data: { confirmedAt: now } }),
+      this.db.knowledgeFact.updateMany({ where: { id: { in: facts.filter((f) => f.status !== 'confirmed').map((f) => f.id) } }, data: { confirmedAt: now } }),
+      this.db.knowledgeFact.updateMany({ where: { id: { in: stale } }, data: { status: 'superseded' } }),
     ]);
     await this.metrics.touchReady(businessId);
+  }
+
+  /** Confirmed facts the batch replaces. Same product twice in one batch: the catalog kept the last price, so the last fact stays. */
+  private async staleBy(businessId: string, batch: DbFact[]): Promise<string[]> {
+    const keys = new Set(batch.map(conflictKey).filter((k): k is string => k !== null));
+    if (!keys.size) return [];
+    const older = await this.db.knowledgeFact.findMany({
+      where: { businessId, status: 'confirmed', deletedAt: null, id: { notIn: batch.map((f) => f.id) }, kind: { in: [...new Set(batch.map((f) => f.kind))] } },
+    });
+    const lastOfItem = new Map(batch.filter((f) => f.kind === 'catalog').map((f) => [conflictKey(f), f.id]));
+    return [
+      ...older.filter((f) => keys.has(conflictKey(f) ?? '')).map((f) => f.id),
+      ...batch.filter((f) => f.kind === 'catalog' && lastOfItem.get(conflictKey(f)) !== f.id).map((f) => f.id),
+    ];
   }
 
   /** A confirmed price already lives in the catalog; hiding only the fact would leave the agent selling it. */
@@ -122,12 +168,14 @@ export class KnowledgeFactsService {
     const unit = text('unit');
     if (question !== undefined && fact.kind !== 'faq') throw new BadRequestException('question faqat faq uchun');
     if ((unit !== undefined || patch.price !== undefined) && fact.kind !== 'catalog') throw new BadRequestException('price va unit faqat katalog uchun');
-    if (patch.price !== undefined && !isValidPrice(patch.price)) throw new BadRequestException('price — 0 yoki undan katta butun son');
+    // The owner types "45.000" or "45 ming": parsed here, so a browser's Number("45.000") = 45 can never reach the catalog.
+    const price = patch.price === undefined ? undefined : parseSom(patch.price);
+    if (price === null) throw new BadRequestException('Narxni so‘mda yozing: 45000, "45 000", "45.000" yoki "45 ming"');
     if (topic !== undefined) data.topic = topic;
     if (content !== undefined) data.content = content;
     if (question !== undefined) data.question = question;
     if (unit !== undefined) data.unit = unit || null;
-    if (isValidPrice(patch.price)) data.price = patch.price;
+    if (price !== undefined) data.price = price;
     return data;
   }
 

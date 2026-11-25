@@ -96,6 +96,8 @@ export interface PaymentStatusResult {
   amount: number;
   payUrl: string;
   paidAt?: ISODate;
+  /** true = sinov to'lovi (haqiqiy pul o'tmaydi) */
+  isTest?: boolean;
 }
 
 export type CreateBusinessDto = Pick<Business, 'name' | 'category' | 'address' | 'district' | 'workHours' | 'maxDiscountPct' | 'lang'> &

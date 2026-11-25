@@ -19,7 +19,8 @@ export type UserRole = 'business' | 'user';
 export interface AuthUser {
   id: UUID;
   name: string;
-  phone: string; // +998XXXXXXXXX
+  /** +998XXXXXXXXX; Telegram Mini App orqali kirganda bo'lmasligi mumkin */
+  phone?: string;
   role: UserRole;
   businessId?: UUID;
 }

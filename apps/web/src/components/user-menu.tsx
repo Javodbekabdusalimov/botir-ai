@@ -56,7 +56,7 @@ export function UserMenu() {
         <div role="menu" className="slide-up absolute right-0 top-[calc(100%+8px)] z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-lift">
           <div className="px-2.5 pb-2 pt-1.5">
             <p className="truncate text-sm font-bold">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{user.phone}</p>
+            {user.phone && <p className="text-xs text-muted-foreground">{user.phone}</p>}
           </div>
           <div className="border-t border-border pt-1.5">
             <Link role="menuitem" href={biz ? "/dashboard" : "/assistant"} onClick={() => setOpen(false)} className={item}>

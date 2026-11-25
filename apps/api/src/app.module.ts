@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { AuthController } from './auth/auth.controller';
+import { TelegramAuthController } from './auth/telegram-auth.controller';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
 import { BILLING_CONTROLLERS, BILLING_PROVIDERS, configureBilling } from './billing/billing.module';
@@ -62,7 +63,7 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController, OutreachController, ...BILLING_CONTROLLERS],
+  controllers: [HealthController, AuthController, TelegramAuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController, OutreachController, ...BILLING_CONTROLLERS],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
     PrismaActionStore, TgUserService, MetricsService, QuestionsService, TurnRecorder,

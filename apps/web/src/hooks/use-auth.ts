@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { UnauthorizedError, getMe, getToken, login as apiLogin, register as apiRegister, setToken } from "@/lib/api";
+import { UnauthorizedError, getMe, getToken, login as apiLogin, register as apiRegister, setToken, telegramAuth } from "@/lib/api";
 import { clearBusinessId, setBusinessId } from "@/hooks/use-business";
 import type { AuthResult, AuthUser, MeResponse, RegisterDto } from "@/lib/types";
 
@@ -81,6 +81,9 @@ const INIT_RETRY_MS = 4_000;
 
 export async function loginUser(phone: string, password: string) {
   await applySession(await apiLogin(phone, password));
+}
+export async function telegramLogin(initData: string) {
+  await applySession(await telegramAuth(initData));
 }
 export async function registerUser(dto: RegisterDto) {
   await applySession(await apiRegister(dto));

@@ -13,11 +13,11 @@ import { PAYMENT_LINK, type PaymentLinkProvider } from '../payments/payment-link
 import { dailyTokens, isPaidPlan, type EffectivePlan, type PaidPlan } from '../payments/plans';
 import type { BillingOwner } from './billing-context';
 import { billingPrices, freeDailyRequests, llmTokens, PLAN_PERIOD_DAYS, planPrice } from './billing-plans';
+import { dayKey } from './token-budget';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
 const DAY_MS = 86_400_000;
-const TASHKENT_OFFSET_MS = 5 * 3_600_000; // UTC+5, no DST
 const REUSE_PENDING_MS = 30 * 60_000;
 
 export type GateKind = 'agent' | 'telegram';
@@ -29,8 +29,7 @@ export const MSG = {
   freeOut: (limit: number): string => `Bugungi ${limit} ta bepul so'rov tugadi`,
 } as const;
 
-/** Tashkent calendar day key, e.g. "2026-11-25". */
-export const dayKey = (now: Date): string => new Date(startOfTashkentDay(now.getTime()).getTime() + TASHKENT_OFFSET_MS).toISOString().slice(0, 10);
+export { dayKey };
 export const nextReset = (now: Date): Date => new Date(startOfTashkentDay(now.getTime()).getTime() + DAY_MS);
 
 @Injectable()
@@ -46,6 +45,17 @@ export class BillingService implements OnModuleInit {
 
   onModuleInit(): void {
     this.agents.llm.setOnCost((owner, usage) => this.debit(owner, llmTokens(usage)));
+    void this.seedGlobalBudget();
+  }
+
+  /** AI_GLOBAL_DAILY_TOKENS counter starts from today's logged Claude tokens (all owners, guests included). */
+  private async seedGlobalBudget(now = new Date()): Promise<void> {
+    try {
+      const s = await this.db.llmCall.aggregate({ where: { at: { gte: startOfTashkentDay(now.getTime()) } }, _sum: { inputTokens: true, outputTokens: true } });
+      this.agents.llm.seedGlobalTokens((s._sum.inputTokens ?? 0) + (s._sum.outputTokens ?? 0), now);
+    } catch (e) {
+      this.logger.warn(`global token budget seed failed (counter starts at 0): ${errMsg(e)}`);
+    }
   }
 
   /** Bearer user (business role → their business) or the guest id from the body. Never throws: a bad token is a guest. */
@@ -165,7 +175,7 @@ export class BillingService implements OnModuleInit {
     if (!isPaidPlan(dto?.plan)) throw new HttpException("plan 'pro' yoki 'max' bo'lishi kerak", HttpStatus.BAD_REQUEST);
     const plan = dto.plan;
     const owner = ownerOfUser(user);
-    const intro = plan === 'pro' && (await this.introAvailable(owner));
+    const intro = await this.introAvailable(owner);
     const price = planPrice(plan, intro);
     // Double click → the same pending bill, not a second one.
     const pending = await this.db.payment.findFirst({
@@ -187,11 +197,9 @@ export class BillingService implements OnModuleInit {
     return { paymentRef: ref, payUrl: link.payUrl, amount: price };
   }
 
-  /** The first PRO month is cheap once per account; only real (non-test) paid PRO payments use it up. */
+  /** The first paid month of any plan is cheap once per account; only a real (non-test) paid subscription uses it up. */
   private async introAvailable(owner: BillingOwner): Promise<boolean> {
-    const paid = await this.db.payment.count({
-      where: { AND: [ownerWhere(owner), { OR: [{ plan: 'pro' }, { plan: null }] }], kind: 'subscription', status: 'paid', isTest: false, deletedAt: null },
-    });
+    const paid = await this.db.payment.count({ where: { ...ownerWhere(owner), kind: 'subscription', status: 'paid', isTest: false, deletedAt: null } });
     return paid === 0;
   }
 }

@@ -75,19 +75,24 @@ export class PersonalAgent {
   }
 
   /**
-   * Businesses of the category with something to sell, real before demo. Only the requested area, unless nobody there matches.
+   * Businesses of the category with something to sell. Only the requested area, unless nobody there matches.
+   * Order: most requested things in the catalog first (none → last), then real before demo, then store order.
    * A business with broken data (catalog that cannot be read, bad prices or hours) is skipped with a warning, never fails the category.
    */
   async findBusinesses(task: UserTask): Promise<AgentBusiness[]> {
     const found = await this.store.getBusinesses({ category: task.category });
-    const usable = await Promise.all(found.map((b) => this.usable(b)));
-    const all = found.filter((_, i) => usable[i]);
+    const catalogs = await Promise.all(found.map((b) => this.usableCatalog(b)));
+    const all = found.flatMap((b, i) => {
+      const catalog = catalogs[i];
+      return catalog ? [{ b, score: catalogScore(task, catalog) }] : [];
+    });
     const area = task.area?.trim().toLowerCase();
     // Both ways: "Chilonzor tumani" ↔ "Chilonzor".
     const matches = (district: string): boolean => Boolean(area && district && (district.includes(area) || area.includes(district)));
-    const inArea = all.filter((b) => matches(b.area.trim().toLowerCase()));
+    const inArea = all.filter(({ b }) => matches(b.area.trim().toLowerCase()));
     const pool = inArea.length > 0 ? inArea : all;
-    return [...pool].sort((x, y) => Number(x.isDemo) - Number(y.isDemo));
+    // Array.prototype.sort is stable: equal keys keep the store order.
+    return [...pool].sort((x, y) => y.score - x.score || Number(x.b.isDemo) - Number(y.b.isDemo)).map(({ b }) => b);
   }
 
   /** First message to the business agent (template, no LLM — fast and predictable). The budget stays private. */
@@ -158,17 +163,17 @@ export class PersonalAgent {
     return { action, message };
   }
 
-  /** A business takes part only if its catalog loads and every price is valid, and its hours are real "HH:MM". */
-  private async usable(b: AgentBusiness): Promise<boolean> {
+  /** The catalog, if the business can take part: it loads, is not empty, every price is valid and its hours are real "HH:MM". */
+  private async usableCatalog(b: AgentBusiness): Promise<Product[] | null> {
     try {
       if (!HHMM.test(b.hours.open) || !HHMM.test(b.hours.close)) throw new Error(`bad work hours ${JSON.stringify(b.hours)}`);
       const products = await this.store.getProducts(b.id);
       const bad = products.find((p) => !isValidPrice(p.price));
       if (bad) throw new Error(`bad price ${bad.price} for ${bad.id}`);
-      return products.length > 0;
+      return products.length > 0 ? products : null;
     } catch (e) {
       this.logger.warn(`[personal-agent] business ${b.id} skipped: ${e instanceof Error ? e.message : String(e)}`);
-      return false;
+      return null;
     }
   }
 
@@ -216,6 +221,15 @@ const words = (s: string): string[] =>
 function sameThing(asked: string, product: string): boolean {
   const pw = words(product);
   return words(asked).some((w) => pw.some((p) => p.startsWith(w) || w.startsWith(p)));
+}
+
+/**
+ * How many of the requested things the catalog has, by product name (the same lenient match as checkClientConditions,
+ * so a business ranked first can also pass it). Named items count; without items, each comma part of `need` counts.
+ */
+export function catalogScore(task: UserTask, products: Product[]): number {
+  const asked = task.items?.length ? task.items.map((it) => it.name) : task.need.split(/[,;]/);
+  return asked.filter((name) => products.some((p) => sameThing(name, p.name))).length;
 }
 
 const isValidPrice = (v: number): boolean => Number.isInteger(v) && v >= 0 && v <= MAX_INT;

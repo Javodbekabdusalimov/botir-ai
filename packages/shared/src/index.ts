@@ -85,7 +85,7 @@ export interface Plan {
   aiCredits: number; // oylik AI dialog kvotasi (eski, biznes obunasi)
   dailyTokens?: number; // Pro/Max: kunlik token (00:00 Asia/Tashkent da yangilanadi); free: 0
   periodDays: number;
-  introPrice?: number; // Pro: birinchi to'langan oy narxi (har biznesga 1 marta), keyin `price`
+  introPrice?: number; // Pro/Max: birinchi to'langan oy narxi (har akkauntga 1 marta, istalgan tarif), keyin `price`
 }
 /** GET /businesses/:id/plan (owner, Bearer): biznes obunasi va keyingi Pro oyi narxi. */
 export interface BusinessPlanStatus {
@@ -550,7 +550,7 @@ export interface SyncCatalogResult {
 export type BillingOwnerType = 'user' | 'business';
 export interface BillingPrices {
   pro: { price: number; introPrice: number; dailyTokens: number };
-  max: { price: number; dailyTokens: number };
+  max: { price: number; introPrice: number; dailyTokens: number };
   freeDailyRequests: number;
   periodDays: number;
 }
@@ -565,7 +565,7 @@ export interface BillingMe {
   dailyTokens: number; // kunlik limit (free: 0)
   freeLeftToday: number; // free: qolgan bepul qidiruv; pro/max: 0
   resetsAt: ISODate; // keyingi 00:00 Asia/Tashkent
-  introAvailable: boolean; // birinchi Pro oyi arzon narxda
+  introAvailable: boolean; // birinchi to'langan oy (Pro yoki Max) introPrice narxida, har akkauntga 1 marta
   prices: BillingPrices;
 }
 /** POST /billing/subscribe */
@@ -692,4 +692,60 @@ export interface OutreachThread {
   /** Javoblardagi narx/band-bo'sh haqida qisqa xulosa; javob yo'q yoki ma'lumot yo'q bo'lsa null */
   summary: string | null;
   lastReplyAt?: ISODate;
+}
+
+// ---------- Admin (faqat egalar: @Auth + ADMIN_PHONES) ----------
+/** Haqiqiy pul = status 'paid' && !isTest. Summalar so'mda, AI xarajati USD da (LlmCall.costUsd). */
+export interface AdminOverview {
+  revenue: { today: number; days30: number; all: number };
+  payingClients: number; // hozir faol Pro/Max (haqiqiy to'lov bilan)
+  byPlan: { pro: number; max: number };
+  paidSubscriptions: { intro: number; full: number }; // haqiqiy to'langan obunalar soni
+  testPaymentsPaid: number; // to'langan TEST to'lovlar (pul kelmagan)
+  users: { total: number; newToday: number };
+  businesses: number;
+  negotiations: { today: number; days30: number };
+  ordersToday: number;
+  aiCostUsd: { today: number; days30: number };
+  globalTokens: { usedToday: number; cap: number }; // cap 0 = cheklovsiz (AI_GLOBAL_DAILY_TOKENS)
+}
+/** GET /admin/clients?q=&plan=&limit=&offset=: bitta qator = bitta to'lovchi (foydalanuvchi yoki biznes). */
+export interface AdminClient {
+  ownerType: BillingOwnerType;
+  ownerId: string;
+  name: string; // foydalanuvchi ismi yoki biznes nomi
+  phone: string | null; // foydalanuvchi yoki biznes egasining telefoni (Telegram orqali kirganlarda null bo'lishi mumkin)
+  plan: 'free' | 'pro' | 'max'; // amaldagi tarif
+  planStartedAt: ISODate | null; // birinchi haqiqiy to'langan obuna
+  expiresAt: ISODate | null;
+  active: boolean;
+  introUsed: boolean;
+  totalPaid: number; // haqiqiy (TEST emas) to'langan obunalar yig'indisi, so'm
+  paymentsCount: number; // haqiqiy to'langan obunalar soni
+  lastPaymentAt: ISODate | null;
+  tokensToday: number;
+  tokens30d: number;
+  aiCostUsd30d: number;
+  negotiations30d: number;
+  lastActivityAt: ISODate | null;
+}
+/** GET /admin/payments?status=&kind=&test=real|test&q=&limit=&offset= (eng yangisi birinchi) */
+export interface AdminPayment {
+  id: string;
+  orderId: string;
+  kind: 'subscription' | 'order';
+  plan: string | null;
+  amount: number;
+  status: string;
+  isTest: boolean;
+  createdAt: ISODate;
+  paidAt: ISODate | null;
+  billId: string;
+  payer: { type: BillingOwnerType; id: string; name: string | null; phone: string | null } | null;
+  business: { id: string; name: string } | null; // buyurtma (yoki biznes obunasi) biznesi
+  orderTotal: number | null; // kind 'order': buyurtma summasi
+}
+export interface AdminPage<T> {
+  total: number;
+  rows: T[];
 }

@@ -7,6 +7,8 @@
     "start": "tsx src/main.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma generate && tsx src/seed.ts",
+    "db:generate": "node scripts/prisma.mjs generate",
+    "db:sync": "node scripts/prisma.mjs db push --skip-generate",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

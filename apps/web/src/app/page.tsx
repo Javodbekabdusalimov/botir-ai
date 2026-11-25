@@ -38,7 +38,7 @@ const STEPS = [
   { icon: Check, title: "Tasdiqlang", text: "Yakuniy taklifni ko'rib, bitta tugma bilan tasdiqlaysiz. To'lov faqat shundan keyin." },
 ];
 
-/** Narxlar landing-content.ts da (egasi tasdiqlaydi). Biznes rejasi backendda hali yo'q: to'lov tugmasi yo'q. */
+/** Narxlar landing-content.ts da (egasi tasdiqlagan, 2026-11-25). Biznes rejasi backendda hali yo'q: to'lov tugmasi yo'q. */
 const PLANS = [
   { name: "Start", price: "bepul", note: "Boshlash uchun", features: ["1 ta biznes agenti", "Katalog yuklash (Excel/CSV)", "Telegram ulash", "Agentlar muzokarasi va to'lov havolasi"], featured: false, cta: "Bepul boshlash" },
   { name: "Biznes", price: BUSINESS_PRICE_COPY, note: "Taklif: tez orada", features: ["Start'dagi hammasi", "Bilimlar bazasi: matn, sayt, fayl", "Inbox: AI javob qoralamalari"], featured: false, cta: null },

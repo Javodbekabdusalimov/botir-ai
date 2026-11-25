@@ -2,7 +2,7 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./seo";
 
 /** Narx rejalari: UI va JSON-LD uchun yagona manba. Hozir backend Pro uchun birinchi oy 1 000 so'm oladi. */
 export const PRO_PRICE_UZS = 1000;
-// egasi tasdiqlaydi: taklif qilingan oylik narxlar (1-oydan keyin)
+// Oylik narxlar (1-oydan keyin): egasi tasdiqlagan, 2026-11-25
 export const BUSINESS_PRICE_UZS = 199_000;
 export const PRO_AFTER_UZS = 499_000;
 const som = (n: number) => n.toLocaleString("ru-RU").replace(/\s/g, " ");

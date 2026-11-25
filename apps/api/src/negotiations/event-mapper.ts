@@ -6,11 +6,12 @@ import type { Product } from '../agents';
 import type { AgentMessage, NegotiationEvent as AgentEvent, Offer } from '../agents/shared';
 
 const HOLD_MS = 400;
-const OFFER_TTL_MS = 30 * 60 * 1000;
+/** How long an offer stays confirmable, counted from when it was made (AgentOffer.createdAt). */
+export const OFFER_TTL_MS = 30 * 60 * 1000;
 
 type OfferPayload = Extract<A2APayload, { type: 'OFFER' }>;
 
-export function toOfferPayload(offer: Offer, products: Product[]): OfferPayload {
+export function toOfferPayload(offer: Offer, products: Product[], issuedAt = new Date()): OfferPayload {
   const byId = new Map(products.map((p) => [p.id, p]));
   const items: OrderItem[] = offer.items.map((it) => ({
     catalogItemId: it.productId,
@@ -20,7 +21,7 @@ export function toOfferPayload(offer: Offer, products: Product[]): OfferPayload 
   }));
   return {
     type: 'OFFER', items, price: offer.total, discountPct: offer.discountPct,
-    validUntil: new Date(Date.now() + OFFER_TTL_MS).toISOString(),
+    validUntil: new Date(issuedAt.getTime() + OFFER_TTL_MS).toISOString(),
     ...(offer.upsell ? { upsell: { itemId: offer.upsell.productId, name: offer.upsell.name, price: offer.upsell.price } } : {}),
   };
 }
@@ -44,17 +45,18 @@ export class LaneMapper {
 
   constructor(
     private readonly negotiationId: string,
+    private readonly taskId: string,
     private readonly businessId: string,
     private readonly products: Product[],
     private readonly emit: (e: SharedEvent) => void,
     private readonly appliedMemory: string[] = [],
   ) {}
 
-  /** Final lane status: closes a held personal message as ACCEPT / REJECT. */
+  /** Final lane status: closes a held personal message as ACCEPT / REJECT. A technical stop keeps its own type (no fake ACCEPT). */
   finish(status: string): void {
     if (!this.held) return;
     const h = this.held;
-    if (h.fromAgent === 'personal' && this.personalCount > 1) {
+    if (h.fromAgent === 'personal' && this.personalCount > 1 && (status === 'agreed' || status === 'rejected')) {
       this.flush(status === 'agreed' ? { type: 'ACCEPT' } : { type: 'REJECT', reason: h.message.text });
     } else this.flush();
   }
@@ -70,11 +72,9 @@ export class LaneMapper {
       return;
     }
     const m = e.message;
-    if (m.role === 'system' || m.role === 'user') {
-      // "Taklif tayyor" / PolicyGuard notes are not part of the A2A dialogue; they only close the held message.
-      if (this.held?.fromAgent === 'personal' && this.personalCount > 1) this.flush({ type: 'ACCEPT' });
-      return;
-    }
+    // System notes ("Taklif tayyor", PolicyGuard, technical error) are not part of the A2A dialogue.
+    // The held message is closed by the final status, so an error note never turns a COUNTER into ACCEPT.
+    if (m.role === 'system' || m.role === 'user') return;
     this.flush();
     const fromAgent = m.role === 'biz_agent' ? 'business' : 'personal';
     if (fromAgent === 'business') this.round += 1;
@@ -105,7 +105,7 @@ export class LaneMapper {
     if (h.fromAgent === 'personal') {
       if (this.personalCount === 1) {
         return {
-          type: 'REQUEST', taskId: `${this.negotiationId}:${this.businessId}`, need: h.message.text,
+          type: 'REQUEST', taskId: this.taskId, need: h.message.text,
           ...(this.appliedMemory.length ? { appliedMemory: this.appliedMemory } : {}),
         };
       }

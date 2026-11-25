@@ -40,7 +40,8 @@ const WAVE = [4, 9, 6, 14, 10, 18, 8, 12, 16, 7, 11, 5, 13, 9, 6, 10, 4];
 export function InboxView() {
   const id = useBusinessId();
   const chats = useAsync(`chats:${id}`, () => getChats(id));
-  const [selected, setSelected] = useState<string | null>(null);
+  // /dashboard (agent xonasi) dan `?chat=<id>` bilan kelinsa, o'sha suhbat ochiladi
+  const [selected, setSelected] = useState<string | null>(() => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("chat")));
   const [modes, setModes] = useState<Record<string, ChatMode>>({});
   const [filter, setFilter] = useState<"human" | "all">("all");
   const list = chats.data;

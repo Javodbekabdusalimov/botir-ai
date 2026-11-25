@@ -51,7 +51,8 @@ export class KnowledgeFactsService {
     }
     const ids = [...new Set(rawIds as string[])];
     const facts = await this.find(businessId, ids);
-    await this.activate(businessId, facts.filter((f) => f.status !== 'confirmed'));
+    // Drafts only: a stale selection must never revive a fact the owner rejected (PATCH status does that on purpose).
+    await this.activate(businessId, facts.filter((f) => f.status === 'draft'));
     return this.read(businessId, ids);
   }
 

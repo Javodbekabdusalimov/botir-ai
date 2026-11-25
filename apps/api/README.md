@@ -24,7 +24,7 @@ pnpm dev:api                                   # prisma db push + seed + tsx wat
 | `PUBLIC_API_URL` | TEST to'lov havolasi bazasi | `http://localhost:4000` |
 | `TEZCHECK_API_KEY`, `TEZCHECK_CASH_DESK_CODE`, `TEZCHECK_API_URL` | haqiqiy TezCheck hisob (bill) | TEST havola (`/pay/test`) |
 | `PLAN_PRO_PRICE`, `PLAN_PRO_CREDITS` | Pro obuna narxi (so'm/oy) va AI kvota | 1000, 1000 |
-| `STT_CMD` | audio fayl → matn: bajariladigan fayl yo'li (audio yo'lini argument qilib oladi, matnni stdout'ga yozadi; shell yo'q) | audio yuklash → 503, brauzer diktovkasi taklif qilinadi |
+| `STT_CMD` | audio fayl → matn: bajariladigan fayl yo'li (audio yo'lini argument qilib oladi, matnni stdout'ga yozadi; shell yo'q) | audio yuklash → 422, brauzer diktovkasi taklif qilinadi |
 | `AUTH_SECRET` | `/auth` JWT (HS256) imzosi | har boot'da random (warn log), tokenlar restartda o'ladi |
 
 ## Demo / test account

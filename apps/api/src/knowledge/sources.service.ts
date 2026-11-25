@@ -1,5 +1,5 @@
 import {
-  BadRequestException, HttpException, HttpStatus, Inject, Injectable, Logger, NotFoundException, OnModuleInit, ServiceUnavailableException,
+  BadRequestException, HttpException, HttpStatus, Inject, Injectable, Logger, NotFoundException, OnModuleInit, UnprocessableEntityException,
 } from '@nestjs/common';
 import type { KnowledgeSource as DbSource } from '@prisma/client';
 import type { KnowledgeFactKind, KnowledgeSource, KnowledgeSourceKind } from '@botir/shared';
@@ -75,7 +75,8 @@ export class KnowledgeSourcesService implements OnModuleInit {
     if (!sniffed) throw new BadRequestException('Bu fayl turi qo‘llanmaydi. JPG, PNG, WEBP, PDF yoki audio yuboring');
     if (sniffed.kind === 'voice') {
       if (!sttCommand()) {
-        throw new ServiceUnavailableException("Serverda ovozni matnga o'girish yoqilmagan. Brauzerdagi mikrofon (diktovka) orqali gapiring yoki matn yozing");
+        // 422, not 503: the web treats 5xx as "backend is down" and switches to demo data.
+        throw new UnprocessableEntityException("Serverda ovozni matnga o'girish yoqilmagan. Brauzerdagi mikrofon (diktovka) orqali gapiring yoki matn yozing");
       }
       return this.start(businessId, 'voice', 'Ovozli fayl', async () => ({ text: await transcribe(file.buffer, sniffed.ext) }));
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError } from "@/lib/friendly-error";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AlertTriangle, Check, FileUp, KeyRound, Link2, Loader2, Mic, MicOff, Pencil, Send, Type, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,9 @@ import {
 import { formatSom } from "@/lib/format";
 import type { KnowledgeFact, KnowledgeOverview, KnowledgeSourceKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ConfirmedFacts } from "./confirmed-facts";
+import { FactEditor } from "./fact-editor";
+import { SyncKey } from "./sync-key";
 
 const TOPIC: Record<string, string> = {
   profile: "Biznes haqida", catalog: "Katalog", delivery: "Yetkazib berish", payment: "To'lov", booking: "Bron",
@@ -48,13 +52,16 @@ export function KnowledgeView() {
   }, [processing, id]);
 
   const refresh = () => getKnowledge(id).then(setData).catch((e: unknown) => setErr(e instanceof Error ? e.message : "Yuklab bo'lmadi"));
-  const act = async (fn: () => Promise<unknown>) => {
+  /** true = server qabul qildi (forma shundagina tozalanadi). */
+  const act = async (fn: () => Promise<unknown>): Promise<boolean> => {
     setErr(null);
     try {
       await fn();
       await refresh();
+      return true;
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Xatolik yuz berdi");
+      return false;
     }
   };
 
@@ -87,7 +94,7 @@ export function KnowledgeView() {
                       <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> O&apos;qilmoqda
                     </span>
                   ) : s.status === "failed" ? (
-                    <span className="text-xs text-destructive" title={s.error}>Xato</span>
+                    <span className="min-w-0 max-w-[60%] text-xs text-destructive">Xato{s.error ? `: ${friendlyError(s.error)}` : ""}</span>
                   ) : (
                     <span className="text-xs text-muted-foreground">{s.factsCount} fakt</span>
                   )}
@@ -116,23 +123,7 @@ export function KnowledgeView() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title={`Agent biladi (${confirmed.length})`}>
-          {!confirmed.length ? (
-            <Empty>Tasdiqlangan fakt yo&apos;q. Agent faqat siz tasdiqlagan faktlarni ishlatadi.</Empty>
-          ) : (
-            <ul className="max-h-80 space-y-1.5 overflow-y-auto text-sm">
-              {confirmed.map((f) => (
-                <li key={f.id} className="flex gap-2 rounded-lg px-2 py-1.5 hover:bg-tint-1/60">
-                  <Check className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden="true" />
-                  <span className="min-w-0">
-                    <span className="text-xs font-semibold text-muted-foreground">{topic(f.topic)} · </span>
-                    {f.question && <span className="font-medium">{f.question} — </span>}
-                    {f.content}
-                    {f.price != null && <span className="font-semibold"> · {formatSom(f.price)}{f.unit ? ` / ${f.unit}` : ""}</span>}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ConfirmedFacts businessId={id} facts={confirmed} topic={topic} act={act} />
         </Panel>
         <SyncKey businessId={id} />
       </div>
@@ -173,7 +164,7 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
   );
 }
 
-function AddSource({ businessId, onAdded }: { businessId: string; onAdded: (fn: () => Promise<unknown>) => Promise<void> }) {
+function AddSource({ businessId, onAdded }: { businessId: string; onAdded: (fn: () => Promise<unknown>) => Promise<boolean> }) {
   const [tab, setTab] = useState<Tab>("text");
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
@@ -184,9 +175,9 @@ function AddSource({ businessId, onAdded }: { businessId: string; onAdded: (fn: 
 
   const submit = async (fn: () => Promise<unknown>, reset?: () => void) => {
     setBusy(true);
-    await onAdded(fn);
+    const ok = await onAdded(fn);
     setBusy(false);
-    reset?.();
+    if (ok) reset?.();
   };
 
   return (
@@ -315,7 +306,7 @@ function TelegramPick({ businessId, busy, onPick }: { businessId: string; busy: 
   );
 }
 
-function DraftFacts({ businessId, facts, act }: { businessId: string; facts: KnowledgeFact[]; act: (fn: () => Promise<unknown>) => Promise<void> }) {
+function DraftFacts({ businessId, facts, act }: { businessId: string; facts: KnowledgeFact[]; act: (fn: () => Promise<unknown>) => Promise<boolean> }) {
   const [sel, setSel] = useState<string[]>([]);
   const [edit, setEdit] = useState<string | null>(null);
   if (!facts.length) return <Empty>Qoralama fakt yo&apos;q. Manba qo&apos;shsangiz, AI chiqargan faktlar shu yerda tasdiqlanadi.</Empty>;
@@ -370,40 +361,7 @@ function DraftFacts({ businessId, facts, act }: { businessId: string; facts: Kno
   );
 }
 
-function FactEditor({ fact, onSave, onCancel }: { fact: KnowledgeFact; onSave: (p: { content: string; question?: string; price?: number; unit?: string }) => void; onCancel: () => void }) {
-  const [content, setContent] = useState(fact.content);
-  const [question, setQuestion] = useState(fact.question ?? "");
-  const [price, setPrice] = useState(fact.price != null ? String(fact.price) : "");
-  const [unit, setUnit] = useState(fact.unit ?? "");
-  const catalog = fact.kind === "catalog";
-  const p = Number(price.replace(/\s/g, ""));
-  const badPrice = catalog && price !== "" && (!Number.isFinite(p) || p < 0);
-  return (
-    <form
-      className="space-y-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (badPrice || !content.trim()) return;
-        onSave({ content: content.trim(), ...(fact.question !== undefined || question ? { question: question.trim() } : {}), ...(catalog ? { price: price === "" ? undefined : p, unit: unit.trim() || undefined } : {}) });
-      }}
-    >
-      {(fact.kind === "faq" || fact.question) && <Input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Savol" aria-label="Savol" />}
-      <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={2} aria-label="Fakt matni" />
-      {catalog && (
-        <div className="flex gap-2">
-          <Input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Narx, so'm" aria-label="Narx" aria-invalid={badPrice} />
-          <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="birlik (porsiya, kg)" aria-label="Birlik" />
-        </div>
-      )}
-      <div className="flex gap-2">
-        <Button type="submit" disabled={badPrice || !content.trim()}>Saqlash</Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>Bekor</Button>
-      </div>
-    </form>
-  );
-}
-
-function QuestionRow({ q, onAnswer, onDismiss }: { q: { question: string; timesAsked: number }; onAnswer: (a: string) => Promise<void>; onDismiss: () => void }) {
+function QuestionRow({ q, onAnswer, onDismiss }: { q: { question: string; timesAsked: number }; onAnswer: (a: string) => Promise<boolean>; onDismiss: () => void }) {
   const [a, setA] = useState("");
   const [busy, setBusy] = useState(false);
   return (
@@ -417,42 +375,5 @@ function QuestionRow({ q, onAnswer, onDismiss }: { q: { question: string; timesA
         <Button type="button" variant="ghost" onClick={onDismiss}>Kerak emas</Button>
       </form>
     </li>
-  );
-}
-
-function SyncKey({ businessId }: { businessId: string }) {
-  const [key, setKey] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  return (
-    <Panel title="Kassa / 1C sinxron">
-      <p className="mb-3 text-sm text-muted-foreground">iiko, 1C yoki o&apos;z skriptingiz <code className="rounded bg-muted px-1">POST /sync/catalog</code> ga narx va qoldiqni yuborsin. Kalit faqat bir marta ko&apos;rsatiladi.</p>
-      {key ? (
-        <div className="space-y-2">
-          <code className="block break-all rounded-lg bg-muted p-2 text-xs">{key}</code>
-          <Button variant="outline" onClick={() => navigator.clipboard?.writeText(key)}>Nusxa olish</Button>
-          <p className="text-xs font-semibold text-amber-700">Hozir saqlab qo&apos;ying: sahifadan chiqsangiz qayta ko&apos;rinmaydi.</p>
-        </div>
-      ) : (
-        <Button
-          variant="outline"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setErr(null);
-            try {
-              setKey((await createSyncKey(businessId)).key);
-            } catch (e) {
-              setErr(e instanceof Error ? e.message : "Xatolik");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <KeyRound className="size-4" aria-hidden="true" /> Kalit yaratish
-        </Button>
-      )}
-      {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
-    </Panel>
   );
 }

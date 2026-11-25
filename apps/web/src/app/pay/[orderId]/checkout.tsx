@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { BadgeCheck, Check, CircleCheck, Clock, Home, Loader2, Lock, SearchX, ShieldCheck, Zap } from "lucide-react";
+import { BadgeCheck, Check, CircleCheck, Home, Loader2, Lock, SearchX, ShieldCheck, Zap } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logos";
 import { NotFoundError, getPaymentStatus } from "@/lib/api";
 import { bizPhoto } from "@/lib/photos";
@@ -61,19 +61,25 @@ export function Checkout({ orderId }: { orderId: string }) {
   const [amount, setAmount] = useState<number | null>(null);
   const [paidAt, setPaidAt] = useState<string>("");
   const [notFound, setNotFound] = useState(false);
+  // To'lov havolasi va test/real belgisi serverdan (boshqa telefonda ham ishlaydi, localStorage shart emas)
+  const [serverLink, setServerLink] = useState<string | null>(null);
+  const [serverTest, setServerTest] = useState<boolean | null>(null);
+  const [checkErr, setCheckErr] = useState(false);
 
   useEffect(() => {
     getPaymentStatus(orderId)
       .then((r) => {
-        const a = (r as { amount?: number }).amount;
-        if (typeof a === "number") setAmount(a);
+        if (typeof r.amount === "number") setAmount(r.amount);
+        if (r.payUrl) setServerLink(r.payUrl);
+        if (typeof r.isTest === "boolean") setServerTest(r.isTest);
         if (r.status === "paid") {
           setPhase("paid");
-          setPaidAt((r as { paidAt?: string }).paidAt ?? new Date().toISOString());
+          setPaidAt(r.paidAt ?? new Date().toISOString());
         }
       })
       .catch((e) => {
         if (e instanceof NotFoundError) setNotFound(true);
+        else setCheckErr(true);
       });
   }, [orderId]);
 
@@ -84,11 +90,14 @@ export function Checkout({ orderId }: { orderId: string }) {
       try {
         const r = await getPaymentStatus(orderId);
         if (!alive) return;
+        setCheckErr(false);
         if (r.status === "paid") {
-          setPaidAt(new Date().toISOString());
+          setPaidAt(r.paidAt ?? new Date().toISOString());
           setPhase("paid");
         } else if (r.status === "failed" || r.status === "expired") setPhase("failed");
-      } catch {}
+      } catch {
+        if (alive) setCheckErr(true);
+      }
     };
     const t = setInterval(tick, 2000);
     void tick();
@@ -98,11 +107,13 @@ export function Checkout({ orderId }: { orderId: string }) {
     };
   }, [phase, orderId]);
 
+  const link = serverLink ?? sum?.link ?? null;
+  const isTest = serverTest ?? (link ? link.includes("/pay/test/") : true);
+
   async function pay() {
     if (phase === "paying") return;
     setPhase("paying");
-    const link = sum?.link;
-    if (link && !link.includes("/pay/test/")) {
+    if (link && !isTest) {
       window.location.href = link; // haqiqiy TezCheck hisobi
       return;
     }
@@ -139,7 +150,7 @@ export function Checkout({ orderId }: { orderId: string }) {
     );
   }
 
-  const total = sum?.total ?? amount ?? 0;
+  const total = amount ?? sum?.total ?? 0;
   const subtotal = sum ? sum.items.reduce((s, i) => s + i.price * i.qty, 0) : total;
   const discount = Math.max(0, subtotal - total);
   const step = phase === "paid" ? 2 : 1;
@@ -153,7 +164,8 @@ export function Checkout({ orderId }: { orderId: string }) {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-extrabold sm:text-3xl">TezCheck: xavfsiz to&apos;lov</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Buyurtma #{shortId(orderId)} · demo to&apos;lov sahifasi (haqiqiy pul yechilmaydi)</p>
+            <p className="mt-1 text-sm text-muted-foreground">Buyurtma #{shortId(orderId)} · {isTest ? "TEST rejim: haqiqiy pul o'tmaydi" : "To'lov TezCheck orqali qabul qilinadi"}</p>
+            {checkErr && <p role="alert" className="mt-1 text-sm text-destructive">Holatni tekshirib bo&apos;lmadi, qayta urinilmoqda…</p>}
           </div>
           <Steps step={step} />
         </div>
@@ -165,13 +177,13 @@ export function Checkout({ orderId }: { orderId: string }) {
                 <path d="M5 12.5l4.5 4.5L19 7.5" />
               </svg>
             </span>
-            <h2 className="mt-5 font-display text-3xl font-extrabold text-green-900">To&apos;landi ✅</h2>
-            <p className="mt-1 text-muted-foreground">Rahmat! Buyurtma biznesga yuborildi.</p>
+            <h2 className="mt-5 font-display text-3xl font-extrabold text-green-900">{isTest ? "TEST to'lov bajarildi" : "To'landi ✅"}</h2>
+            <p className="mt-1 text-muted-foreground">{isTest ? "TEST to'lov: haqiqiy pul o'tmadi. Buyurtma biznesga yuborildi." : "TezCheck orqali to'landi. Buyurtma biznesga yuborildi."}</p>
             <dl className="mx-auto mt-6 divide-y divide-border rounded-2xl border border-border bg-muted/40 text-left text-sm">
               {[
                 ["Summa", formatSom(total)],
                 ["Biznes", sum?.businessName ?? "-"],
-                ["Usul", METHODS.find((m) => m.key === method)?.key.toUpperCase() ?? ""],
+                ...(isTest ? [] : [["Usul", METHODS.find((m) => m.key === method)?.key.toUpperCase() ?? ""]]),
                 ["Vaqt", paidAt ? formatWhen(paidAt) : ""],
                 ["Buyurtma", `#${orderId.slice(-6).toUpperCase()}`],
               ].map(([k, v]) => (
@@ -269,7 +281,6 @@ export function Checkout({ orderId }: { orderId: string }) {
                   )}
                   <div className="flex items-end justify-between pt-1"><dt className="font-semibold">Jami</dt><dd className="font-display text-2xl font-extrabold tabular-nums text-green-800">{formatSom(total)}</dd></div>
                 </dl>
-                <p className="mt-4 flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground"><Clock className="size-3.5 shrink-0" aria-hidden="true" /> Havola 30 daqiqa amal qiladi</p>
                 <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><CircleCheck className="size-3.5 shrink-0 text-green-600" aria-hidden="true" /> TezCheck orqali, faqat kirim</p>
               </div>
             </aside>

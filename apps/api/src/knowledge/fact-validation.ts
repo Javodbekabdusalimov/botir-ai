@@ -1,6 +1,6 @@
 // LLM output is untrusted: every field is checked and clamped here before it can become a draft fact.
 import type { KnowledgeFactKind } from '@botir/shared';
-import { cleanLine, normalizeName, redactPii } from './text-utils';
+import { cleanLine, normalizeName, parseSom, redactPii, somInText } from './text-utils';
 
 export interface DraftFact {
   kind: KnowledgeFactKind;
@@ -41,6 +41,18 @@ export function dropKnown(facts: DraftFact[], existing: ComparableFact[]): Draft
   return facts.filter((f) => !known.has(factKey(f)) && !known.has(quoteKey(f)));
 }
 
+/**
+ * LLM narxi: matn ("45.000") ham qabul qilinadi; "45.000" dan 45 chiqqan bo'lsa (nuqta kasr deb o'qilgan),
+ * iqtibosdagi 45 000 ga to'g'irlanadi.
+ */
+export function catalogPrice(raw: unknown, evidence: string): number | null {
+  const n = parseSom(raw);
+  if (n === null || !isValidPrice(n)) return null;
+  const quoted = somInText(evidence);
+  if (n > 0 && n < 1000 && !quoted.includes(n) && quoted.includes(n * 1000)) return n * 1000;
+  return n;
+}
+
 function toFact(raw: unknown, grounding?: string): DraftFact | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
@@ -48,7 +60,7 @@ function toFact(raw: unknown, grounding?: string): DraftFact | null {
   if (!kind) return null;
   const topic = cleanLine(r.topic, LIMITS.topic);
   const question = kind === 'faq' ? cleanLine(r.question, LIMITS.question) : '';
-  const price = kind === 'catalog' && isValidPrice(r.price) ? r.price : null;
+  const price = kind === 'catalog' ? catalogPrice(r.price, cleanLine(r.evidence, 400)) : null;
   if (!topic || (kind === 'faq' && !question) || (kind === 'catalog' && price === null)) return null;
   const content = cleanLine(r.content, LIMITS.content) || (kind === 'catalog' ? topic : '');
   if (!content) return null;

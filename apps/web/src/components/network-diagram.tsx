@@ -6,7 +6,7 @@ export function NetworkDiagram() {
     <figure>
       <svg viewBox="0 0 640 300" role="img" aria-labelledby="net-t net-d" className="h-auto w-full">
         <title id="net-t">Tarmoq effekti sxemasi</title>
-        <desc id="net-d">Chapda mijozlar va ularning shaxsiy agentlari, o&apos;ngda bizneslar va ularning agentlari, o&apos;rtada Botir tarmog&apos;i. Ko&apos;proq biznes mijozlarga ko&apos;proq tanlov beradi, ko&apos;proq mijoz bizneslarga ko&apos;proq buyurtma beradi.</desc>
+        <desc id="net-d">Chapda mijozlar va ularning shaxsiy agentlari, o&apos;ngda bizneslar va ularning agentlari, o&apos;rtada Life Assistant tarmog&apos;i. Ko&apos;proq biznes mijozlarga ko&apos;proq tanlov beradi, ko&apos;proq mijoz bizneslarga ko&apos;proq buyurtma beradi.</desc>
         {clients.map((y) =>
           biz.map((y2) => <line key={`${y}-${y2}`} x1="170" y1={y} x2="470" y2={y2} stroke="#b2bdb4" strokeWidth="1.5" className="flow-line" />),
         )}

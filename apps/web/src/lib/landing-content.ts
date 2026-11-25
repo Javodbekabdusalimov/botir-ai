@@ -1,7 +1,14 @@
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./seo";
 
-/** Narx rejalari: UI va JSON-LD (SoftwareApplication.offers) uchun yagona manba. Pro narxi o'zgarmaydi: 1 000 so'm/oy. */
+/** Narx rejalari: UI va JSON-LD uchun yagona manba. Hozir backend Pro uchun birinchi oy 1 000 so'm oladi. */
 export const PRO_PRICE_UZS = 1000;
+// Oylik narxlar (1-oydan keyin): egasi tasdiqlagan, 2026-11-25
+export const BUSINESS_PRICE_UZS = 199_000;
+export const PRO_AFTER_UZS = 499_000;
+const som = (n: number) => n.toLocaleString("ru-RU").replace(/\s/g, " ");
+/** "1-oy 1 000 so'm, keyin 499 000 so'm/oy" */
+export const PRO_PRICE_COPY = `1-oy ${som(PRO_PRICE_UZS)} so'm, keyin ${som(PRO_AFTER_UZS)} so'm/oy`;
+export const BUSINESS_PRICE_COPY = `${som(BUSINESS_PRICE_UZS)} so'm/oy`;
 export const MAX_ROUNDS_COPY = 3;
 
 export interface FaqItem {
@@ -14,7 +21,7 @@ export interface FaqItem {
 export const FAQ: FaqItem[] = [
   {
     q: "Life Assistant nima?",
-    a: "Life Assistant: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i, unda agent agent bilan gaplashadi, inson esa faqat yakuniy taklifni tasdiqlaydi. Biznes katalogini yuklaydi va AI sotuvchi Telegram'da mijozlar bilan o'zbek tilida 24/7 gaplashadi. Mijoz esa shaxsiy yordamchiga so'rov yozadi, yordamchi bir nechta biznes bilan o'zi muzokara qiladi.",
+    a: "Life Assistant: O'zbekiston bizneslari va mijozlari uchun AI agentlar tarmog'i, unda agent agent bilan gaplashadi, inson esa faqat yakuniy taklifni tasdiqlaydi. Biznes katalogini yuklaydi, AI sotuvchi esa Telegram xabariga darhol javob qoralamasini tayyorlaydi; autopilot rejimida ish vaqtida o'zi javob beradi. Mijoz esa shaxsiy yordamchiga so'rov yozadi, yordamchi bir nechta biznes bilan o'zi muzokara qiladi.",
   },
   {
     q: "Agentlar muzokarasi qanday ishlaydi?",
@@ -25,8 +32,8 @@ export const FAQ: FaqItem[] = [
     a: "Yo'q, narx faqat biznes katalogidan olinadi va chegirma biznes belgilagan maksimal foizdan oshmaydi. Bu qoida PolicyGuard tekshiruvi bilan majburlanadi: agent limitdan past narx taklif qila olmaydi.",
   },
   {
-    q: "Pul qachon yechiladi?",
-    a: "Pul faqat siz yakuniy taklifni \"Tasdiqlayman\" tugmasi bilan tasdiqlaganingizdan keyin yechiladi. To'lov TezCheck orqali qabul qilinadi: Payme, Click yoki Uzum. Tizim faqat kirim to'lovlarini qabul qiladi, qaytarish yoki chiqarish amallari yo'q.",
+    q: "Pul qachon to'lanadi?",
+    a: "Siz yakuniy taklifni \"Tasdiqlayman\" tugmasi bilan tasdiqlaganingizdan keyingina to'lov havolasi ochiladi va pulni o'zingiz to'laysiz. To'lov TezCheck orqali qabul qilinadi: Payme, Click yoki Uzum. Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi.",
   },
   {
     q: "Telegram'ni qanday ulayman?",
@@ -38,7 +45,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     q: "Life Assistant narxi qancha?",
-    a: `Start tarifi bepul, Pro tarifi oyiga ${PRO_PRICE_UZS.toLocaleString("ru-RU").replace(/ /g, " ")} so'm turadi va sotuvdan komissiya olinmaydi. Start 1 ta biznes agenti, katalog yuklash, Telegram ulash va oyiga 100 tagacha suhbatni beradi. Pro 10 barobar ko'p AI kredit, autopilot va analitikani qo'shadi. Mijozlar uchun yordamchi bepul.`,
+    a: `Start tarifi bepul, Biznes ${BUSINESS_PRICE_COPY} (taklif), Pro ${PRO_PRICE_COPY}. Hech qaysi tarifda komissiya yo'q. Start 1 ta biznes agenti, katalog yuklash va Telegram ulashni beradi; Pro analitika va buyurtmalar panelini qo'shadi. Mijozlar uchun yordamchi bepul.`,
   },
   {
     q: "Agent xato qilsa nima bo'ladi?",

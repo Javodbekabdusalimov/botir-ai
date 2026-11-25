@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, CheckCircle2, Loader2, MapPin, Mic, Play, Send, Users, UtensilsCrossed, Wrench } from "lucide-react";
+import { CalendarClock, CheckCircle2, Loader2, MapPin, Play, Send, Users, UtensilsCrossed, Wrench } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -237,15 +237,6 @@ export function AssistantChat() {
           placeholder="Ertaga 6 kishilik osh joy band qil"
           className="min-h-12 flex-1 text-base sm:text-sm"
         />
-        <button
-          type="button"
-          disabled
-          title="Ovoz bilan yozish: tez orada"
-          aria-label="Mikrofon: tez orada"
-          className="grid size-12 shrink-0 place-items-center rounded-lg border border-border bg-muted text-muted-foreground opacity-70"
-        >
-          <Mic className="size-4" aria-hidden="true" />
-        </button>
         <Button type="submit" className="size-12" disabled={busy || !text.trim()} aria-label="Yuborish">
           <Send className="size-4" />
         </Button>

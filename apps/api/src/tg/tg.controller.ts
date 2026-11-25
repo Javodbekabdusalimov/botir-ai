@@ -35,6 +35,15 @@ export class TgController {
     return ok(await this.tg.code(dto.loginId, dto.code, dto.password, { type: 'business', id: b.id }));
   }
 
+  /** Biznesning Telegram ulanish holati (serverdagi haqiqat; UI localStorage'ga ishonmaydi). */
+  @Get('tg-connect')
+  @Auth()
+  async status(@Query('businessId') businessId: string, @CurrentUser() user: DbUser) {
+    if (!businessId) throw new BadRequestException('businessId is required');
+    await assertBusinessOwner(this.db, businessId, user);
+    return ok(await this.tg.status({ type: 'business', id: businessId }));
+  }
+
   @Delete('tg-connect')
   @Auth()
   async disconnect(@Query('businessId') businessId: string, @CurrentUser() user: DbUser) {

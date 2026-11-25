@@ -63,6 +63,18 @@ function BizSelect({ list, current }: { list: Business[]; current?: Business }) 
   );
 }
 
+function NoBusiness() {
+  return (
+    <div className="mx-auto mt-6 max-w-lg rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+      <h1 className="font-sans text-xl font-bold tracking-tight">Avval biznesingizni ulang</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Nomi, manzili va katalogini kiriting: agent shu ma&apos;lumot bilan mijozlarga javob beradi.</p>
+      <Link href="/connect" className="mt-5 inline-flex h-11 items-center rounded-xl bg-primary px-5 font-semibold text-white hover:opacity-90">
+        Biznesni ulash
+      </Link>
+    </div>
+  );
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const id = useBusinessId();
@@ -76,6 +88,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [own, id]);
   const current = all.find((b) => b.id === id || ALIAS[id] === b.id);
   const name = current?.name ?? business?.name;
+  // Biznesi hali yo'q egasi: boshqa (namuna) biznesni ko'rsatmaymiz
+  if (user?.role === "business" && !user.businessId) return <NoBusiness />;
   return (
     <>
       {path === "/dashboard" ? null : (

@@ -18,13 +18,20 @@ export function RequireUser({ children }: { children: React.ReactNode }) {
 }
 
 function Guard({ children, role }: { children: React.ReactNode; role?: "business" }) {
-  const { status, user } = useAuth();
+  const { status, user, offline } = useAuth();
   const router = useRouter();
   const path = usePathname();
   useEffect(() => {
     if (status === "out") router.replace(`/login?next=${encodeURIComponent(path)}`);
   }, [status, path, router]);
 
+  if (status === "loading" && offline)
+    return (
+      <div role="alert" className="mx-auto max-w-md px-4 py-16 text-center">
+        <h1 className="font-sans text-xl font-bold">Server javob bermadi</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Sessiyangiz saqlangan. Qayta ulanmoqda… (server uyg&apos;onishi 1 daqiqagacha olishi mumkin)</p>
+      </div>
+    );
   if (status === "loading" || status === "out")
     return (
       <div role="status" aria-label="Tekshirilmoqda" className="mx-auto max-w-7xl animate-pulse space-y-4 px-4 sm:px-6 lg:px-8 py-10">

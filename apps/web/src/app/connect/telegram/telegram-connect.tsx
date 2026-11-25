@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
-import { BadgeCheck, CheckCircle2, Loader2, LockKeyhole, Unplug } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, Loader2, LockKeyhole, Unplug } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logos";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, inputClass } from "@/components/field";
 import { CHAT_MODES } from "@/components/tg-mode";
 import { useBusinessId } from "@/hooks/use-business";
-import { modeStore, tgCode, tgDisconnect, tgStart } from "@/lib/api";
+import { getHealth, tgCode, tgDisconnect, tgStart, tgStatus } from "@/lib/api";
+import { useAsync } from "@/hooks/use-async";
 import { cn } from "@/lib/utils";
 
 type Method = "business" | "account";
@@ -21,27 +22,6 @@ const FLOW: { id: Step; label: string }[] = [
   { id: "password", label: "2FA" },
 ];
 
-const connKey = (id: string) => `botir.tg.${id}`;
-const connSubs = new Set<() => void>();
-const readConn = (id: string) => {
-  try {
-    return localStorage.getItem(connKey(id)) === "1";
-  } catch {
-    return false;
-  }
-};
-const writeConn = (id: string, v: boolean) => {
-  try {
-    if (v) localStorage.setItem(connKey(id), "1");
-    else localStorage.removeItem(connKey(id));
-  } catch {}
-  connSubs.forEach((f) => f());
-};
-const subscribeConn = (cb: () => void) => {
-  connSubs.add(cb);
-  return () => void connSubs.delete(cb);
-};
-
 /** 9 raqam -> "90 123 45 67" */
 function formatPhone(digits: string): string {
   const d = digits.slice(0, 9);
@@ -50,8 +30,11 @@ function formatPhone(digits: string): string {
 
 export function TelegramConnect() {
   const businessId = useBusinessId();
-  const demo = useSyncExternalStore(modeStore.subscribe, modeStore.getSnapshot, modeStore.getServerSnapshot);
-  const connected = useSyncExternalStore(subscribeConn, () => readConn(businessId), () => false);
+  // Haqiqat faqat serverdan: userbot yoqilganmi va shu biznes ulanganmi (localStorage'ga ishonilmaydi)
+  const health = useAsync("health", getHealth);
+  const server = useAsync(`tg:${businessId}`, () => tgStatus(businessId));
+  const userbotOff = health.data ? health.data.userbot !== true : !!health.error;
+  const connected = server.data?.connected === true;
   const [method, setMethod] = useState<Method>("account");
   const [step, setStep] = useState<Step>("choose");
   const [phone, setPhone] = useState("");
@@ -89,7 +72,6 @@ export function TelegramConnect() {
       const r = await tgCode(loginId, code, withPassword);
       if (r.status === "connected") {
         setPassword("");
-        writeConn(businessId, true);
         setStep("connected");
       } else if (r.status === "need_password") setStep("password");
       else if (r.status === "invalid_code") {
@@ -112,7 +94,7 @@ export function TelegramConnect() {
   const onDisconnect = () =>
     run(async () => {
       await tgDisconnect(businessId);
-      writeConn(businessId, false);
+      server.reload();
       setStep("choose");
       setPhone("");
       setCode("");
@@ -123,11 +105,18 @@ export function TelegramConnect() {
 
   return (
     <div className="mt-8">
-      {demo && !isConnected && (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-biz-soft p-3 text-xs text-biz">
-          Demo rejim: haqiqiy SMS yuborilmaydi, istalgan 5 xonali kod qabul qilinadi (keyin 2FA so'raladi).
+      {userbotOff && (
+        <p role="alert" className="mb-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
+            {health.error ? "Server holatini tekshirib bo'lmadi. " : ""}Telegram ulash hozir serverda yoqilmagan. Telefon, kod yoki parol so&apos;ralmaydi.
+          </span>
         </p>
       )}
+
+      <p className="mb-4 rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
+        Ulasangiz: faqat shaxsiy (1:1) chatlardagi mijoz xabarlari o&apos;qiladi va javob qoralamasi uchun AI ga yuboriladi. Guruh va kanallar o&apos;qilmaydi.
+      </p>
 
       <p className="mb-4 flex items-start gap-2 rounded-xl border border-tint-3 bg-tint-1 p-3 text-xs text-green-900">
         <LockKeyhole className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -165,7 +154,7 @@ export function TelegramConnect() {
             </Button>
           </div>
         </div>
-      ) : (
+      ) : userbotOff || health.loading ? null : (
         <>
           <ol className="mb-6 flex items-center gap-2" aria-label="Qadamlar">
                 {FLOW.map((s, i) => (

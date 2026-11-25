@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError, TECH_ERROR_TEXT } from "@/lib/friendly-error";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, CheckCheck, Loader2, Mic, Send, Sparkles } from "lucide-react";
 import { OfferCard } from "@/components/negotiation";
@@ -104,10 +105,11 @@ function NegotiationTurn({ id, names, onDone }: { id: string; names: Record<stri
       ))}
       {state.error && (
         <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {state.error}
+          {friendlyError(state.error)}
         </p>
       )}
-      {(state.status === "rejected" || state.status === "failed") && <p className="text-sm text-muted-foreground">Agentlar kelisha olmadi. So&apos;rovni o&apos;zgartirib ko&apos;ring.</p>}
+      {state.status === "rejected" && <p className="text-sm text-muted-foreground">Agentlar kelisha olmadi. So&apos;rovni o&apos;zgartirib ko&apos;ring.</p>}
+      {state.status === "failed" && <p className="text-sm text-muted-foreground">{TECH_ERROR_TEXT}</p>}
       {current && (
         <div className="pl-0 sm:pl-9">
           <OfferCard

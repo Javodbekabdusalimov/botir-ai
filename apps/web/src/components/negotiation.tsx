@@ -9,7 +9,7 @@ import { savePaidOrder } from "@/lib/orders-store";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BizAvatar } from "@/components/biz-avatar";
 import { PayLogos } from "@/components/brand-logos";
-import { useCountUp } from "@/hooks/use-count-up";
+import { PriceBlock } from "@/components/price-block";
 import { bizPhoto } from "@/lib/photos";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -181,7 +181,7 @@ export function NegotiationStage({
           {state.status === "agreed" && "Kelishildi"}
           {state.status === "confirmed" && "Tasdiqlandi"}
           {state.status === "rejected" && "Kelishilmadi"}
-          {state.status === "failed" && "Javob kechikdi"}
+          {state.status === "failed" && "Texnik xato"}
         </span>
       </div>
       <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3" aria-live="polite">
@@ -226,7 +226,6 @@ export function OfferCard({
   useEffect(() => {
     if (focusConfirm && ready && !result) confirmRef.current?.focus();
   }, [focusConfirm, ready, result]);
-  const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
     <div className="slide-up overflow-hidden rounded-2xl border border-primary/50 bg-card shadow-lift">
       <div className="relative isolate overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5">
@@ -256,7 +255,7 @@ export function OfferCard({
           </li>
         ))}
       </ul>
-      <PriceBlock price={offer.price} subtotal={subtotal} discountPct={offer.discountPct} compact={compact} />
+      <PriceBlock price={offer.price} items={offer.items} compact={compact} />
       {offer.validUntil && <p className="mt-1 text-xs text-muted-foreground">Amal qiladi: {formatWhen(offer.validUntil)} gacha</p>}
 
       {!result && !compact && (
@@ -290,42 +289,13 @@ export function OfferCard({
 }
 
 /** Narx o'zgarsa: eski narx chiziladi, yangisi pastdan chiqadi (270 000 -> ~~270 000~~ 256 500). */
-function PriceBlock({ price, subtotal, discountPct, compact }: { price: number; subtotal: number; discountPct: number; compact?: boolean }) {
-  const [track, setTrack] = useState<{ price: number; prev: number | null }>({ price, prev: null });
-  if (track.price !== price) setTrack({ price, prev: track.price });
-  const struck = track.prev ?? (discountPct > 0 ? subtotal : null);
-  return (
-    <div className={cn("flex items-end justify-between gap-3", compact ? "mt-1" : "mt-3 border-t border-border pt-3")}>
-      <span className="pb-1 text-sm font-medium">Jami</span>
-      <div className="text-right" aria-live="polite">
-        {struck !== null && struck !== price && (
-          <div key={`s${struck}`} className="strike text-sm tabular-nums">
-            {formatSom(struck)}
-          </div>
-        )}
-        <AnimatedPrice price={price} />
-      </div>
-    </div>
-  );
-}
-
-/** Narx raqami eski qiymatdan yangisiga sanab o'tadi (reduced-motion: darhol). */
-function AnimatedPrice({ price }: { price: number }) {
-  const shown = useCountUp(price, 600);
-  return (
-    <div className="font-display text-2xl font-bold tabular-nums text-green-800" aria-label={formatSom(price)}>
-      <span aria-hidden="true">{formatSom(shown)}</span>
-    </div>
-  );
-}
-
-
 const OPENED = new Set<string>();
 
 /** Tasdiqdan keyin: to'lov sahifasi ochiladi, har 3s status so'raladi, "To'landi" bo'lsa buyurtma saqlanadi. */
 function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer }) {
   const [status, setStatus] = useState<"pending" | "paid" | "failed" | "expired">("pending");
   const [netError, setNetError] = useState(false);
+  const [isTest, setIsTest] = useState(() => result.paymentLink.includes("/pay/test/"));
   const [copied, setCopied] = useState(false);
   const { offer } = best;
   const [paidAt] = useState(() => Date.now());
@@ -351,6 +321,7 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
         const r = await getPaymentStatus(result.orderId);
         if (!alive) return;
         setNetError(false);
+        if (typeof r.isTest === "boolean") setIsTest(r.isTest);
         if (r.status !== "pending") {
           setStatus(r.status);
           if (r.status === "paid")
@@ -391,8 +362,8 @@ function PaymentFlow({ result, best }: { result: ConfirmResult; best: BestOffer 
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
         </span>
-        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">To&apos;landi</p>
-        <p className="mt-1 text-sm font-medium text-green-900/80">TezCheck orqali to&apos;landi</p>
+        <p className="mt-3 font-display text-2xl font-extrabold text-green-900">{isTest ? "TEST to'lov" : "To'landi"}</p>
+        <p className="mt-1 text-sm font-medium text-green-900/80">{isTest ? "TEST to'lov: haqiqiy pul o'tmadi" : "TezCheck orqali to'landi"}</p>
         <dl className="mx-auto mt-4 max-w-xs divide-y divide-tint-3 rounded-xl border border-tint-3 bg-card text-left text-sm">
           {[
             ["Summa", formatSom(offer.price)],

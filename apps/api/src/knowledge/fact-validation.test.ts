@@ -10,9 +10,14 @@ const one = (raw: Record<string, unknown>, text?: string) => validateFacts({ fac
 
 async function main(): Promise<void> {
   // Prices: finite integer >= 0 or the fact is dropped
-  for (const price of [-1, 1.5, NaN, Infinity, '45000', null, undefined, 3e9, true, {}]) assert.equal(one(cat({ price })), undefined, String(price));
+  for (const price of [-1, 1.5, NaN, Infinity, 'qirq', null, undefined, 3e9, true, {}]) assert.equal(one(cat({ price })), undefined, String(price));
   assert.equal(one(cat({ price: 0 }))?.price, 0);
   assert.equal(isValidPrice(45000), true);
+  // "45.000" = 45 000 so'm, not 45
+  assert.equal(one(cat({ price: '45.000' }))?.price, 45000);
+  assert.equal(one(cat({ price: '45 000' }))?.price, 45000);
+  assert.equal(one(cat({ price: 45, evidence: 'Osh 45.000' }), 'Osh 45.000 so\'m')?.price, 45000);
+  assert.equal(one(cat({ price: 45, evidence: 'Choy 45' }), 'Choy 45')?.price, 45);
 
   // Shape
   for (const bad of [null, [], 'x', { facts: 'x' }, {}]) assert.deepEqual(validateFacts(bad), []);

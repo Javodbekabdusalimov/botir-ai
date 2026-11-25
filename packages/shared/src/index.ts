@@ -302,6 +302,8 @@ export interface Chat {
   mode: ChatMode;
   lastMessageAt: ISODate;
   lastMessageText?: string;
+  /** Oxirgi xabar muallifi: chat holati shundan (Kutyapti / AI javob berdi / Siz javob berdingiz). */
+  lastAuthor?: 'customer' | 'owner' | 'ai';
   needsHuman: boolean;
   unread?: number;
 }

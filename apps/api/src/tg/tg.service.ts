@@ -177,7 +177,7 @@ export class TgService implements OnModuleInit, OnModuleDestroy {
         const [last] = await this.store.listMessages(c.id, 1);
         out.push({
           id: c.id, tgAccountId: c.accountId, peerId: c.peerId, title: c.title, mode: c.mode,
-          lastMessageAt: c.lastMessageAt ?? new Date(0).toISOString(), lastMessageText: last?.text, needsHuman: c.needsHuman,
+          lastMessageAt: c.lastMessageAt ?? new Date(0).toISOString(), lastMessageText: last?.text, lastAuthor: last?.author, needsHuman: c.needsHuman,
         });
       }
     }

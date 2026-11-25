@@ -282,7 +282,7 @@ export function AgentRoom() {
             </section>
 
             <div className="grid grid-cols-2 gap-1.5">
-              <Link href="/connect" className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-white/70 bg-white/50 text-xs font-semibold text-green-950 hover:bg-white/80">
+              <Link href="/dashboard/knowledge" className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-white/70 bg-white/50 text-xs font-semibold text-green-950 hover:bg-white/80">
                 <Settings2 className="size-3.5" aria-hidden="true" /> Sozlash
               </Link>
               <Link href="/dashboard/improve" className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-white/70 bg-white/50 text-xs font-semibold text-green-950 hover:bg-white/80">

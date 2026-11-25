@@ -16,7 +16,7 @@ const BUSINESS_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
   { href: "/dashboard/inbox", label: "Inbox", icon: Inbox },
   { href: "/connect/telegram", label: "Telegram", icon: Send },
-  { href: "/connect", label: "Biznes", icon: Building2 },
+  { href: "/dashboard/knowledge", label: "Katalog", icon: Building2 },
 ];
 const CLIENT_LINKS: NavLink[] = [
   { href: "/assistant", label: "Yordamchi", icon: Sparkles },

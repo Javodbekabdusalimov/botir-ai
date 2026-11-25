@@ -8,19 +8,25 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Empty, ErrorBox, Loading } from "@/components/states";
 import { CHAT_MODES } from "@/components/tg-mode";
-import { useAsync } from "@/hooks/use-async";
+import { usePolled } from "@/hooks/use-polled";
+import { ReplyBox } from "./reply-box";
 import { useBusinessId } from "@/hooks/use-business";
 import { getChats, getMessages, sendMessage, setChatMode } from "@/lib/api";
 import { formatWhen } from "@/lib/format";
+import { friendlyError } from "@/lib/friendly-error";
 import type { Chat, ChatMode, InboxMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** Chat holati: odam kerak (qizil) / kutyapti (o'qilmagan) / AI javob berdi */
-function statusOf(c: Chat): { label: string; cls: string } {
-  if (c.needsHuman) return { label: "Odam kerak 🔴", cls: "bg-red-50 text-red-700 ring-1 ring-red-200" };
-  if (c.unread) return { label: "Kutyapti", cls: "bg-biz-soft text-biz ring-1 ring-amber-200" };
-  return { label: "AI javob berdi", cls: "bg-tint-2 text-green-900" };
+/** Chat holati oxirgi xabardan: odam kerak / mijoz kutyapti / AI javob berdi / siz javob berdingiz */
+function statusOf(c: Chat): { label: string; dot: string } {
+  if (c.needsHuman) return { label: "Odam kerak", dot: "bg-red-500" };
+  const who = c.lastAuthor ?? (c.unread ? "customer" : undefined);
+  if (who === "customer") return { label: "Kutyapti", dot: "bg-amber-400" };
+  if (who === "owner") return { label: "Siz javob berdingiz", dot: "bg-sky-500" };
+  if (who === "ai") return { label: "AI javob berdi", dot: "bg-green-500" };
+  return { label: "Yangi", dot: "bg-muted-foreground" };
 }
+const POLL_MS = 8000;
 
 const modeOf = (m: ChatMode) => CHAT_MODES.find((x) => x.id === m)!;
 const AV = ["bg-green-100 text-green-800", "bg-amber-100 text-amber-800", "bg-sky-100 text-sky-800", "bg-violet-100 text-violet-800", "bg-rose-100 text-rose-800"];
@@ -39,7 +45,7 @@ const WAVE = [4, 9, 6, 14, 10, 18, 8, 12, 16, 7, 11, 5, 13, 9, 6, 10, 4];
 
 export function InboxView() {
   const id = useBusinessId();
-  const chats = useAsync(`chats:${id}`, () => getChats(id));
+  const chats = usePolled(`chats:${id}`, () => getChats(id), POLL_MS);
   // /dashboard (agent xonasi) dan `?chat=<id>` bilan kelinsa, o'sha suhbat ochiladi
   const [selected, setSelected] = useState<string | null>(() => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("chat")));
   const [modes, setModes] = useState<Record<string, ChatMode>>({});
@@ -118,8 +124,8 @@ export function InboxView() {
                       {!!c.unread && <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-green-600 px-1.5 text-[11px] font-bold text-white">{c.unread}</span>}
                     </span>
                     <span className="mt-1 flex items-center gap-1.5">
-                      <span className={cn("size-2 rounded-full", c.needsHuman ? "bg-red-500" : c.unread ? "bg-amber-400" : "bg-green-500")} aria-hidden="true" />
-                      <span className="text-[11px] font-medium text-muted-foreground">{statusOf(c).label.replace(" 🔴", "")} · {modeOf(mode).label}</span>
+                      <span className={cn("size-2 rounded-full", statusOf(c).dot)} aria-hidden="true" />
+                      <span className="text-[11px] font-medium text-muted-foreground">{statusOf(c).label} · {modeOf(mode).label}</span>
                     </span>
                   </span>
                 </button>
@@ -131,7 +137,7 @@ export function InboxView() {
 
       <div className={cn("min-h-0", !current && "hidden md:block")}>
         {current ? (
-          <ChatDetail key={current.id} chat={current} mode={modes[current.id] ?? current.mode} onMode={(m) => setModes((s) => ({ ...s, [current.id]: m }))} onBack={() => setSelected(null)} />
+          <ChatDetail key={current.id} chat={current} mode={modes[current.id] ?? current.mode} onMode={(m) => setModes((s) => ({ ...s, [current.id]: m }))} onBack={() => setSelected(null)} onActivity={chats.refresh} />
         ) : (
           <Empty>Chatni tanlang: mijoz xabarlari va AI qoralamalari shu yerda.</Empty>
         )}
@@ -140,9 +146,15 @@ export function InboxView() {
   );
 }
 
-function ChatDetail({ chat, mode, onMode, onBack }: { chat: Chat; mode: ChatMode; onMode: (m: ChatMode) => void; onBack: () => void }) {
-  const msgs = useAsync(`msgs:${chat.id}`, () => getMessages(chat.id));
+function ChatDetail({ chat, mode, onMode, onBack, onActivity }: { chat: Chat; mode: ChatMode; onMode: (m: ChatMode) => void; onBack: () => void; onActivity: () => void }) {
+  const msgs = usePolled(`msgs:${chat.id}`, () => getMessages(chat.id), POLL_MS);
   const [sent, setSent] = useState<InboxMessage[]>([]);
+  const onSent = (x: InboxMessage) => {
+    setSent((s) => [...s, x]);
+    onActivity();
+  };
+  const loaded = msgs.data ?? [];
+  const shown = [...loaded, ...sent.filter((x) => !loaded.some((m) => m.id === x.id))];
   const [modeBusy, setModeBusy] = useState(false);
   const [modeErr, setModeErr] = useState<string | null>(null);
 
@@ -198,16 +210,17 @@ function ChatDetail({ chat, mode, onMode, onBack }: { chat: Chat; mode: ChatMode
         ) : msgs.error ? (
           <ErrorBox message={msgs.error} onRetry={msgs.reload} />
         ) : (
-          [...(msgs.data ?? []), ...sent].map((m, i, arr) => (
+          shown.map((m, i, arr) => (
             <div key={m.id}>
               {(i === 0 || dayKey(arr[i - 1].sentAt) !== dayKey(m.sentAt)) && (
                 <p className="my-2 text-center"><span className="rounded-full bg-white/80 px-3 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm">{dayLabel(m.sentAt)}</span></p>
               )}
-              <Message m={m} chatId={chat.id} onSent={(x) => setSent((s) => [...s, x])} />
+              <Message m={m} chatId={chat.id} onSent={onSent} />
             </div>
           ))
         )}
       </div>
+      <ReplyBox chatId={chat.id} onSent={onSent} />
     </section>
   );
 }
@@ -228,7 +241,7 @@ function Message({ m, chatId, onSent }: { m: InboxMessage; chatId: string; onSen
       onSent(await sendMessage(chatId, text.trim()));
       setDone(true);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Yuborib bo'lmadi");
+      setErr(friendlyError(e instanceof Error ? e.message : null));
     } finally {
       setBusy(false);
     }
@@ -286,7 +299,6 @@ function Message({ m, chatId, onSent }: { m: InboxMessage; chatId: string; onSen
                 <span key={i} className="w-[3px] rounded-full bg-green-600/70" style={{ height: h }} />
               ))}
             </span>
-            <span className="text-[11px] text-muted-foreground">0:07</span>
           </div>
         )}
         <p>{m.transcript ?? m.text}</p>

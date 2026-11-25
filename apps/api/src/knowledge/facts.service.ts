@@ -65,7 +65,9 @@ export class KnowledgeFactsService {
     if (!status) throw new BadRequestException(`status: ${STATUSES.join(' | ')}`);
 
     const leaving = fact.status === 'confirmed' && status !== 'confirmed';
-    if (leaving) await this.assertNotInCatalog(fact);
+    // "Olib tashlash" (rejected): katalog pozitsiyasi ham o'chadi, aks holda agent eski narxni sotishda davom etadi.
+    if (leaving && status === 'rejected') await this.removeFromCatalog(fact);
+    else if (leaving) await this.assertNotInCatalog(fact);
     const edited = Object.keys(data).length > 0;
     if (edited || status !== fact.status) {
       // Confirmation itself happens in activate(), after the catalog write succeeded.
@@ -100,6 +102,11 @@ export class KnowledgeFactsService {
   }
 
   /** A confirmed price already lives in the catalog; hiding only the fact would leave the agent selling it. */
+  private async removeFromCatalog(fact: DbFact): Promise<void> {
+    if (!fact.catalogItemId) return;
+    await this.db.catalogItem.updateMany({ where: { id: fact.catalogItemId, businessId: fact.businessId, deletedAt: null }, data: { deletedAt: new Date() } });
+  }
+
   private async assertNotInCatalog(fact: DbFact): Promise<void> {
     if (!fact.catalogItemId) return;
     const item = await this.db.catalogItem.findFirst({ where: { id: fact.catalogItemId, deletedAt: null } });

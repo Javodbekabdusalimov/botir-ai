@@ -6,6 +6,8 @@ const TECHNICAL = /ENOENT|spawn|prisma|\/Users\/|\/home\/|\bat [\w.<>]+ \(|stack
 const ENGLISH_ONLY = /^[\x20-\x7E]+$/;
 const UZ_HINT = /[og]'|\b(va|yo'q|bor|qayta|xato|topilmadi|so'm|kerak|emas|uchun|uzildi|ulanish)\b/i;
 
+const TG_OFF = /userbot disabled|TG_SESSION_KEY|telegram send failed|telegram.*not (connected|configured)/i;
+export const TG_OFF_TEXT = "Telegram orqali yuborib bo'lmadi, xabar ketmadi. Telegram ulanishini tekshiring.";
 export const AI_DOWN_TEXT = "AI agentlar hozir band, birozdan keyin qayta urinib ko'ring.";
 export const TECH_ERROR_TEXT = "Texnik xato, qayta urinib ko'ring.";
 
@@ -16,6 +18,7 @@ export function isAiUnavailable(msg: string | null | undefined): boolean {
 /** Har qanday xato matnini foydalanuvchiga ko'rsatiladigan o'zbekcha matnga aylantiradi. */
 export function friendlyError(msg: string | null | undefined): string {
   if (!msg) return TECH_ERROR_TEXT;
+  if (TG_OFF.test(msg)) return TG_OFF_TEXT;
   if (isAiUnavailable(msg)) return AI_DOWN_TEXT;
   if (TECHNICAL.test(msg)) return TECH_ERROR_TEXT;
   if (/not found/i.test(msg)) return "Topilmadi";

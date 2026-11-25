@@ -9,7 +9,7 @@ import { savePaidOrder } from "@/lib/orders-store";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BizAvatar } from "@/components/biz-avatar";
 import { PayLogos } from "@/components/brand-logos";
-import { useCountUp } from "@/hooks/use-count-up";
+import { PriceBlock } from "@/components/price-block";
 import { bizPhoto } from "@/lib/photos";
 import { formatSom, formatWhen } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -226,7 +226,6 @@ export function OfferCard({
   useEffect(() => {
     if (focusConfirm && ready && !result) confirmRef.current?.focus();
   }, [focusConfirm, ready, result]);
-  const subtotal = offer.items.reduce((s, i) => s + i.price * i.qty, 0);
   return (
     <div className="slide-up overflow-hidden rounded-2xl border border-primary/50 bg-card shadow-lift">
       <div className="relative isolate overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5">
@@ -256,7 +255,7 @@ export function OfferCard({
           </li>
         ))}
       </ul>
-      <PriceBlock price={offer.price} subtotal={subtotal} discountPct={offer.discountPct} compact={compact} />
+      <PriceBlock price={offer.price} items={offer.items} compact={compact} />
       {offer.validUntil && <p className="mt-1 text-xs text-muted-foreground">Amal qiladi: {formatWhen(offer.validUntil)} gacha</p>}
 
       {!result && !compact && (
@@ -290,36 +289,6 @@ export function OfferCard({
 }
 
 /** Narx o'zgarsa: eski narx chiziladi, yangisi pastdan chiqadi (270 000 -> ~~270 000~~ 256 500). */
-function PriceBlock({ price, subtotal, discountPct, compact }: { price: number; subtotal: number; discountPct: number; compact?: boolean }) {
-  const [track, setTrack] = useState<{ price: number; prev: number | null }>({ price, prev: null });
-  if (track.price !== price) setTrack({ price, prev: track.price });
-  const struck = track.prev ?? (discountPct > 0 ? subtotal : null);
-  return (
-    <div className={cn("flex items-end justify-between gap-3", compact ? "mt-1" : "mt-3 border-t border-border pt-3")}>
-      <span className="pb-1 text-sm font-medium">Jami</span>
-      <div className="text-right" aria-live="polite">
-        {struck !== null && struck !== price && (
-          <div key={`s${struck}`} className="strike text-sm tabular-nums">
-            {formatSom(struck)}
-          </div>
-        )}
-        <AnimatedPrice price={price} />
-      </div>
-    </div>
-  );
-}
-
-/** Narx raqami eski qiymatdan yangisiga sanab o'tadi (reduced-motion: darhol). */
-function AnimatedPrice({ price }: { price: number }) {
-  const shown = useCountUp(price, 600);
-  return (
-    <div className="font-display text-2xl font-bold tabular-nums text-green-800" aria-label={formatSom(price)}>
-      <span aria-hidden="true">{formatSom(shown)}</span>
-    </div>
-  );
-}
-
-
 const OPENED = new Set<string>();
 
 /** Tasdiqdan keyin: to'lov sahifasi ochiladi, har 3s status so'raladi, "To'landi" bo'lsa buyurtma saqlanadi. */

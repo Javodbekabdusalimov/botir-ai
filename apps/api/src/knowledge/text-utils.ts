@@ -73,3 +73,17 @@ export function htmlToText(html: string): string {
   }
   return decodeEntities(out.join('')).split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
 }
+
+/** "45.000", "45,000", "45 000", "45000" → 45000. Not a price → null. */
+export function parseSom(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v !== 'string') return null;
+  const s = v.replace(/[\s ]/g, '').replace(/so'?m|сум|uzs/gi, '');
+  if (/^\d{1,3}([.,]\d{3})+$/.test(s)) return Number(s.replace(/[.,]/g, ''));
+  return /^\d+$/.test(s) ? Number(s) : null;
+}
+
+/** Every number written in a quote, thousands separators understood ("Osh 45.000" → [45000]). */
+export function somInText(text: string): number[] {
+  return (text.match(/\d{1,3}(?:[ ., ]\d{3})+|\d+/g) ?? []).map((t) => parseSom(t)).filter((n): n is number => n !== null);
+}

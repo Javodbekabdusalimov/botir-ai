@@ -48,6 +48,9 @@ export function SiteFooter() {
               ["/live/demo-chorsu", "Muzokara namunasi"],
               ["/qanday-ishlaydi", "Qanday ishlaydi"],
               ["/telegram-ai-sotuvchi", "Telegram AI sotuvchi"],
+              ["/biznes-avtomatlashtirish", "Biznesni avtomatlashtirish"],
+              ["/arzon-narx-topish", "Arzon narxlarni topish"],
+              ["/ai-yordamchi", "AI yordamchi"],
               ["/narxlar", "Narxlar"],
               ["/savol-javob", "Savol-javob"],
             ].map(([h, l]) => (

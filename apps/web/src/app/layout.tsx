@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   // Search Console: asosiy tasdiq public/google84cc5b4f86d33aff.html fayli; env bo'lsa meta-teg ham qo'shiladi.
   ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
   manifest: "/manifest.webmanifest",
-  keywords: ["Life Assistant", "AI sotuvchi", "Telegram AI bot", "AI agent O'zbekiston", "o'zbekcha AI yordamchi", "avtomatik savdo", "agent muzokara"],
+  keywords: ["Life Assistant", "AI yordamchi", "biznes avtomatlashtirish", "biznesni avtomatlashtirish", "arzon narxlarni topish", "narx solishtirish", "AI sotuvchi", "Telegram AI bot", "AI agent O'zbekiston", "o'zbekcha AI yordamchi", "avtomatik savdo", "agent muzokara"],
   category: "business",
   formatDetection: { telephone: false },
 };

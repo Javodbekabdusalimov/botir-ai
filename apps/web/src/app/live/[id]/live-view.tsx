@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { NegotiationStage } from "@/components/negotiation";
 import { GroupOffer, groupOffers } from "./group-offer";
 import { useNegotiation } from "@/hooks/use-negotiation";
-import { agentRequest, getBusinesses, recallRequestText } from "@/lib/api";
+import { agentRequest, getBusinesses, recallRequestText, UpgradeRequiredError } from "@/lib/api";
 import { NEGOTIATION_NOT_FOUND } from "@/lib/api/stream";
 import { ALL_MOCK_BUSINESSES } from "@/lib/mock";
 
@@ -70,9 +70,9 @@ function Session({ id, onRetry }: { id: string; onRetry: () => void }) {
     try {
       const r = await agentRequest(text);
       router.push(`/live/${r.negotiationId}`);
-    } catch {
+    } catch (e) {
       setRetrying(false);
-      router.push("/assistant");
+      router.push(e instanceof UpgradeRequiredError ? "/narxlar" : "/assistant"); // 402: limit tugadi → tariflar
     }
   }
 

@@ -184,6 +184,41 @@ async function main(): Promise<void> {
     assert.deepEqual((await llm.completeJson({ ...ask, model: 'haiku' })).data, { a: 1 });
     assert.ok(warns.some((w) => w.includes('saveLlmCall failed')));
   }
+  // 10. AI_GLOBAL_DAILY_TOKENS: all calls count (no billing owner needed); at the cap new calls fail fast with LlmError('limit')
+  {
+    const { GlobalTokenBudget, globalDailyTokens } = await import('../../billing/token-budget');
+    const { sdkQuery, calls } = fakeSdk([async () => [ok('{"a":1}', { usage: { input_tokens: 40, cache_read_input_tokens: 20, output_tokens: 50 } })]]);
+    let cap = 100;
+    const budget = new GlobalTokenBudget(() => cap);
+    const { llm, store } = client(sdkQuery, { budget });
+    await llm.completeJson({ ...ask, model: 'haiku' });
+    assert.deepEqual(llm.globalTokens(), { used: 110, cap: 100 });
+    await assert.rejects(llm.completeJson({ ...ask, model: 'haiku' }), (e: unknown) => e instanceof LlmError && e.kind === 'limit' && e.message === LLM_USER_ERROR);
+    assert.equal(calls.length, 1, 'no provider call once the cap is reached');
+    assert.deepEqual(store.llmCalls.map((c) => [c.ok, c.errorKind ?? null]), [[true, null], [false, 'limit']]);
+    assert.equal(llm.status().ai, 'limited');
+    cap = 0; // 0 = no cap
+    await llm.completeJson({ ...ask, model: 'haiku' });
+    assert.equal(calls.length, 2);
+    // seed = max(counter, today's DB sum); a new Tashkent day starts from 0
+    const b2 = new GlobalTokenBudget(() => 1000);
+    const day = new Date('2026-11-25T10:00:00Z');
+    b2.add(300, day);
+    b2.seed(200, day);
+    assert.equal(b2.snapshot(day).used, 300);
+    b2.seed(1200, day);
+    assert.equal(b2.exhausted(day), true);
+    assert.equal(b2.exhausted(new Date('2026-11-25T19:00:00Z')), false, '00:00 Tashkent resets');
+    // env parsing: default 3 000 000, '0' = no cap, garbage = default
+    const prev = process.env.AI_GLOBAL_DAILY_TOKENS;
+    for (const [v, want] of [[undefined, 3_000_000], ['0', 0], ['500', 500], ['abc', 3_000_000], ['', 3_000_000]] as const) {
+      if (v === undefined) delete process.env.AI_GLOBAL_DAILY_TOKENS;
+      else process.env.AI_GLOBAL_DAILY_TOKENS = v;
+      assert.equal(globalDailyTokens(), want, `AI_GLOBAL_DAILY_TOKENS=${String(v)}`);
+    }
+    if (prev === undefined) delete process.env.AI_GLOBAL_DAILY_TOKENS;
+    else process.env.AI_GLOBAL_DAILY_TOKENS = prev;
+  }
   process.stdout.write('llm-client tests passed\n');
 }
 

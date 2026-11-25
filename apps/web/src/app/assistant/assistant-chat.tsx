@@ -9,7 +9,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaidOrders } from "@/lib/orders-store";
 import { Textarea } from "@/components/ui/textarea";
-import { agentRequest } from "@/lib/api";
+import { UpgradeRequiredError, agentRequest } from "@/lib/api";
+import { UpgradeCard } from "@/components/upgrade-card";
 import { CATEGORY_LABEL, formatSom, formatWhen } from "@/lib/format";
 import type { NegotiationTask } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function AssistantChat() {
   const { status: authStatus, user } = useAuth();
   const orders = usePaidOrders();
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export function AssistantChat() {
     if (!t || busy) return;
     setText("");
     setError(null);
+    setUpgrade(null);
     setMsgs((m) => [...m, { id: m.length, from: "me", text: t }]);
     setBusy(true);
     try {
@@ -64,7 +67,8 @@ export function AssistantChat() {
           : { id: m.length, from: "agent", text: "Tushunmadim. Nima kerakligini aniqroq ayting: masalan, \"Ertaga 6 kishilik osh joy band qil\"." },
       ]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Agent javob bermadi, qayta urinib ko'ring");
+      if (e instanceof UpgradeRequiredError) setUpgrade(e.message);
+      else setError(e instanceof Error ? e.message : "Agent javob bermadi, qayta urinib ko'ring");
       setText(t); // yozilganini yo'qotmaymiz
     } finally {
       setBusy(false);
@@ -200,6 +204,7 @@ export function AssistantChat() {
         <div ref={endRef} />
       </div>
 
+      {upgrade && <UpgradeCard message={upgrade} className="mb-2" />}
       {error && (
         <p role="alert" className="mb-2 text-sm text-destructive">
           {error}

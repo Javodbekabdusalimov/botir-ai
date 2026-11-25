@@ -1,15 +1,17 @@
-import { spawn } from 'node:child_process';
 import { query, type SDKMessage, type SDKRateLimitInfo, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
 import { currentBillingOwner, type BillingOwner } from '../../billing/billing-context';
+import { GlobalTokenBudget, llmTokens } from '../../billing/token-budget';
 import type { AgentStore } from '../store/agent-store';
 import type { AgentLogger } from '../logger';
 import { silentLogger } from '../logger';
 import type { LlmCallRecord, LlmErrorKind, LlmModel } from '../types';
+import { runCli, usageOf, parseCliRun, type AttemptResult, type CallUsage, type CliRun, type CliRunner } from './cli-run';
 import { classifyError, LlmError, looksLikeError, RETRYABLE } from './llm-error';
 import { envInt, FALLBACK_MODEL, resolveEffort, resolveModel, type LlmEffort } from './llm-policy';
 import { Semaphore } from './semaphore';
 
 export { LlmError, LLM_USER_ERROR } from './llm-error';
+export { parseCliRun, type CliRun, type CliRunner } from './cli-run';
 export { MODEL_POLICY, resolveEffort, resolveModel, type LlmEffort } from './llm-policy';
 
 export interface LlmAttachment {
@@ -34,14 +36,6 @@ export interface CompleteOutput {
 /** Seam for tests: the real SDK query() or a fake message stream. */
 export type SdkQuery = (params: Parameters<typeof query>[0]) => AsyncIterable<SDKMessage>;
 
-export interface CliRun {
-  code: number | null;
-  stdout: string;
-  stderr: string;
-  timedOut: boolean;
-}
-/** Seam for tests: spawns `claude -p` (real) or returns canned output. */
-export type CliRunner = (cmd: string, args: string[], stdin: string, timeoutMs: number) => Promise<CliRun>;
 
 export interface LlmClientOptions {
   store: AgentStore;
@@ -59,6 +53,8 @@ export interface LlmClientOptions {
   cliRunner?: CliRunner;
   /** Billing hook: called after every logged call that has token usage and a billing owner. Failures are swallowed. */
   onCost?: OnCost;
+  /** Daily cap on all Claude tokens (AI_GLOBAL_DAILY_TOKENS). Default: own in-memory counter. */
+  budget?: GlobalTokenBudget;
 }
 
 export type OnCost = (owner: BillingOwner, usage: { inputTokens?: number; outputTokens?: number; costUsd?: number }) => Promise<void> | void;
@@ -80,16 +76,9 @@ export interface AiStatus {
   rateLimits: RateLimitStatus[];
 }
 
-interface CallUsage {
-  inputTokens?: number;
-  outputTokens?: number;
-  costUsd?: number;
-}
 
-interface AttemptResult {
-  text: string;
-  usage: CallUsage;
-}
+/** Detail (logs only) of the fail-fast error once AI_GLOBAL_DAILY_TOKENS is used up; users see LLM_USER_ERROR. */
+export const GLOBAL_BUDGET_DETAIL = 'AI_GLOBAL_DAILY_TOKENS reached: no new AI calls until 00:00 Asia/Tashkent';
 
 const JSON_HINT =
   '\n\nJavobni FAQAT bitta JSON obyekt sifatida qaytar. Markdown, ``` yoki izoh yozma.';
@@ -114,6 +103,7 @@ export class LlmClient {
   private readonly sdkQuery: SdkQuery;
   private readonly cliRunner: CliRunner;
   private onCost: OnCost | undefined;
+  private readonly budget: GlobalTokenBudget;
   private last: { ok: boolean; kind?: LlmErrorKind; at: string } | undefined;
   private readonly rateLimits = new Map<string, RateLimitStatus>();
 
@@ -130,6 +120,17 @@ export class LlmClient {
     this.sdkQuery = opts.sdkQuery ?? query;
     this.cliRunner = opts.cliRunner ?? runCli;
     this.onCost = opts.onCost;
+    this.budget = opts.budget ?? new GlobalTokenBudget();
+  }
+
+  /** Startup seed of today's global token counter (BillingService reads today's LlmCall rows). */
+  seedGlobalTokens(tokens: number, now = new Date()): void {
+    this.budget.seed(tokens, now);
+  }
+
+  /** Today's Claude tokens of all calls vs AI_GLOBAL_DAILY_TOKENS (0 = no cap). */
+  globalTokens(now = new Date()): { used: number; cap: number } {
+    return this.budget.snapshot(now);
   }
 
   /** Late wiring (the Nest agents factory builds the client before BillingService exists). */
@@ -162,6 +163,12 @@ export class LlmClient {
     const model = resolveModel(input.purpose, input.model);
     const fallback = FALLBACK_MODEL[model];
     const plan: LlmModel[] = fallback ? [model, model, fallback] : [model, model];
+    // Fail fast before queueing: same typed error (kind 'limit', not retried) as a provider usage limit.
+    if (this.budget.exhausted()) {
+      const err = new LlmError('limit', GLOBAL_BUDGET_DETAIL);
+      await this.record(model, input, 0, 0, {}, err);
+      throw err;
+    }
 
     let release: () => void;
     try {
@@ -211,6 +218,7 @@ export class LlmClient {
       const cost = usage.costUsd !== undefined ? ` $${usage.costUsd.toFixed(4)}` : '';
       this.logger.log(`[llm] ${model} ${purpose} ${ms}ms ok=true${tokens}${cost}`);
     }
+    this.budget.add(llmTokens(usage));
     const owner = currentBillingOwner();
     const ownerCols = owner ? (owner.ownerType === 'business' ? { businessId: owner.ownerId } : { userId: owner.ownerId }) : {};
     const row: LlmCallRecord = { model, ms, chars, purpose, ok: !err, at, ...(err ? { errorKind: err.kind } : {}), ...usage, ...ownerCols };
@@ -305,76 +313,6 @@ export class LlmClient {
     return parseCliRun(run, this.timeoutMs);
   }
 }
-
-interface CliResult {
-  subtype?: string;
-  is_error?: boolean;
-  result?: unknown;
-  api_error_status?: number | null;
-  usage?: UsageLike;
-  total_cost_usd?: number;
-}
-
-/** `claude -p --output-format json` output → text, or the same typed LlmError as the SDK branch. */
-export function parseCliRun(run: CliRun, timeoutMs: number): AttemptResult {
-  if (run.timedOut) throw new LlmError('timeout', `claude -p: no answer in ${timeoutMs}ms`);
-  let parsed: CliResult | undefined;
-  try {
-    parsed = JSON.parse(run.stdout) as CliResult;
-  } catch {
-    parsed = undefined;
-  }
-  if (!parsed || typeof parsed !== 'object') {
-    const raw = `${run.stderr} ${run.stdout}`.trim().slice(0, 300);
-    throw new LlmError(classifyError({ text: raw }), `claude -p exit ${run.code}: ${raw}`);
-  }
-  const text = typeof parsed.result === 'string' ? parsed.result : '';
-  if (run.code !== 0 || parsed.is_error || typeof parsed.result !== 'string' || looksLikeError(text)) {
-    const raw = text || run.stderr;
-    throw new LlmError(classifyError({ text: raw, status: parsed.api_error_status }), `claude -p ${parsed.subtype ?? ''} exit ${run.code}: ${raw.slice(0, 300)}`);
-  }
-  return { text, usage: usageOf(parsed) };
-}
-
-interface UsageLike {
-  input_tokens?: number;
-  output_tokens?: number;
-  cache_read_input_tokens?: number | null;
-  cache_creation_input_tokens?: number | null;
-}
-
-/** inputTokens = fresh + cache read + cache write; outputTokens include thinking. */
-function usageOf(r: { usage?: UsageLike; total_cost_usd?: number }): CallUsage {
-  const n = (v: number | null | undefined): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
-  const u = r.usage;
-  return {
-    ...(u ? { inputTokens: n(u.input_tokens) + n(u.cache_read_input_tokens) + n(u.cache_creation_input_tokens), outputTokens: n(u.output_tokens) } : {}),
-    ...(typeof r.total_cost_usd === 'number' ? { costUsd: r.total_cost_usd } : {}),
-  };
-}
-
-const runCli: CliRunner = (cmd, args, stdin, timeoutMs) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { stdio: ['pipe', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill('SIGTERM');
-    }, timeoutMs);
-    child.stdout.on('data', (d: Buffer) => (stdout += d.toString()));
-    child.stderr.on('data', (d: Buffer) => (stderr += d.toString()));
-    child.on('error', (e) => {
-      clearTimeout(timer);
-      reject(e);
-    });
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      resolve({ code, stdout, stderr, timedOut });
-    });
-    child.stdin.end(stdin);
-  });
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 

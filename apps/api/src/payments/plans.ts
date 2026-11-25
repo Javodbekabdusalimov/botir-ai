@@ -19,22 +19,20 @@ export const isPaidPlan = (v: unknown): v is PaidPlan => v === 'pro' || v === 'm
 // Price = worst-case monthly AI cost (every token used every day) + 40%, at ~12 000 so'm per $:
 //   PRO: 100 000/day x 30 = 3M tokens = ~$4.84 -> ~58 000 so'm x 1.4 = ~81 300 -> 82 000 so'm   (PLAN_PRO_PRICE)  ~2 negotiations/day
 //   MAX: 200 000/day x 30 = 6M tokens = ~$9.68 -> ~116 000 so'm x 1.4 = ~162 600 -> 163 000 so'm (PLAN_MAX_PRICE)  ~4-5 negotiations/day
-// The first PRO month per account costs PLAN_PRO_INTRO_PRICE (1 000 so'm, TezCheck minimum).
+// The first paid month of ANY plan (Pro or Max), once per account, costs PLAN_INTRO_PRICE (1 000 so'm, TezCheck minimum).
 export const dailyTokens = (plan: EffectivePlan): number =>
   plan === 'pro' ? envInt('PLAN_PRO_DAILY_TOKENS', 100000) : plan === 'max' ? envInt('PLAN_MAX_DAILY_TOKENS', 200000) : 0;
 
-export const maxPrice = (): number => envInt('PLAN_MAX_PRICE', 163000);
+/** First paid month of any plan, once per account. PLAN_PRO_INTRO_PRICE = legacy alias. 1 000 = TezCheck minimum. */
+export const introPrice = (): number => envInt('PLAN_INTRO_PRICE', envInt('PLAN_PRO_INTRO_PRICE', 1000));
 
-/** Pro: the first paid month costs `intro` (once per account), every next 30 days cost `full`. */
-export const proPrices = (): { intro: number; full: number } => ({
-  intro: envInt('PLAN_PRO_INTRO_PRICE', 1000), // TezCheck minimum
-  full: envInt('PLAN_PRO_PRICE', 82000),
-});
+/** Every next 30 days. */
+export const fullPrice = (plan: PaidPlan): number => (plan === 'max' ? envInt('PLAN_MAX_PRICE', 163000) : envInt('PLAN_PRO_PRICE', 82000));
 
 export const plans = (): Plan[] => [
   { id: 'free', name: 'Free', price: 0, aiCredits: envInt('PLAN_START_CREDITS', 100), dailyTokens: 0, periodDays: PLAN_PERIOD_DAYS },
-  { id: 'pro', name: 'Pro', price: proPrices().full, introPrice: proPrices().intro, aiCredits: envInt('PLAN_PRO_CREDITS', 1000), dailyTokens: dailyTokens('pro'), periodDays: PLAN_PERIOD_DAYS },
-  { id: 'max', name: 'Max', price: maxPrice(), aiCredits: envInt('PLAN_PRO_CREDITS', 1000), dailyTokens: dailyTokens('max'), periodDays: PLAN_PERIOD_DAYS },
+  { id: 'pro', name: 'Pro', price: fullPrice('pro'), introPrice: introPrice(), aiCredits: envInt('PLAN_PRO_CREDITS', 1000), dailyTokens: dailyTokens('pro'), periodDays: PLAN_PERIOD_DAYS },
+  { id: 'max', name: 'Max', price: fullPrice('max'), introPrice: introPrice(), aiCredits: envInt('PLAN_PRO_CREDITS', 1000), dailyTokens: dailyTokens('max'), periodDays: PLAN_PERIOD_DAYS },
 ];
 
 /** 'start' is the legacy alias of 'free'. */
@@ -44,12 +42,10 @@ export const planById = (id: PlanId): Plan | undefined => plans().find((p) => p.
 export const effectivePlan = (b: Pick<DbBusiness, 'plan' | 'planUntil'>, now = new Date()): PlanId =>
   b.plan === 'pro' && b.planUntil != null && b.planUntil > now ? 'pro' : 'free';
 
-/**
- * `paidSubscriptions` = paid Pro months of this business in the current payment mode (real TezCheck, or TEST links when
- * TEZCHECK_API_KEY is unset), so a TEST payment never uses up the real intro price.
- */
+/** `paidSubscriptions` = real (non-TEST) paid subscriptions of this business, any plan: a TEST payment never uses up the intro price. */
 export function planStatus(b: Pick<DbBusiness, 'plan' | 'planUntil'>, paidSubscriptions: number, now = new Date()): BusinessPlanStatus {
-  const { intro, full } = proPrices();
+  const intro = introPrice();
+  const full = fullPrice('pro');
   const introAvailable = paidSubscriptions === 0;
   return {
     plan: effectivePlan(b, now),

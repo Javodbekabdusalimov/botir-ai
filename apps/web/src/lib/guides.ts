@@ -1,4 +1,4 @@
-import { BUSINESS_PRICE_COPY, FAQ, MAX_ROUNDS_COPY, PRO_PRICE_COPY, type FaqItem } from "./landing-content";
+import { FAQ, FREE_COPY, MAX_PRICE_COPY, MAX_ROUNDS_COPY, MAX_TOKENS_COPY, PAYMENTS_COPY, PLANS_COPY, PRO_PRICE_COPY, PRO_TOKENS_COPY, type FaqItem } from "./landing-content";
 import { SITE_NAME, SITE_URL } from "./seo";
 import { INTENT_GUIDES } from "./guides-intent";
 
@@ -68,7 +68,7 @@ export const GUIDES: Guide[] = [
     title: "Telegram uchun AI sotuvchi: o'zbekcha, darhol javob",
     h1: "Telegram uchun AI sotuvchi: mijozlarga o'zbek tilida darhol javob",
     description: "Life Assistant: Telegram mijozlariga o'zbek tilida darhol javob qoralamasini tayyorlaydigan AI sotuvchi. Narx katalogdan, chegirma limitda, buyurtma sizning tasdig'ingiz bilan.",
-    answer: "Life Assistant: Telegram akkauntingizga ulanadigan AI sotuvchi, u Telegram xabariga darhol javob qoralamasini tayyorlaydi (autopilot rejimida ish vaqtida o'zi javob beradi), narxni faqat katalogingizdan aytadi va chegirmani siz belgilagan limitdan oshirmaydi. Start tarifi bepul, Pro " + PRO_PRICE_COPY + ", hech qaysi tarifda komissiya yo'q.",
+    answer: "Life Assistant: Telegram akkauntingizga ulanadigan AI sotuvchi, u Telegram xabariga darhol javob qoralamasini tayyorlaydi (autopilot rejimida ish vaqtida o'zi javob beradi), narxni faqat katalogingizdan aytadi va chegirmani siz belgilagan limitdan oshirmaydi. Telegram ulash Pro va Max tariflarida: Pro " + PRO_PRICE_COPY + ", hech qaysi tarifda komissiya yo'q.",
     sections: [
       {
         h: "AI sotuvchi qaysi bizneslarga mos?",
@@ -85,7 +85,7 @@ export const GUIDES: Guide[] = [
       },
       {
         h: "To'lov qanday qabul qilinadi?",
-        p: ["To'lov TezCheck orqali Payme, Click yoki Uzum havolasi bilan qabul qilinadi Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi. Havola faqat mijoz yakuniy taklifni tasdiqlagandan keyin yuboriladi."],
+        p: ["To'lov TezCheck orqali Payme, Click yoki Uzum havolasi bilan qabul qilinadi. " + PAYMENTS_COPY + " Havola faqat mijoz yakuniy taklifni tasdiqlagandan keyin yuboriladi."],
       },
     ],
     faq: [FAQ[4], FAQ[5], FAQ[7]],
@@ -94,22 +94,25 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "narxlar",
-    title: "Narxlar: Start bepul, Pro " + PRO_PRICE_COPY,
+    title: "Narxlar: Free bepul, Pro va Max 1-oy 1 000 so'm",
     h1: "Life Assistant narxlari",
-    description: `Life Assistant narxi: Start tarifi bepul, Pro ${PRO_PRICE_COPY}, komissiya yo'q. Mijozlar uchun shaxsiy yordamchi bepul.`,
-    answer: `Life Assistant Start tarifi bepul, Biznes ${BUSINESS_PRICE_COPY} (tez orada), Pro ${PRO_PRICE_COPY}. Hech qaysi tarifda komissiya yo'q. Mijozlar uchun shaxsiy AI yordamchi butunlay bepul.`,
+    description: `Life Assistant narxi: ${FREE_COPY}, Pro ${PRO_PRICE_COPY}, Max ${MAX_PRICE_COPY}. Komissiya yo'q.`,
+    answer: `Life Assistant narxlari: ${PLANS_COPY}. Hech qaysi tarifda komissiya yo'q. Mijozlar ham, bizneslar ham shu tariflardan foydalanadi.`,
     sections: [
       {
-        h: "Start tarifida nima bor?",
-        p: ["Start tarifi bepul va boshlash uchun yetarli: 1 ta biznes agenti, katalog yuklash (Excel/CSV), Telegram ulash va agentlar muzokarasi."],
+        h: "Free tarifida nima bor?",
+        p: [`${FREE_COPY}: joylar, narx va reytingni topib solishtiradi. Biznes katalogini (Excel/CSV) yuklash ham bepul.`],
       },
       {
-        h: "Pro tarifi nima qo'shadi?",
-        p: [`Pro tarifi: ${PRO_PRICE_COPY}. Qo'shimcha: analitika va buyurtmalar paneli, agentni yaxshilash takliflari (o'zgarishni siz tasdiqlaysiz). Biznes tarifi (${BUSINESS_PRICE_COPY}) tez orada.`],
+        h: "Pro va Max nima beradi?",
+        p: [
+          `Pro: ${PRO_PRICE_COPY}, ${PRO_TOKENS_COPY}. Agent siz uchun savdolashadi, buyurtma beradi, Telegram akkauntingizni ulash mumkin.`,
+          `Max: ${MAX_PRICE_COPY}, ${MAX_TOKENS_COPY}: Pro'dagi hammasi, 2 baravar ko'p token. Tokenlar har kuni 00:00 da (Toshkent) yangilanadi. Birinchi to'langan oy har akkauntga bir marta 1 000 so'm.`,
+        ],
       },
       {
         h: "Yashirin to'lovlar bormi?",
-        p: ["Yo'q: hech qaysi tarifda sotuvdan foiz yoki komissiya olinmaydi. To'lov TezCheck orqali qabul qilinadi. Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi."],
+        p: ["Yo'q: hech qaysi tarifda sotuvdan foiz yoki komissiya olinmaydi. To'lov TezCheck orqali qabul qilinadi (Payme, Click, Uzum). " + PAYMENTS_COPY],
       },
     ],
     faq: [FAQ[6], FAQ[3]],

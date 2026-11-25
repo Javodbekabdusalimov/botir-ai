@@ -15,7 +15,8 @@ export function guideMeta(slug: string): Metadata {
 }
 
 /** Ommaviy qo'llanma sahifasi: breadcrumb, qisqa javob (TL;DR), savol-sarlavhali bo'limlar, FAQ, ichki havolalar. */
-export function GuidePage({ slug }: { slug: string }) {
+/** `children`: sahifaga xos interaktiv blok (masalan /narxlar sotib olish tugmalari), qisqa javobdan keyin. */
+export function GuidePage({ slug, children }: { slug: string; children?: React.ReactNode }) {
   const g = getGuide(slug);
   if (!g) notFound();
   const related = GUIDES.filter((x) => x.slug !== g.slug);
@@ -37,6 +38,8 @@ export function GuidePage({ slug }: { slug: string }) {
           <p className="text-xs font-bold uppercase tracking-wide text-green-800">Qisqa javob</p>
           <p className="mt-2 leading-relaxed">{g.answer}</p>
         </section>
+
+        {children}
 
         {g.steps && (
           <section aria-labelledby="steps-h" className="mt-10">

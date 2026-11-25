@@ -1,4 +1,4 @@
-import { MAX_ROUNDS_COPY, PRO_PRICE_COPY, type FaqItem } from "./landing-content";
+import { FREE_COPY, MAX_ROUNDS_COPY, PRO_PRICE_COPY, type FaqItem } from "./landing-content";
 import type { Guide } from "./guides";
 
 /**
@@ -14,7 +14,7 @@ const AUTOMATION_FAQ: FaqItem[] = [
   },
   {
     q: "Biznes avtomatlashtirish qancha turadi?",
-    a: `Life Assistant'da Start tarifi bepul, Pro ${PRO_PRICE_COPY}, sotuvdan komissiya olinmaydi. Dasturchi yollash yoki alohida CRM sotib olish shart emas: katalog va Telegram yetarli.`,
+    a: `Life Assistant'da ${FREE_COPY}, Pro ${PRO_PRICE_COPY}, sotuvdan komissiya olinmaydi. Dasturchi yollash yoki alohida CRM sotib olish shart emas: katalog va Telegram yetarli.`,
   },
   {
     q: "AI xato narx aytib qo'ymaydimi?",
@@ -29,7 +29,7 @@ const CHEAP_FAQ: FaqItem[] = [
   },
   {
     q: "Narxlarni solishtirish bepulmi?",
-    a: "Ha, mijozlar uchun AI yordamchi butunlay bepul. To'lov faqat siz tanlagan taklifni tasdiqlaganingizdan keyin, TezCheck orqali (Payme, Click, Uzum) amalga oshiriladi.",
+    a: `Ha, ${FREE_COPY}. Agent siz uchun savdolashishi va buyurtma berishi Pro tarifida (${PRO_PRICE_COPY}). To'lov faqat siz tanlagan taklifni tasdiqlaganingizdan keyin, TezCheck orqali (Payme, Click, Uzum) amalga oshiriladi.`,
   },
   {
     q: "Chegirma olish mumkinmi?",
@@ -57,8 +57,8 @@ export const INTENT_GUIDES: Guide[] = [
     slug: "biznes-avtomatlashtirish",
     title: "Biznesni avtomatlashtirish: AI sotuvchi va Telegram",
     h1: "Biznesni avtomatlashtirish: AI sotuvchi bilan",
-    description: "Kichik biznesni avtomatlashtirish: AI sotuvchi Telegram mijozlariga katalog asosida javob beradi, buyurtmani tasdiqlashga olib keladi. Start bepul, komissiya yo'q.",
-    answer: `Life Assistant kichik biznesni avtomatlashtiradi: katalogni yuklaysiz, Telegram'ni ulaysiz, AI sotuvchi mijoz savollariga katalog asosida o'zbekcha javob tayyorlaydi, narx bo'yicha kelishadi va buyurtmani sizning tasdig'ingizga olib keladi. Start bepul, Pro ${PRO_PRICE_COPY}, komissiya yo'q.`,
+    description: "Kichik biznesni avtomatlashtirish: AI sotuvchi Telegram mijozlariga katalog asosida javob beradi, buyurtmani tasdiqlashga olib keladi. Free bepul, komissiya yo'q.",
+    answer: `Life Assistant kichik biznesni avtomatlashtiradi: katalogni yuklaysiz, Telegram'ni ulaysiz, AI sotuvchi mijoz savollariga katalog asosida o'zbekcha javob tayyorlaydi, narx bo'yicha kelishadi va buyurtmani sizning tasdig'ingizga olib keladi. Free bepul, Pro ${PRO_PRICE_COPY}, komissiya yo'q.`,
     sections: [
       {
         h: "Qaysi ishlar avtomatlashadi?",
@@ -82,8 +82,8 @@ export const INTENT_GUIDES: Guide[] = [
     slug: "arzon-narx-topish",
     title: "Arzon narxlarni topish: AI narx solishtiradi va kelishadi",
     h1: "Arzon narxlarni qanday topish mumkin?",
-    description: "Arzon narxlarni topish: AI yordamchi joylarni topadi, narx, reyting va masofani solishtiradi, siz uchun savdolashadi. Mijozlar uchun bepul.",
-    answer: `Arzon narxni topish uchun Life Assistant'ga nima kerakligini yozing: AI yordamchi mos joylarni topadi, narx, reyting va masofani solishtiradi, har biri bilan ko'pi bilan ${MAX_ROUNDS_COPY} raund kelishadi va eng arzon taklifni ko'rsatadi. Mijozlar uchun bepul, to'lov faqat tasdiqdan keyin.`,
+    description: "Arzon narxlarni topish: AI yordamchi joylarni topadi, narx, reyting va masofani solishtiradi, siz uchun savdolashadi. Qidiruv kuniga 3 ta bepul.",
+    answer: `Arzon narxni topish uchun Life Assistant'ga nima kerakligini yozing: AI yordamchi mos joylarni topadi, narx, reyting va masofani solishtiradi, har biri bilan ko'pi bilan ${MAX_ROUNDS_COPY} raund kelishadi va eng arzon taklifni ko'rsatadi. ${FREE_COPY}; savdolashish Pro tarifida, to'lov faqat tasdiqdan keyin.`,
     sections: [
       {
         h: "AI narxlarni qanday solishtiradi?",
@@ -108,7 +108,7 @@ export const INTENT_GUIDES: Guide[] = [
     title: "AI yordamchi o'zbek tilida: joy band qiladi, narx topadi",
     h1: "O'zbek tilidagi AI yordamchi",
     description: "O'zbek tilidagi AI yordamchi: joy band qiladi, narx va reytingni solishtiradi, biznes bilan siz uchun kelishadi. Bepul, to'lov faqat tasdiqdan keyin.",
-    answer: "Life Assistant: o'zbek tilidagi bepul AI yordamchi. Unga oddiy so'z bilan yozasiz, masalan \"bugun mashinamni servisga olib borishim kerak\", u mos joylarni topadi, narx, reyting va egasini ko'rsatadi, siz uchun kelishadi va to'lov havolasini tayyorlaydi. Pul faqat sizning tasdig'ingizdan keyin.",
+    answer: "Life Assistant: o'zbek tilidagi AI yordamchi (Free tarifi bepul). Unga oddiy so'z bilan yozasiz, masalan \"bugun mashinamni servisga olib borishim kerak\", u mos joylarni topadi, narx, reyting va egasini ko'rsatadi, siz uchun kelishadi va to'lov havolasini tayyorlaydi. Pul faqat sizning tasdig'ingizdan keyin.",
     sections: [
       {
         h: "AI yordamchiga nima deb yozish mumkin?",

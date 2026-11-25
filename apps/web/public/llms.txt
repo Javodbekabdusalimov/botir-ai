@@ -10,8 +10,8 @@
 - Muzokara ko'pi bilan 3 raund: so'rov, taklif, qarshi taklif, bitim.
 - Narx faqat katalogdan olinadi, chegirma biznes belgilagan limitdan oshmaydi (PolicyGuard).
 - Pul faqat inson "Tasdiqlayman" bosgandan keyin, TezCheck orqali (Payme, Click, Uzum). Faqat kirim to'lovlari.
-- Narx: Start bepul, Biznes 199 000 so'm/oy (tez orada), Pro 1-oy 1 000 so'm, keyin 499 000 so'm/oy. Hech qaysi tarifda komissiya yo'q.
-- To'lov TezCheck orqali. Hozir pilot: to'lovlar Life Assistant kassasiga tushadi, biznes bilan hisob-kitob alohida kelishiladi.
+- Narx: Free bepul (kuniga 3 ta qidiruv); Pro 82 000 so'm/oy (100 000 token/kun); Max 163 000 so'm/oy (200 000 token/kun). Pro va Max uchun 1-oy 1 000 so'm (har akkauntga bir marta). Hech qaysi tarifda komissiya yo'q.
+- To'lov TezCheck orqali. Obuna (Pro/Max) to'lovlari Life Assistant'ga tushadi. Buyurtma to'lovlari hozirgi versiyada TEST rejimida: haqiqiy pul yechilmaydi.
 
 ## Sahifalar
 - [Bosh sahifa](/): mahsulot haqida, savol-javob
@@ -20,7 +20,7 @@
 - [Biznesni avtomatlashtirish](/biznes-avtomatlashtirish): AI sotuvchi Telegram'da, katalog asosida javob, buyurtma tasdiqqa
 - [Arzon narxlarni topish](/arzon-narx-topish): AI joylarni topadi, narx/reyting/masofani solishtiradi, savdolashadi
 - [AI yordamchi o'zbek tilida](/ai-yordamchi): joy band qiladi, narx topadi, siz uchun kelishadi
-- [Narxlar](/narxlar): Start bepul, Pro 1-oy 1 000 so'm
+- [Narxlar](/narxlar): Free bepul, Pro 82 000 va Max 163 000 so'm/oy, 1-oy 1 000 so'm
 - [Savol-javob](/savol-javob): barcha savollar
 - [To'liq matn](/llms-full.txt): barcha ommaviy sahifalar bitta faylda
 - [Shaxsiy yordamchi](/assistant)

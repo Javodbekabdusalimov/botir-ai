@@ -1,7 +1,12 @@
+import { BuyPlans } from "@/components/buy-plans";
 import { GuidePage, guideMeta } from "@/components/guide-page";
 
 export const metadata = guideMeta("narxlar");
 
 export default function Page() {
-  return <GuidePage slug="narxlar" />;
+  return (
+    <GuidePage slug="narxlar">
+      <BuyPlans />
+    </GuidePage>
+  );
 }

@@ -50,7 +50,7 @@ export function InboxView() {
   if (chats.error || !list) return <ErrorBox message={chats.error ?? "Ma'lumot yo'q"} onRetry={chats.reload} />;
   if (!list.length)
     return (
-      <div className="grid place-items-center rounded-3xl border border-dashed border-tint-3 bg-gradient-to-b from-tint-1 to-card px-6 py-14 text-center">
+      <div className="grid place-items-center rounded-2xl border border-dashed border-tint-3 bg-gradient-to-b from-tint-1 to-card px-6 py-14 text-center">
         <span className="grid size-14 place-items-center rounded-2xl bg-white shadow-soft"><BrandLogo brand="telegram" height={30} /></span>
         <h2 className="mt-4 font-sans text-lg font-extrabold">Hali yozishmalar yo&apos;q</h2>
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">Telegram akkauntingizni ulang: mijoz xabarlari, AI qoralamalari va ovozli xabarlar shu yerda Telegram kabi ko&apos;rinadi.</p>
@@ -67,7 +67,7 @@ export function InboxView() {
   const visible = filter === "human" ? sorted.filter((c) => c.needsHuman) : sorted;
 
   return (
-    <div className="grid h-[calc(100dvh-14rem)] min-h-[30rem] gap-4 md:grid-cols-[20rem_1fr]">
+    <div className="grid h-[calc(100dvh-14rem)] sm:h-[calc(100dvh-17rem)] min-h-[30rem] gap-4 md:grid-cols-[20rem_1fr]">
       <div className={cn("min-h-0 overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-soft", current && "hidden md:block")}>
         {urgent > 0 && (
           <p className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="status">

@@ -209,7 +209,7 @@ export function BotirChat({ businessName, className, chips = CHIPS }: { business
           {error}
         </p>
       )}
-      <div className="shrink-0 border-t border-border bg-card/90 px-3 pb-3 pt-2 backdrop-blur sm:px-4">
+      <div className="shrink-0 border-t border-border bg-card/90 px-3 pb-3 pt-2 sm:px-4">
         <div className="mb-2 flex gap-2 overflow-x-auto pb-1" aria-label="Tezkor javoblar">
           {chips.map((c) => (
             <button key={c} type="button" onClick={() => void send(c)} disabled={busy} className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-tint-3 bg-tint-1 px-3 text-[13px] font-medium text-green-900 transition-colors hover:bg-tint-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ring">

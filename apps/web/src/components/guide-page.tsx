@@ -44,7 +44,7 @@ export function GuidePage({ slug }: { slug: string }) {
             <ol className="mt-4 space-y-3">
               {g.steps.map((s, i) => (
                 <li key={s.name} id={`qadam-${i + 1}`} className="flex gap-4 rounded-2xl border border-border bg-card p-4 shadow-soft">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary font-bold text-green-950" aria-hidden="true">{i + 1}</span>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary font-bold text-white" aria-hidden="true">{i + 1}</span>
                   <div>
                     <h3 className="font-sans text-base font-semibold tracking-normal">{s.name}</h3>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{s.text}</p>

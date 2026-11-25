@@ -11,7 +11,7 @@ export function TestAgent() {
   const name = list.data?.find((b) => b.id === id)?.name;
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <section aria-label="Agentni sinash" className="flex h-[min(42rem,calc(100dvh-14rem))] min-h-[28rem] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <section aria-label="Agentni sinash" className="flex h-[min(42rem,calc(100dvh-14rem))] sm:h-[min(42rem,calc(100dvh-17rem))] min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         <header className="flex items-center gap-3 border-b border-border px-4 py-3">
           <span className="grid size-10 place-items-center rounded-full bg-green-600 text-sm font-bold text-white">AI</span>
           <div className="min-w-0">

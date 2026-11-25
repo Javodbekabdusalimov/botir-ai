@@ -36,7 +36,7 @@ function BizSelect({ list, current }: { list: Business[]; current?: Business }) 
   // Egasi faqat o'z biznesini ko'radi (API boshqasiga 403 beradi): tanlov kerak emas.
   if (list.length <= 1)
     return (
-      <span className="flex h-10 w-full items-center rounded-xl border border-white/30 bg-white/15 px-3 text-sm font-semibold text-white backdrop-blur-md sm:w-60">
+      <span className="flex h-10 w-full items-center rounded-xl border border-white/30 bg-white/15 px-3 text-sm font-semibold text-white sm:w-60">
         <span className="min-w-0 flex-1 truncate">{current?.name ?? "Mening biznesim"}</span>
       </span>
     );
@@ -48,7 +48,7 @@ function BizSelect({ list, current }: { list: Business[]; current?: Business }) 
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
-        className="flex h-10 w-full items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white sm:w-60"
+        className="flex h-10 w-full items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-3 text-sm font-semibold text-white transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white sm:w-60"
       >
         <span className="min-w-0 flex-1 truncate text-left">{current?.name ?? "Biznesni tanlang"}</span>
         <ChevronDown className={cn("size-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden="true" />
@@ -77,7 +77,7 @@ function BizSelect({ list, current }: { list: Business[]; current?: Business }) 
   );
 }
 
-const glass = "flex h-10 items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-3.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white";
+const glass = "flex h-10 items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
@@ -110,7 +110,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : (
-        <section className="relative isolate overflow-hidden rounded-3xl bg-green-800 shadow-lift">
+        <section className="relative isolate overflow-hidden rounded-2xl bg-green-800 shadow-lift">
           <Image src={bizPhoto(id)} alt="" fill priority sizes="(min-width: 1200px) 1168px, 100vw" className="-z-20 object-cover" />
           <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-green-950/85 via-green-800/55 to-emerald-400/10" aria-hidden="true" />
           <div className="flex min-h-[19rem] flex-col justify-between gap-8 p-5 sm:min-h-[20rem] sm:p-8">
@@ -119,7 +119,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-3 text-xs font-bold text-green-900">
                   <span className="size-2 animate-pulse rounded-full bg-green-500 motion-reduce:animate-none" /> Agent faol
                 </span>
-                <span className={cn("flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold", plan === "pro" ? "bg-amber-300 text-amber-950" : "bg-white/20 text-white backdrop-blur-md")}>
+                <span className={cn("flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold", plan === "pro" ? "bg-amber-300 text-amber-950" : "bg-white/20 text-white")}>
                   <Crown className="size-3.5" aria-hidden="true" /> {plan === "pro" ? "Pro" : "Start"} tarif
                 </span>
               </div>
@@ -133,9 +133,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <h1 className="text-balance font-display text-2xl font-extrabold leading-tight text-white sm:text-4xl">{name ?? <span className="inline-block h-9 w-64 animate-pulse rounded-lg bg-white/20" />}</h1>
                   {current && (
                     <ul className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-white">
-                      <li className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-md">{CATEGORY_LABEL[current.category] ?? current.category}</li>
-                      <li className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-md"><MapPin className="size-3" aria-hidden="true" /> {current.district}</li>
-                      <li className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-md"><Clock className="size-3" aria-hidden="true" /> {hours(current)}</li>
+                      <li className="rounded-full bg-white/20 px-2.5 py-1">{CATEGORY_LABEL[current.category] ?? current.category}</li>
+                      <li className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1"><MapPin className="size-3" aria-hidden="true" /> {current.district}</li>
+                      <li className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1"><Clock className="size-3" aria-hidden="true" /> {hours(current)}</li>
                     </ul>
                   )}
                 </div>

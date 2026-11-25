@@ -6,7 +6,7 @@ import { LogoMark } from "@/components/logo";
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto grid max-w-5xl items-stretch gap-8 px-4 py-8 sm:py-14 lg:grid-cols-[1fr_26rem] lg:gap-10">
-      <aside className="relative isolate hidden min-h-[30rem] flex-col justify-between overflow-hidden rounded-3xl p-8 text-white lg:flex">
+      <aside className="relative isolate hidden min-h-[30rem] flex-col justify-between overflow-hidden rounded-2xl p-8 text-white lg:flex">
         <Image src="/photos/plov.jpg" alt="Osh markazida oshpaz katta qozonda osh tayyorlamoqda" fill sizes="520px" priority className="-z-10 object-cover" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-green-950/95 via-green-950/60 to-green-900/30" aria-hidden="true" />
         <LogoMark className="size-11 rounded-xl bg-white/90 p-1.5" />
@@ -29,7 +29,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           </ul>
         </div>
       </aside>
-      <div className="rounded-3xl border border-border bg-card p-5 shadow-lift sm:p-8">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-lift sm:p-8">
         <h1 className="font-display text-3xl font-extrabold">{title}</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
         <div className="mt-6">{children}</div>

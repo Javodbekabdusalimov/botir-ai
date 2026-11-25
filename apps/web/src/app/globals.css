@@ -62,21 +62,21 @@
 
 
 :root {
-  /* Botir AI: yorug' tema. Asosiy = yashil (green-500/600/700), mijoz agenti = yashil, biznes agenti = qahrabo (amber). */
+  /* Botir AI: TezDetal UI tizimi (oq yuza, brend yashili #16a34a, Inter, ikki qatlamli soya). Asosiy = yashil (green-500/600/700), mijoz agenti = yashil, biznes agenti = qahrabo (amber). */
   --ink: #171717;
-  --background: #fafafa;
+  --background: #ffffff;
   --foreground: #171717;
   --card: #ffffff;
   --card-foreground: #171717;
   --popover: #ffffff;
   --popover-foreground: #171717;
-  --primary: #22c55e;
-  --primary-strong: #16a34a;
-  --primary-foreground: #052e16;
+  --primary: #16a34a;
+  --primary-strong: #15803d;
+  --primary-foreground: #ffffff;
   --secondary: #f0fdf4;
   --secondary-foreground: #14532d;
   --muted: #f5f5f5;
-  --muted-foreground: #5c5c5c;
+  --muted-foreground: #737373;
   --accent: #dcfce7;
   --accent-foreground: #14532d;
   --destructive: #dc2626;
@@ -95,13 +95,13 @@
   --chart-3: #16a34a;
   --chart-4: #a3a3a3;
   --chart-5: #dc2626;
-  --radius: 0.875rem;
-  --elev-soft: 0 1px 2px rgb(23 23 23 / 0.04), 0 8px 24px -8px rgb(23 23 23 / 0.08);
-  --elev-lift: 0 2px 4px rgb(23 23 23 / 0.04), 0 24px 48px -16px rgb(21 128 61 / 0.22);
+  --radius: 0.75rem;
+  --elev-soft: 0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06);
+  --elev-lift: 0 4px 8px rgba(16,24,40,0.05), 0 12px 24px rgba(16,24,40,0.09);
   --sidebar: #ffffff;
   --sidebar-foreground: #171717;
-  --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #052e16;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f0fdf4;
   --sidebar-accent-foreground: #14532d;
   --sidebar-border: #e5e5e5;
@@ -115,18 +115,15 @@
   }
   html {
     @apply font-sans;
+    font-size: clamp(14.5px, calc(0.625vw + 7.5px), 16px);
     scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(60rem 28rem at 85% -10%, rgb(34 197 94 / 0.10), transparent 60%),
-      radial-gradient(50rem 26rem at -10% 15%, rgb(187 247 208 / 0.35), transparent 60%);
-    background-attachment: fixed;
   }
   h1, h2, h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     font-weight: 700;
   }
 }
@@ -136,26 +133,16 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --green-deep: #052e16;
   --green-mid: #14532d;
-  --elev-glass: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 2px rgb(23 23 23 / 0.04), 0 12px 32px -12px rgb(21 128 61 / 0.18);
+  --elev-glass: 0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06);
 }
 
 /* Nozik donador tekstura: faqat qo'zg'almas, pointer-events yo'q qatlamda (scroll konteynerda emas) */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
 
 /* Oynasimon (glass) yuza: shaffoflik kamaytirilganda to'q fon */
+/* TezDetal: oynasimon emas — tekis oq karta, ingichka chegara, ikki qatlamli soya */
 .glass {
-  background: rgb(255 255 255 / 0.72);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgb(255 255 255 / 0.8);
+  background: #fff;
+  border: 1px solid var(--border);
   box-shadow: var(--elev-glass);
 }
 @media (prefers-reduced-transparency: reduce) {
@@ -163,16 +150,14 @@ body::before {
 }
 
 /* To'q yashil sahna: stats, CTA va /live arena uchun */
+/* TezDetal: tekis brend yashili blok (yog'du/qahrabo dog'larsiz) */
 .stage-deep {
-  background:
-    radial-gradient(40rem 20rem at 85% -20%, rgb(34 197 94 / 0.35), transparent 60%),
-    radial-gradient(30rem 18rem at 0% 110%, rgb(245 158 11 / 0.16), transparent 60%),
-    linear-gradient(160deg, #14532d 0%, #052e16 100%);
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
   color: #f0fdf4;
 }
 
 /* Gradient matn: faqat bitta so'zda, yashil oralig'ida */
-.text-grad { background: linear-gradient(100deg, #15803d 0%, #22c55e 55%, #15803d 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.text-grad { color: #12652f; }
 
 /* Kartochka: ko'rsatkich ostida yashil yog'du va ko'tarilish (faqat hover qurilmalarda) */
 @media (hover: hover) and (pointer: fine) {
@@ -199,9 +184,7 @@ body::before {
 /* Marquee yo'q: integratsiyalar qatori statik; faqat bitta sekin gorizontal harakat ishlatilmaydi */
 
 /* Khatam (sakkiz qirrali yulduz) naqshi: past shaffoflikda */
-.khatam {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%2316a34a' stroke-opacity='.09' stroke-width='1'%3E%3Crect x='14' y='14' width='28' height='28'/%3E%3Crect x='14' y='14' width='28' height='28' transform='rotate(45 28 28)'/%3E%3C/g%3E%3C/svg%3E");
-}
+.khatam { background-color: #f8fdf9; }
 
 @keyframes dash-flow { to { stroke-dashoffset: -24; } }
 .flow-line { stroke-dasharray: 4 8; animation: dash-flow 1.6s linear infinite; }
@@ -270,3 +253,10 @@ body::before {
 .range-green::-moz-range-thumb { width: 18px; height: 18px; border-radius: 999px; background: #fff; border: 2px solid #16a34a; }
 .range-green:focus-visible { outline: none; }
 .range-green:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px #bbf7d0; }
+
+/* TezDetal skroll paneli */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f5f5f5; }
+::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #16a34a; }
+.tabular { font-variant-numeric: tabular-nums; }

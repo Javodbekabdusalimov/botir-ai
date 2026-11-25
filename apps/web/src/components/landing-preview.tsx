@@ -24,7 +24,7 @@ export function LandingPreview() {
   const live = state.status === "running";
   return (
     <div className="relative">
-    <div className="relative flex h-[36rem] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-lift sm:h-[38rem]">
+    <div className="relative flex h-[36rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-lift sm:h-[38rem]">
       <div className="flex items-center gap-2 border-b border-border bg-muted/60 px-4 py-2.5" aria-hidden="true">
         <span className="size-2.5 rounded-full bg-red-300" />
         <span className="size-2.5 rounded-full bg-amber-300" />
@@ -55,7 +55,7 @@ export function LandingPreview() {
         </div>
       </div>
     </div>
-      <div className="pop-in absolute -top-4 right-6 z-10 hidden rounded-2xl border border-tint-3 bg-white/90 px-3 py-2 text-xs font-semibold text-green-900 shadow-soft backdrop-blur sm:flex sm:items-center sm:gap-1.5">
+      <div className="pop-in absolute -top-4 right-6 z-10 hidden rounded-2xl border border-tint-3 bg-white/90 px-3 py-2 text-xs font-semibold text-green-900 shadow-soft sm:flex sm:items-center sm:gap-1.5">
         <ShieldCheck className="size-4 text-green-600" aria-hidden="true" /> PolicyGuard: chegirma ≤ limit
       </div>
     </div>

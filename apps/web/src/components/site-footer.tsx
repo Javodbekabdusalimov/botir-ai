@@ -25,7 +25,7 @@ const TEAM = [
 export function SiteFooter() {
   return (
 <footer className="border-t border-tint-3 bg-gradient-to-b from-tint-1 to-white">
-      <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-12 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:px-8 py-12 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
           <div className="flex items-center gap-2">
             <LogoMark className="size-9" />
@@ -97,7 +97,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-tint-3">
-        <p className="mx-auto max-w-[1200px] px-4 py-4 text-xs text-muted-foreground">© 2026 Botir AI. Namuna bizneslar fiktiv. Brend logotiplari ularning egalariga tegishli.</p>
+        <p className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 text-xs text-muted-foreground">© 2026 Botir AI. Namuna bizneslar fiktiv. Brend logotiplari ularning egalariga tegishli.</p>
       </div>
     </footer>
   );

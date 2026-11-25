@@ -86,7 +86,7 @@ export function AssistantChat() {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-7rem)] max-w-2xl flex-col px-4 py-4 sm:h-[calc(100dvh-2.9rem)] sm:py-6">
+    <div className="mx-auto flex h-[calc(100dvh-7rem)] max-w-2xl flex-col px-4 py-4 sm:h-[calc(100dvh-5.9rem)] sm:py-6">
       <p className="text-sm font-medium text-agent">Shaxsiy agent</p>
       <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Yordamchingizga ayting</h1>
 
@@ -184,7 +184,7 @@ export function AssistantChat() {
             {STARTERS.map(({ icon: Icon, title, text: starter }) => (
               <li key={title}>
                 <button type="button" onClick={() => setText(starter)} className="lift press flex min-h-28 w-full flex-col items-start gap-2 rounded-2xl border border-tint-3 bg-gradient-to-br from-tint-1 to-white p-4 text-left shadow-soft focus-visible:outline-2 focus-visible:outline-ring">
-                  <span className="grid size-9 place-items-center rounded-xl bg-primary text-green-950"><Icon className="size-4" aria-hidden="true" /></span>
+                  <span className="grid size-9 place-items-center rounded-xl bg-primary text-white"><Icon className="size-4" aria-hidden="true" /></span>
                   <span className="text-sm font-bold">{title}</span>
                   <span className="text-xs leading-snug text-muted-foreground">{starter}</span>
                 </button>

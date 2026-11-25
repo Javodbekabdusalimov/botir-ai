@@ -238,7 +238,7 @@ export function ConnectForm() {
 function AgentReady({ business, result }: { business: Business; result: CatalogImportResult }) {
   const errs = result.errors;
   return (
-    <div className="rise-in mt-8 rounded-3xl border border-green-500/40 bg-tint-1 p-5 shadow-soft sm:p-8">
+    <div className="rise-in mt-8 rounded-2xl border border-green-500/40 bg-tint-1 p-5 shadow-soft sm:p-8">
       <p className="flex items-center gap-2 font-display text-2xl font-bold text-green-900">
         <CheckCircle2 className="size-7 text-green-600" aria-hidden="true" /> Agentingiz tayyor ✅
       </p>

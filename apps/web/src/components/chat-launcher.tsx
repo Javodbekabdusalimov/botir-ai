@@ -19,10 +19,10 @@ export function ChatLauncher() {
         <section
           aria-label="Botir AI chat"
           hidden={!open}
-          className="slide-up fixed inset-x-3 bottom-[4.5rem] z-50 flex h-[min(34rem,calc(100dvh-7rem))] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-lift sm:inset-x-auto sm:bottom-24 sm:right-6 sm:w-[26rem]"
+          className="slide-up fixed inset-x-3 bottom-[4.5rem] z-50 flex h-[min(34rem,calc(100dvh-7rem))] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-lift sm:inset-x-auto sm:bottom-24 sm:right-6 sm:w-[26rem]"
         >
           <header className="flex items-center gap-3 bg-gradient-to-r from-green-700 to-green-500 px-4 py-3 text-white">
-            <span className="grid size-10 place-items-center rounded-full bg-white/20 text-sm font-bold backdrop-blur">AI</span>
+            <span className="grid size-10 place-items-center rounded-full bg-white/20 text-sm font-bold">AI</span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-extrabold">Botir AI</p>
               <p className="flex items-center gap-1.5 text-xs text-green-50">

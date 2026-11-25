@@ -72,7 +72,7 @@ export function HeroSage() {
               siz faqat tasdiqlaysiz
             </h1>
             <p className="mt-5 max-w-lg text-pretty text-base leading-relaxed text-white/85 sm:text-lg">
-              Botir mijozlaringiz bilan Telegram&apos;da o&apos;zbekcha gaplashadi, narxni katalogdan oladi va chegirmani belgilagan chegarangizdan oshirmaydi.
+              Life Assistant mijozlaringiz bilan Telegram&apos;da (tez orada) o&apos;zbekcha gaplashadi, narxni katalogdan oladi va chegirmani belgilagan chegarangizdan oshirmaydi.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -129,11 +129,8 @@ export function HeroSage() {
             >
               <div className="flex items-center justify-between px-2 pb-1 pt-1 text-xs text-white/85">
                 <span className="flex items-center gap-2">
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#f6c27a] opacity-70 motion-reduce:animate-none" />
-                    <span className="relative inline-flex size-2 rounded-full bg-[#f6c27a]" />
-                  </span>
-                  Agent xonasi · jonli
+                  <span className="rounded-full bg-white/15 px-2 py-0.5 font-semibold">Namuna</span>
+                  Agent xonasi
                 </span>
                 <span>Chilonzor Osh Markazi</span>
               </div>

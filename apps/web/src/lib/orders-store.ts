@@ -11,6 +11,8 @@ export interface PaidOrder {
   total: number;
   discountPct: number;
   paidAt: string;
+  /** TEST to'lov: haqiqiy pul o'tmagan (prodda hozir hammasi TEST) */
+  isTest?: boolean;
 }
 
 const KEY = "botir.paidOrders";
@@ -33,6 +35,7 @@ function read(): PaidOrder[] {
 }
 
 export function savePaidOrder(o: PaidOrder) {
+  if (o.orderId.startsWith("demo")) return; // namuna buyurtmasi /assistant ga tushmaydi
   try {
     const list = read().filter((x) => x.orderId !== o.orderId);
     localStorage.setItem(KEY, JSON.stringify([o, ...list].slice(0, 20)));

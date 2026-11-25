@@ -10,6 +10,7 @@ import { NotFoundError, getPaymentStatus } from "@/lib/api";
 import { bizPhoto } from "@/lib/photos";
 import { formatSom, formatWhen, shortId } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { savePaidOrder } from "@/lib/orders-store";
 
 interface Summary {
   businessId: string;
@@ -111,6 +112,12 @@ export function Checkout({ orderId }: { orderId: string }) {
   const link = serverLink ?? sum?.link ?? null;
   const isTest = serverTest ?? (link ? link.includes("/pay/test/") : true);
 
+  // To'langanda buyurtma /assistant dagi ro'yxatga tushadi (TEST belgisi bilan)
+  useEffect(() => {
+    if (phase !== "paid" || !sum) return;
+    savePaidOrder({ orderId, businessName: sum.businessName, items: sum.items, total: amount ?? sum.total, discountPct: sum.discountPct, paidAt: paidAt || new Date().toISOString(), isTest });
+  }, [phase, sum, orderId, amount, paidAt, isTest]);
+
   async function pay() {
     if (phase === "paying") return;
     setPhase("paying");
@@ -179,7 +186,7 @@ export function Checkout({ orderId }: { orderId: string }) {
               </svg>
             </span>
             <h2 className="mt-5 font-display text-3xl font-extrabold text-green-900">{isTest ? "TEST to'lov bajarildi" : "To'landi ✅"}</h2>
-            <p className="mt-1 text-muted-foreground">{isTest ? "TEST to'lov: haqiqiy pul o'tmadi. Buyurtma biznesga yuborildi." : "TezCheck orqali to'landi. Buyurtma biznesga yuborildi."}</p>
+            <p className="mt-1 text-muted-foreground">{orderId.startsWith("demo") ? "Namuna: haqiqiy buyurtma va to'lov yo'q." : isTest ? "TEST to'lov: haqiqiy pul o'tmadi. Buyurtma biznesga yuborildi." : "TezCheck orqali to'landi. Buyurtma biznesga yuborildi."}</p>
             <dl className="mx-auto mt-6 divide-y divide-border rounded-2xl border border-border bg-muted/40 text-left text-sm">
               {[
                 ["Summa", formatSom(total)],

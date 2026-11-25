@@ -31,7 +31,7 @@ export function Overview() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Receipt} tone="green" label="Botir orqali buyurtmalar" error={!!orders.error} value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid" || o.status === "confirmed").length} ta tasdiqlangan` : undefined} />
+        <Stat icon={Receipt} tone="green" label="Life Assistant orqali buyurtmalar" error={!!orders.error} value={orders.data?.length} hint={orders.data ? `${orders.data.filter((o) => o.status === "paid" || o.status === "confirmed").length} ta tasdiqlangan` : undefined} />
         <Stat icon={MessagesSquare} tone="amber" label="So'rovlar" error={!!stats.error} value={stats.data ? stats.data.topRequests.reduce((s, r) => s + r.count, 0) : undefined} hint={stats.data ? `${stats.data.topRequests.length} xil so'rov` : undefined} />
         <Stat icon={SearchX} tone="blue" label="Topilmagan so'rovlar" error={!!stats.error} value={stats.data?.notFound.length} hint={stats.data ? (stats.data.notFound.length ? "Katalogga qo'shish mumkin" : "Hammasi katalogda bor") : undefined} />
         <Stat icon={Bot} tone="violet" label="AI javob bergan" error={!!kb.error} value={ai ? (ai.aiAnsweredPct ?? 0) : undefined} display={ai && ai.aiAnsweredPct == null ? "—" : undefined} suffix="%" hint={ai ? (ai.aiTurns ? `${ai.aiTurns} ta javob` : "Hali suhbat yo'q") : undefined} />

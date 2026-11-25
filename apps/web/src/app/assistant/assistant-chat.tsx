@@ -96,7 +96,7 @@ export function AssistantChat() {
 
       {authStatus === "out" && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-tint-3 bg-tint-1 px-4 py-3 text-sm">
-          <span className="text-green-900">Kirsangiz, buyurtmalaringiz saqlanadi. Demo kirishsiz ham ishlaydi.</span>
+          <span className="text-green-900">Kirsangiz, buyurtmalaringiz saqlanadi. Kirmasdan ham ishlaydi.</span>
           <Link href="/login?next=/assistant" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-4 font-semibold")}>
             Kirish
           </Link>
@@ -118,7 +118,7 @@ export function AssistantChat() {
                   </p>
                 </div>
                 <span className="flex shrink-0 items-center gap-1 rounded-full bg-tint-2 px-2.5 py-1 text-xs font-semibold text-green-900">
-                  <CheckCircle2 className="size-3.5" aria-hidden="true" /> To&apos;landi
+                  <CheckCircle2 className="size-3.5" aria-hidden="true" /> {o.isTest ? "TEST to'lov" : "To'landi"}
                 </span>
               </div>
               <ul className="mt-2 text-sm text-muted-foreground">

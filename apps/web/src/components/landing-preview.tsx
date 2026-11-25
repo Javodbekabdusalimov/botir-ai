@@ -29,7 +29,7 @@ export function LandingPreview() {
         <span className="size-2.5 rounded-full bg-red-300" />
         <span className="size-2.5 rounded-full bg-amber-300" />
         <span className="size-2.5 rounded-full bg-green-400" />
-        <span className="ml-3 flex-1 truncate rounded-md bg-white/80 px-3 py-1 text-[11px] text-muted-foreground">lifeassistant.uz/live/chilonzor-osh</span>
+        <span className="ml-3 flex-1 truncate rounded-md bg-white/80 px-3 py-1 text-[11px] text-muted-foreground">Namuna muzokara</span>
       </div>
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
         <span className="flex items-center gap-2 text-sm font-semibold">

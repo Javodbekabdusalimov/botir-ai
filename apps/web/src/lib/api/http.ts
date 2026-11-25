@@ -3,6 +3,12 @@ import { API_URL, FORCE_DEMO, TIMEOUT_MS, trackSlow } from "./config";
 
 /** Backend xatosi yoki server javob bermadi: foydalanuvchiga ko'rsatiladi (mock'ga o'tilmaydi). */
 export class ApiError extends Error {}
+/** 409: bu taklif allaqachon tasdiqlangan — server mavjud buyurtmani qaytaradi (ikki tap / reload). */
+export class AlreadyConfirmedError extends ApiError {
+  constructor(public readonly orderId: string, public readonly paymentLink: string | null) {
+    super("Buyurtma allaqachon yaratilgan");
+  }
+}
 /** Resurs topilmadi (faqat `notFoundError: true` so'ralganda tashlanadi). */
 export class NotFoundError extends ApiError {}
 /** 401: token yaroqsiz (faqat shunda sessiya o'chiriladi). */
@@ -100,6 +106,10 @@ export async function request<T>(
     body = (await res.json()) as ApiResponse<T> & { message?: string | string[] };
   } catch {
     throw new ApiError(SERVER_DOWN);
+  }
+  if (res.status === 409) {
+    const c = body as unknown as { orderId?: unknown; paymentLink?: unknown };
+    if (typeof c.orderId === "string") throw new AlreadyConfirmedError(c.orderId, typeof c.paymentLink === "string" ? c.paymentLink : null);
   }
   if (res.status === 401) throw new UnauthorizedError(textOf(body) || "Sessiya tugagan, qayta kiring");
   if (res.status === 402) throw new UpgradeRequiredError(textOf(body) || "Bugungi limit tugadi");

@@ -2,7 +2,7 @@
 
 import { friendlyError } from "@/lib/friendly-error";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { AlertTriangle, Check, FileUp, KeyRound, Link2, Loader2, Mic, MicOff, Pencil, Send, Type, X } from "lucide-react";
+import { AlertTriangle, Check, FileUp, Link2, Loader2, Mic, MicOff, Pencil, Send, Type, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import { useAsync } from "@/hooks/use-async";
 import { useBusinessId } from "@/hooks/use-business";
 import {
   addKnowledgeFile, addKnowledgeTelegram, addKnowledgeText, addKnowledgeUrl, answerQuestion, confirmFacts,
-  createSyncKey, dismissQuestion, getChats, getKnowledge, patchFact,
+  dismissQuestion, getChats, getKnowledge, patchFact,
 } from "@/lib/api";
 import { formatSom } from "@/lib/format";
 import type { KnowledgeFact, KnowledgeOverview, KnowledgeSourceKind } from "@/lib/types";

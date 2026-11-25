@@ -38,6 +38,8 @@ export interface Offer {
   total: number;
   discountPct: number;
   status: 'proposed' | 'accepted' | 'declined';
+  /** Optional complementary item; never part of `total` until the user accepts it on confirm. */
+  upsell?: { productId: string; name: string; price: number };
 }
 
 export type NegotiationEvent =

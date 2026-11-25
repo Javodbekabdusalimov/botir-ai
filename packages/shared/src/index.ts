@@ -179,7 +179,16 @@ export interface NegotiationTask {
 }
 
 export type A2APayload =
-  | { type: 'REQUEST'; taskId: string; need: string; when?: ISODate; people?: number; budget?: number }
+  | {
+      type: 'REQUEST';
+      taskId: string;
+      need: string;
+      when?: ISODate;
+      people?: number;
+      budget?: number;
+      /** "Botir sizni eslaydi": remembered user preferences injected into this request. */
+      appliedMemory?: string[];
+    }
   | {
       type: 'OFFER';
       items: OrderItem[];
@@ -187,12 +196,31 @@ export type A2APayload =
       discountPct: number;
       validUntil: ISODate;
       slot?: { start: ISODate; end: ISODate };
+      /** One complementary catalog item suggestion. NOT included in `price`; user accepts via confirm `acceptUpsell`. */
+      upsell?: UpsellSuggestion;
     }
   | { type: 'COUNTER'; askDiscountPct: number; reason: string }
   | { type: 'ACCEPT' }
   | { type: 'REJECT'; reason: string };
 
 export type A2AType = A2APayload['type'];
+
+export interface UpsellSuggestion {
+  itemId: UUID;
+  name: string;
+  price: number; // catalog price, computed by code
+}
+
+/** One competitor in a task's competition (sorted best first). score = 0.6 price + 0.25 rating + 0.15 distance. */
+export interface CompetitionEntry {
+  businessId: UUID;
+  businessName: string;
+  price: number;
+  discountPct: number;
+  rating: number;
+  distanceKm: number;
+  score: number; // 0..1
+}
 
 export interface NegotiationMessage {
   id: UUID;
@@ -216,7 +244,17 @@ export interface Negotiation extends Base {
 /** GET /negotiations/:id/stream — SSE event.data = JSON.stringify(NegotiationEvent) */
 export type NegotiationEvent =
   | { type: 'message'; message: NegotiationMessage }
-  | { type: 'best_offer'; businessId: UUID; businessName: string; offer: Extract<A2APayload, { type: 'OFFER' }> }
+  | {
+      type: 'best_offer';
+      businessId: UUID;
+      businessName: string;
+      offer: Extract<A2APayload, { type: 'OFFER' }>;
+      /** true = winner of the task's competition (emitted after all lanes of the task finished). */
+      winner?: boolean;
+      ranking?: CompetitionEntry[];
+      reason?: string; // e.g. "eng arzon + reyting 4.8"
+      appliedMemory?: string[];
+    }
   | { type: 'status'; status: NegotiationStatus }
   | { type: 'error'; error: string };
 
@@ -231,6 +269,8 @@ export interface AgentRequestResult {
 export interface ConfirmResult {
   orderId: UUID;
   paymentLink: string;
+  total?: number; // order total computed from the catalog (includes upsell if accepted)
+  upsellAccepted?: boolean;
 }
 
 // ---------- Telegram Connect + Inbox (§4) ----------

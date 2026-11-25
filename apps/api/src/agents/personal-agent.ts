@@ -26,6 +26,7 @@ export class PersonalAgent {
       system: [
         "Sen foydalanuvchi gapini vazifalarga ajratuvchi parser'san.",
         `category faqat: ${CATEGORIES.join('|')}. need — qisqa o'zbekcha (masalan "osh, joy band qilish", "moy almashtirish").`,
+        "Ovqat/joy istaklarini (masalan \"piyozsiz\", \"deraza yonida\") need ichida saqla (masalan \"osh piyozsiz, joy band qilish\").",
         'when — matndagi vaqt iborasi (masalan "ertaga 18:00"), people — son, area — tuman nomi (masalan "Chilonzor").',
         "Matnda yo'q maydonni qo'shma.",
         memoryContext ? `Mijoz haqida ma'lum faktlar:\n${memoryContext}` : '',
@@ -36,21 +37,26 @@ export class PersonalAgent {
     return (data.tasks ?? []).filter((t) => CATEGORIES.includes(t.category));
   }
 
-  /** Matching businesses: category + area, falls back to category only. */
+  /** All businesses of the category (they compete); those in the requested area and demo ones first. */
   async findBusinesses(task: UserTask): Promise<AgentBusiness[]> {
-    if (task.area) {
-      const local = await this.store.getBusinesses({ category: task.category, area: task.area });
-      if (local.length > 0) return local;
-    }
-    return this.store.getBusinesses({ category: task.category });
+    const all = await this.store.getBusinesses({ category: task.category });
+    const area = task.area?.toLowerCase();
+    const rank = (b: AgentBusiness): number =>
+      (area && b.area.toLowerCase().includes(area) ? 0 : 2) + (b.isDemo ? 0 : 1);
+    return all.map((b, i) => ({ b, i })).sort((x, y) => rank(x.b) - rank(y.b) || x.i - y.i).map((x) => x.b);
   }
 
   /** First message to the business agent (template, no LLM — fast and predictable). */
-  requestText(task: UserTask, lang: Lang): string {
+  requestText(task: UserTask, lang: Lang, memory: string[] = []): string {
     const parts = [task.need, task.when, task.people ? `${task.people} kishi` : undefined].filter(Boolean);
+    const mem = memory.length
+      ? lang === 'ru'
+        ? ` Предпочтения клиента (из памяти): ${memory.join('; ')}.`
+        : ` Mijozning odatlari (xotiradan): ${memory.join('; ')}.`
+      : '';
     return lang === 'ru'
-      ? `Здравствуйте! Я ассистент клиента. Нужно: ${parts.join(', ')}. Что можете предложить?`
-      : `Assalomu alaykum! Men mijozning yordamchisiman. Kerak: ${parts.join(', ')}. Nima taklif qilasiz?`;
+      ? `Здравствуйте! Я ассистент клиента. Нужно: ${parts.join(', ')}.${mem} Что можете предложить?`
+      : `Assalomu alaykum! Men mijozning yordamchisiman. Kerak: ${parts.join(', ')}.${mem} Nima taklif qilasiz?`;
   }
 
   /** React to a business offer: accept, politely ask for a discount, or reject. */

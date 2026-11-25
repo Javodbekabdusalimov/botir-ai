@@ -21,6 +21,7 @@ export function toOfferPayload(offer: Offer, products: Product[]): OfferPayload 
   return {
     type: 'OFFER', items, price: offer.total, discountPct: offer.discountPct,
     validUntil: new Date(Date.now() + OFFER_TTL_MS).toISOString(),
+    ...(offer.upsell ? { upsell: { itemId: offer.upsell.productId, name: offer.upsell.name, price: offer.upsell.price } } : {}),
   };
 }
 
@@ -46,6 +47,7 @@ export class LaneMapper {
     private readonly businessId: string,
     private readonly products: Product[],
     private readonly emit: (e: SharedEvent) => void,
+    private readonly appliedMemory: string[] = [],
   ) {}
 
   /** Final lane status: closes a held personal message as ACCEPT / REJECT. */
@@ -101,7 +103,12 @@ export class LaneMapper {
 
   private defaultPayload(h: Held): A2APayload {
     if (h.fromAgent === 'personal') {
-      if (this.personalCount === 1) return { type: 'REQUEST', taskId: `${this.negotiationId}:${this.businessId}`, need: h.message.text };
+      if (this.personalCount === 1) {
+        return {
+          type: 'REQUEST', taskId: `${this.negotiationId}:${this.businessId}`, need: h.message.text,
+          ...(this.appliedMemory.length ? { appliedMemory: this.appliedMemory } : {}),
+        };
+      }
       return { type: 'COUNTER', askDiscountPct: askedDiscount(h.message.text), reason: h.message.text };
     }
     // Business reply without a (new) offer: clarification on the current offer.

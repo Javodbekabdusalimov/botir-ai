@@ -11,6 +11,7 @@ import { PrismaTgStore } from './db/prisma-tg-store';
 import { PrismaService } from './db/prisma.service';
 import { LoopController } from './loop/loop.controller';
 import { agentsProvider } from './negotiations/agents.provider';
+import { MemoryController } from './negotiations/memory.controller';
 import { NegotiationsController } from './negotiations/negotiations.controller';
 import { NegotiationsService } from './negotiations/negotiations.service';
 import { PAYMENT_LINK } from './payments/payment-link';
@@ -44,7 +45,7 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
     PrismaActionStore, TgUserService,

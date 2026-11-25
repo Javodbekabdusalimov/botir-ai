@@ -20,6 +20,7 @@ export * from './personal-agent';
 export * from './negotiator';
 export * from './auditor';
 export * from './memory';
+export * from './competition';
 export * from './loop/evaluator';
 export * from './loop/loop-engine';
 export type { AgentStore } from './store/agent-store';

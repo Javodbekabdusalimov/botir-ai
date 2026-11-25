@@ -28,7 +28,7 @@ export class TezcheckPaymentLinkProvider implements PaymentLinkProvider {
     const amount = Math.round(order.total);
     const created = await client.createBill({
       amountMinor: amount * 100,
-      title: (order.title ?? `Botir buyurtma #${order.id.slice(0, 8)}`).slice(0, 191),
+      title: (order.title ?? `Life Assistant buyurtma #${order.id.slice(0, 8)}`).slice(0, 191),
       externalReference: order.id,
       idempotencyKey: `botir-${order.id}`,
     });

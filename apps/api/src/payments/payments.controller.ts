@@ -58,7 +58,7 @@ export class PaymentsController {
     const ref = pending?.orderId ?? `sub-${randomUUID()}`;
     const link = await this.payments.createPaymentLink({
       id: ref, businessId: id, total: price, kind: 'subscription',
-      title: `Botir ${plan.name} — ${introAvailable ? 'birinchi oy' : '1 oy'} (${b.name})`,
+      title: `Life Assistant ${plan.name} — ${introAvailable ? 'birinchi oy' : '1 oy'} (${b.name})`,
     });
     return ok<SubscriptionResult>({ paymentRef: ref, payUrl: link.payUrl, amount: price });
   }

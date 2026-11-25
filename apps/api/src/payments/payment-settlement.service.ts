@@ -1,4 +1,5 @@
-// pending → paid, exactly once. Order → status 'paid'; subscription → business on Pro (+30 days, +AI credits).
+// pending → paid, exactly once. Order → status 'paid'; real-money subscription → business on Pro (+30 days, +AI credits).
+// A TEST payment never activates a plan (invariant 3: only paid && livemode counts).
 // Then the business owner is notified (Telegram bot if linked; always a log line).
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Payment } from '@prisma/client';
@@ -25,7 +26,7 @@ export class PaymentSettlement {
     const flipped = await this.db.$transaction(async (tx) => {
       const r = await tx.payment.updateMany({ where: { id: p.id, status: { not: 'paid' } }, data: { status: 'paid', paidAt } });
       if (r.count === 0) return false;
-      if (p.kind === 'subscription' && p.businessId && pro && p.plan !== 'max') {
+      if (p.kind === 'subscription' && !p.isTest && p.businessId && pro && p.plan !== 'max') {
         const b = await tx.business.findUniqueOrThrow({ where: { id: p.businessId } });
         const from = b.plan === 'pro' && b.planUntil && b.planUntil > paidAt ? b.planUntil : paidAt;
         await tx.business.update({
@@ -50,7 +51,7 @@ export class PaymentSettlement {
     const order = `buyurtma #${p.orderId.slice(0, 8)} — ${amount}`;
     // A TEST payment brings no money: say so, or the owner may hand over the goods for free.
     const text = p.kind === 'subscription'
-      ? `✅ Botir Pro faollashtirildi (${amount}). ${p.isTest ? '⚠️ TEST: pul yechilmadi.' : 'Rahmat!'}`
+      ? (p.isTest ? `🧪 TEST to'lov (${amount}): pul yechilmadi, Pro yoqilmadi.` : `✅ Life Assistant Pro faollashtirildi (${amount}). Rahmat!`)
       : p.isTest
         ? `🧪 TEST to'lov: ${order}. Haqiqiy pul kelmadi, mahsulotni bu to'lov uchun bermang.`
         : `💰 To'lov keldi: ${order}`;

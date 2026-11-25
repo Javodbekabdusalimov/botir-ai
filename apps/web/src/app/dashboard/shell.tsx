@@ -20,6 +20,7 @@ import type { Business } from "@/lib/types";
 const TABS = [
   { href: "/dashboard", label: "Umumiy" },
   { href: "/dashboard/inbox", label: "Inbox" },
+  { href: "/dashboard/knowledge", label: "Bilimlar" },
   { href: "/dashboard/chat", label: "Agentni sinash" },
   { href: "/dashboard/improve", label: "Yaxshilash" },
 ];

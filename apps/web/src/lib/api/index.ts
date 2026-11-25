@@ -8,8 +8,8 @@
  */
 import type {
   AgentRequestResult, Analytics, AuthResult, Business, CatalogImportResult, CatalogRowInput, Chat, ChatMode,
-  ConfirmResult, CreateBusinessDto, InboxMessage, LoopProposal, MeResponse, MeTgStatus, MemoryFact, Order,
-  PaymentStatus, Plan as BillingPlan, RegisterDto, SubscriptionResult, TgConnectCodeResult, TgConnectStartResult, UserAction,
+  ConfirmResult, CreateBusinessDto, InboxMessage, KnowledgeFact, KnowledgeFactPatch, KnowledgeOverview, KnowledgeSource, LoopProposal, MeResponse, MeTgStatus, MemoryFact, Order,
+  PaymentStatus, PendingQuestion, Plan as BillingPlan, RegisterDto, SyncKeyResult, SubscriptionResult, TgConnectCodeResult, TgConnectStartResult, UserAction,
 } from "../types";
 import * as mock from "../mock";
 import { AGENT_TIMEOUT_MS, LOOP_TIMEOUT_MS, TIMEOUT_MS } from "./config";
@@ -202,3 +202,37 @@ export const decideAction = (id: string, d: "approve" | "reject") =>
     mock.mockDecideAction(id, d);
     return delay(400, { ok: true as const });
   });
+
+/* ---- Biznes bilimi (manbalar → qoralama faktlar → egasi tasdiqlaydi) ---- */
+const kb = (businessId: string) => `/businesses/${encodeURIComponent(businessId)}/knowledge`;
+export const getKnowledge = (businessId: string) =>
+  request<KnowledgeOverview>(kb(businessId), undefined, () => mock.mockKnowledge());
+export const addKnowledgeText = (businessId: string, text: string, kind: "text" | "voice" = "text") =>
+  request<KnowledgeSource>(`${kb(businessId)}/sources/text`, json("POST", { text, kind }), () => mock.mockKnowledgeSource(kind, text));
+export const addKnowledgeUrl = (businessId: string, url: string) =>
+  request<KnowledgeSource>(`${kb(businessId)}/sources/url`, json("POST", { url }), () => mock.mockKnowledgeSource("website", url));
+export const addKnowledgeTelegram = (businessId: string, chatIds: string[]) =>
+  request<KnowledgeSource>(`${kb(businessId)}/sources/telegram`, json("POST", { chatIds }), () =>
+    mock.mockKnowledgeSource("telegram", `${chatIds.length} ta chat`),
+  );
+export function addKnowledgeFile(businessId: string, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return request<KnowledgeSource>(`${kb(businessId)}/sources/file`, { method: "POST", body: fd }, () =>
+    mock.mockKnowledgeSource(file.type === "application/pdf" ? "pdf" : "photo", file.name),
+  );
+}
+export const confirmFacts = (businessId: string, ids: string[]) =>
+  request<{ confirmed: number }>(`${kb(businessId)}/facts/confirm`, json("POST", { ids }), () => ({ confirmed: ids.length }));
+export const patchFact = (businessId: string, factId: string, patch: KnowledgeFactPatch) =>
+  request<KnowledgeFact>(`${kb(businessId)}/facts/${encodeURIComponent(factId)}`, json("PATCH", patch), () => mock.mockPatchFact(factId, patch));
+export const answerQuestion = (businessId: string, qid: string, answer: string) =>
+  request<PendingQuestion>(`${kb(businessId)}/questions/${encodeURIComponent(qid)}/answer`, json("POST", { answer }), () =>
+    mock.mockAnswerQuestion(qid, answer),
+  );
+export const dismissQuestion = (businessId: string, qid: string) =>
+  request<PendingQuestion>(`${kb(businessId)}/questions/${encodeURIComponent(qid)}/dismiss`, json("POST"), () =>
+    mock.mockDismissQuestion(qid),
+  );
+export const createSyncKey = (businessId: string) =>
+  request<SyncKeyResult>(`/businesses/${encodeURIComponent(businessId)}/sync-key`, json("POST"), () => ({ key: "demo-sync-key" }));

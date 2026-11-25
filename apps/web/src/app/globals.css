@@ -260,3 +260,8 @@
 ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #16a34a; }
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* Agent xonasi: faol personaj atrofidagi aylanuvchi halqa */
+@keyframes room-spin { to { transform: rotate(360deg); } }
+.room-spin { transform-box: fill-box; transform-origin: center; animation: room-spin 8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .room-spin { animation: none; } }

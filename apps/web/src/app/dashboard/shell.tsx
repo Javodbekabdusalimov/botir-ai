@@ -93,10 +93,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const current = all.find((b) => b.id === id || ALIAS[id] === b.id);
   const name = current?.name ?? business?.name;
   const plan = business?.plan ?? current?.plan ?? "start";
-  const compact = path.startsWith("/dashboard/inbox") || path.startsWith("/dashboard/chat");
+  const compact = path === "/dashboard" || path.startsWith("/dashboard/inbox") || path.startsWith("/dashboard/chat");
   return (
     <>
-      {compact ? (
+      {path === "/dashboard" ? null : compact ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft">
           <div className="flex min-w-0 items-center gap-3">
             <BizAvatar id={id} name={name ?? "Biznes"} size={40} />

@@ -56,6 +56,9 @@ services:
       # Daily cap on ALL Claude tokens of the owner's account (all clients + guests). At the cap new AI calls fail fast ("AI band"). 0 = no cap.
       - key: AI_GLOBAL_DAILY_TOKENS
         value: "3000000"
+      # Owners' admin panel (/admin): comma-separated phones (+998XXXXXXXXX). Empty = nobody is admin.
+      - key: ADMIN_PHONES
+        sync: false
       - key: KNOWLEDGE_DAILY_CAP
         value: "30"
       # /agent/request abuse limits. Demo venue = one shared Wi-Fi IP, so the per-IP window is generous.

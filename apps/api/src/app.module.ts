@@ -1,4 +1,5 @@
 import { Controller, Get, Inject, Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
+import { ADMIN_CONTROLLERS, ADMIN_PROVIDERS } from './admin/admin.module';
 import { AuthController } from './auth/auth.controller';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
@@ -62,12 +63,12 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController, OutreachController, ...BILLING_CONTROLLERS],
+  controllers: [HealthController, AuthController, BusinessesController, NegotiationsController, PaymentsController, TestPayController, TgController, MeTgController, LoopController, MemoryController, KnowledgeController, SyncController, OutreachController, ...BILLING_CONTROLLERS, ...ADMIN_CONTROLLERS],
   providers: [
     PrismaService, AuthService, AuthGuard, PrismaAgentStore, PrismaTgStore, agentsProvider, AnalyticsService, NegotiationsService, TgService,
     PrismaActionStore, TgUserService, MetricsService, QuestionsService, TurnRecorder,
     OutreachService, CatalogWriter, KnowledgeSourcesService, KnowledgeFactsService, SyncService,
-    TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller, ...BILLING_PROVIDERS,
+    TestPaymentLinkProvider, TezcheckPaymentLinkProvider, PaymentSettlement, PaymentPoller, ...BILLING_PROVIDERS, ...ADMIN_PROVIDERS,
     // Real TezCheck bills when the key is configured; otherwise clearly-labeled TEST links.
     {
       provide: PAYMENT_LINK,

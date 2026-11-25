@@ -693,3 +693,58 @@ export interface OutreachThread {
   lastReplyAt?: ISODate;
 }
 
+// ---------- Admin (faqat egalar: @Auth + ADMIN_PHONES) ----------
+/** Haqiqiy pul = status 'paid' && !isTest. Summalar so'mda, AI xarajati USD da (LlmCall.costUsd). */
+export interface AdminOverview {
+  revenue: { today: number; days30: number; all: number };
+  payingClients: number; // hozir faol Pro/Max (haqiqiy to'lov bilan)
+  byPlan: { pro: number; max: number };
+  paidSubscriptions: { intro: number; full: number }; // haqiqiy to'langan obunalar soni
+  testPaymentsPaid: number; // to'langan TEST to'lovlar (pul kelmagan)
+  users: { total: number; newToday: number };
+  businesses: number;
+  negotiations: { today: number; days30: number };
+  ordersToday: number;
+  aiCostUsd: { today: number; days30: number };
+  globalTokens: { usedToday: number; cap: number }; // cap 0 = cheklovsiz (AI_GLOBAL_DAILY_TOKENS)
+}
+/** GET /admin/clients?q=&plan=&limit=&offset=: bitta qator = bitta to'lovchi (foydalanuvchi yoki biznes). */
+export interface AdminClient {
+  ownerType: BillingOwnerType;
+  ownerId: string;
+  name: string; // foydalanuvchi ismi yoki biznes nomi
+  phone: string | null; // foydalanuvchi yoki biznes egasining telefoni (Telegram orqali kirganlarda null bo'lishi mumkin)
+  plan: 'free' | 'pro' | 'max'; // amaldagi tarif
+  planStartedAt: ISODate | null; // birinchi haqiqiy to'langan obuna
+  expiresAt: ISODate | null;
+  active: boolean;
+  introUsed: boolean;
+  totalPaid: number; // haqiqiy (TEST emas) to'langan obunalar yig'indisi, so'm
+  paymentsCount: number; // haqiqiy to'langan obunalar soni
+  lastPaymentAt: ISODate | null;
+  tokensToday: number;
+  tokens30d: number;
+  aiCostUsd30d: number;
+  negotiations30d: number;
+  lastActivityAt: ISODate | null;
+}
+/** GET /admin/payments?status=&kind=&test=real|test&q=&limit=&offset= (eng yangisi birinchi) */
+export interface AdminPayment {
+  id: string;
+  orderId: string;
+  kind: 'subscription' | 'order';
+  plan: string | null;
+  amount: number;
+  status: string;
+  isTest: boolean;
+  createdAt: ISODate;
+  paidAt: ISODate | null;
+  billId: string;
+  payer: { type: BillingOwnerType; id: string; name: string | null; phone: string | null } | null;
+  business: { id: string; name: string } | null; // buyurtma (yoki biznes obunasi) biznesi
+  orderTotal: number | null; // kind 'order': buyurtma summasi
+}
+export interface AdminPage<T> {
+  total: number;
+  rows: T[];
+}
